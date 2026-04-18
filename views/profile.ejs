@@ -1,0 +1,42 @@
+<%- include("partials/layout") %>
+
+<div class="card">
+
+<div class="profile-top">
+
+<div class="avatar">
+<%= user.name.charAt(0).toUpperCase() %>
+</div>
+
+<div class="info">
+<h2><%= user.name %></h2>
+<p><%= user.email %></p>
+<p><%= user.role %></p>
+</div>
+
+</div>
+
+<hr style="margin:25px 0;">
+
+<h2 style="margin-bottom:20px;">Edit Profile</h2>
+
+<form action="/profile/update" method="POST">
+
+<label>Full Name</label>
+<input type="text" name="name" value="<%= user.name %>">
+
+<label>Email</label>
+<input type="email" name="email" value="<%= user.email %>">
+
+<label>Phone</label>
+<input type="text" name="phone" value="<%= user.phone %>">
+
+<button type="submit">Update Profile</button>
+
+</form>
+
+</div>
+
+</div>
+</body>
+</html>
