@@ -56,4 +56,10 @@ const productSchema = new mongoose.Schema(
   }
 );
 
+// 🔥 ENFORCE CONSISTENCY (NO MANUAL MISTAKES)
+productSchema.pre("save", function (next) {
+  this.depositAmount = (this.cost * this.depositPercentage) / 100;
+  next();
+});
+
 module.exports = mongoose.model("Product", productSchema);
