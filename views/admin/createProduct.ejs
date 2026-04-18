@@ -1,0 +1,36 @@
+<%- include("../partials/layout") %>
+
+<h2>Create Product</h2>
+
+<form
+ action="/admin/products/create"
+ method="POST"
+ enctype="multipart/form-data"
+>
+
+<input name="id" placeholder="Product ID">
+
+<input name="name" placeholder="Product Name">
+
+<input name="category" placeholder="Category">
+
+<input type="number" name="cost" placeholder="Cost">
+
+<input
+ type="number"
+ name="depositPercentage"
+ placeholder="Deposit %"
+>
+
+<textarea
+ name="description"
+ placeholder="Description"
+></textarea>
+
+<input type="file" name="image">
+
+<button>Create Product</button>
+
+</form>
+
+</div></body></html>
