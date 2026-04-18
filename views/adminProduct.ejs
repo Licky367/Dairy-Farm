@@ -1,0 +1,33 @@
+<%- include("../partials/layout") %>
+
+<h2>Edit Product</h2>
+
+<div class="card">
+
+<form action="/admin/products/update/<%= product.id %>" method="POST">
+
+<label>Product Name</label>
+<input type="text" name="name" value="<%= product.name %>">
+
+<label>Category</label>
+<input type="text" name="category" value="<%= product.category %>">
+
+<label>Description</label>
+<textarea name="description"><%= product.description %></textarea>
+
+<label>Image URL</label>
+<input type="text" name="image" value="<%= product.image %>">
+
+<label>Cost (KES)</label>
+<input type="number" name="cost" value="<%= product.cost %>">
+
+<label>Deposit Percentage (%)</label>
+<input type="number" name="depositPercentage" value="<%= product.depositPercentage %>">
+
+<button type="submit">Update Product</button>
+
+</form>
+
+</div>
+
+</div></body></html>
