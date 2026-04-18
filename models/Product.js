@@ -26,6 +26,19 @@ const productSchema = new mongoose.Schema(
       min: 0
     },
 
+    depositPercentage: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100
+    },
+
+    depositAmount: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
     description: {
       type: String,
       required: true,
