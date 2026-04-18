@@ -9,7 +9,7 @@ const profileRoutes = require("./routes/profile");
 const clientRoutes = require("./routes/client");
 const adminRoutes = require("./routes/admin");
 const checkoutRoutes = require("./routes/checkout");
-const productRoutes = require("./routes/productDetails");
+const productRoutes = require("./routes/product");
 const mpesaRoutes = require("./routes/mpesa");
 
 const app = express();
