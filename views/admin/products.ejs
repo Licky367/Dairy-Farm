@@ -1,0 +1,21 @@
+<%- include("../partials/layout") %>
+
+<h2>Manage Products</h2>
+
+<% products.forEach(product => { %>
+
+<div class="card" style="margin-bottom:10px;">
+
+    <h3><%= product.name %></h3>
+    <p><%= product.category %></p>
+    <p>KES <%= product.cost %></p>
+
+    <a href="/admin/products/edit/<%= product.id %>">
+        <button>Edit Product</button>
+    </a>
+
+</div>
+
+<% }) %>
+
+</div></body></html>
