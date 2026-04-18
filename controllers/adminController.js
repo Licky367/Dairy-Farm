@@ -1,49 +1,34 @@
-const Product = require("../models/Product");
+const adminService = require("../services/adminService");
 
 exports.dashboard = (req, res) => {
     res.render("admin/dashboard");
 };
 
 exports.products = async (req, res) => {
-    const products = await Product.find();
+    const products = await adminService.getProducts();
     res.render("admin/products", { products });
 };
 
+exports.createProductPage = (req, res) => {
+    res.render("admin/createProduct");
+};
+
+exports.createProduct = async (req, res) => {
+    await adminService.createProduct(req.body, req.file);
+    res.redirect("/admin/products");
+};
+
 exports.editProductPage = async (req, res) => {
-    const product = await Product.findOne({ id: req.params.id });
-
-    if (!product) return res.send("Product not found");
-
+    const product = await adminService.getProduct(req.params.id);
     res.render("admin/editProduct", { product });
 };
 
 exports.updateProduct = async (req, res) => {
-    const {
-        name,
-        category,
-        cost,
-        description,
-        depositPercentage
-    } = req.body;
+    await adminService.updateProduct(req.params.id, req.body, req.file);
+    res.redirect("/admin/products");
+};
 
-    const updateData = {
-        name,
-        category,
-        cost,
-        description,
-        depositPercentage,
-        depositAmount: (cost * depositPercentage) / 100
-    };
-
-    // if new image uploaded
-    if (req.file) {
-        updateData.image = "/uploads/" + req.file.filename;
-    }
-
-    await Product.findOneAndUpdate(
-        { id: req.params.id },
-        updateData
-    );
-
+exports.deleteProduct = async (req, res) => {
+    await adminService.deleteProduct(req.params.id);
     res.redirect("/admin/products");
 };
