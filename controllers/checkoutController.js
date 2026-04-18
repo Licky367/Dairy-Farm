@@ -1,19 +1,26 @@
 const Order = require("../models/Order");
+const cartService = require("../services/cartService");
 
 exports.checkoutPage = (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
+    const cart = req.session.cart || [];
+
+    if (cart.length === 0) return res.send("Cart is empty");
 
     res.render("checkout", {
-        cart: req.session.cart || []
+        cart,
+        total: cartService.getTotal(req)
     });
 };
 
 exports.processCheckout = async (req, res) => {
-    if (!req.session.user) return res.redirect("/login");
+    const cart = req.session.cart || [];
+
+    if (cart.length === 0) return res.send("Cart is empty");
 
     const order = new Order({
         userId: req.session.user._id,
-        items: req.session.cart,
+        items: cart,
+        totalAmount: cartService.getTotal(req),
         status: req.body.status
     });
 
@@ -21,5 +28,5 @@ exports.processCheckout = async (req, res) => {
 
     req.session.cart = [];
 
-    res.send("Order placed successfully");
+    res.redirect("/client");
 };
