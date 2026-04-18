@@ -2,17 +2,32 @@
 
 <h2>Manage Products</h2>
 
+<a href="/admin/products/create">
+<button>Add Product</button>
+</a>
+
 <% products.forEach(product => { %>
 
-<div class="card" style="margin-bottom:10px;">
+<div class="card" style="margin-top:15px;">
 
-    <h3><%= product.name %></h3>
-    <p><%= product.category %></p>
-    <p>KES <%= product.cost %></p>
+<img src="<%= product.image %>" width="100">
 
-    <a href="/admin/products/edit/<%= product.id %>">
-        <button>Edit Product</button>
-    </a>
+<h3><%= product.name %></h3>
+
+<p><%= product.category %></p>
+
+<p>KES <%= product.cost %></p>
+
+<a href="/admin/products/edit/<%= product.id %>">
+<button>Edit</button>
+</a>
+
+<form
+ action="/admin/products/delete/<%= product.id %>"
+ method="POST"
+>
+<button>Delete</button>
+</form>
 
 </div>
 
