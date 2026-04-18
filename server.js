@@ -4,6 +4,7 @@ const session = require("express-session");
 const path = require("path");
 
 const authRoutes = require("./routes/auth");
+const profileRoutes = require("./routes/profile");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(session({
 }));
 
 app.use("/", authRoutes);
+app.use("/", profileRoutes);
 
 app.listen(3000,()=>{
     console.log("Server running on port 3000");
