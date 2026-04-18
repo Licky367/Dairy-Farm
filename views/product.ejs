@@ -1,0 +1,37 @@
+<%- include("partials/layout") %>
+
+<div class="card">
+
+<div style="display:flex; gap:30px; flex-wrap:wrap;">
+
+    <img src="<%= product.image || 'https://via.placeholder.com/300' %>"
+         style="width:300px; border-radius:10px;">
+
+    <div style="flex:1">
+
+        <h2><%= product.name %></h2>
+
+        <p style="color:gray;"><%= product.description %></p>
+
+        <h3>KES <%= product.cost.toLocaleString() %></h3>
+
+        <p>
+            Deposit: <b><%= product.depositPercentage %>%</b>
+            (KES <%= product.depositAmount.toLocaleString() %>)
+        </p>
+
+        <p><b>Category:</b> <%= product.category %></p>
+
+        <button style="background:#0b5d1e; color:white; padding:12px; border:none; border-radius:8px; width:200px;">
+            Add to Cart
+        </button>
+
+    </div>
+
+</div>
+
+</div>
+
+</div>
+</body>
+</html>
