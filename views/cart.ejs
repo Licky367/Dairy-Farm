@@ -1,28 +1,40 @@
-<%- include("partials/layout") %>
+<%- include("partials/layout", { title: "Your Cart" }) %>
 
 <h2>Your Cart</h2>
 
-<% if(cart.length === 0) { %>
-    <p>Cart is empty</p>
-<% } %>
+<% if (!cart || cart.length === 0) { %>
+    <p style="color:#777;margin-top:15px;">Cart is empty</p>
+<% } else { %>
 
 <% let total = 0; %>
 
 <% cart.forEach(item => { %>
 
-    <% total += item.cost * item.quantity; %>
+<% total += item.cost * item.quantity; %>
 
-    <div class="card" style="margin-bottom:10px;">
-        <h3><%= item.name %></h3>
-        <p>KES <%= item.cost %> × <%= item.quantity %></p>
-    </div>
+<div class="card" style="margin-bottom:10px;">
+    <h3><%= item.name %></h3>
+    <p>KES <%= item.cost.toLocaleString() %> × <%= item.quantity %></p>
+</div>
 
 <% }) %>
 
-<h3>Total: KES <%= total.toLocaleString() %></h3>
+<h3 style="margin-top:20px;">
+Total: KES <%= total.toLocaleString() %>
+</h3>
 
 <a href="/checkout">
-    <button>Proceed to Checkout</button>
+    <button style="
+        margin-top:15px;
+        background:#0b5d1e;
+        color:white;
+        border:none;
+        padding:12px 18px;
+        border-radius:10px;
+        cursor:pointer;
+    ">
+        Proceed to Checkout
+    </button>
 </a>
 
-</div></body></html>
+<% } %>
