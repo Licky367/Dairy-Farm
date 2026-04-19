@@ -26,6 +26,18 @@ box-shadow:0 4px 12px rgba(0,0,0,.05);z-index:999;
 
 .menu-btn{font-size:28px;cursor:pointer;color:#0b5d1e;font-weight:bold;}
 
+.icon-group{
+display:flex;
+align-items:center;
+gap:18px;
+}
+
+.icon-group a{
+text-decoration:none;
+font-size:20px;
+color:#0b5d1e;
+}
+
 .profile-box{position:relative;}
 
 .profile-btn{
@@ -87,30 +99,66 @@ font-size:13px;z-index:1000;
 <div class="header">Corevester Investments Limited</div>
 
 <div class="topmenu">
+
+<!-- LEFT SIDE -->
+<div style="display:flex;align-items:center;gap:15px;">
 <div class="menu-btn" onclick="openSidebar()">☰</div>
 
+<!-- CLIENT ICONS ONLY -->
+<% if (user && user.role === "client") { %>
+<div class="icon-group">
+<a href="/client">🏠</a>
+<a href="/client/cart">🛒</a>
+</div>
+<% } %>
+
+</div>
+
+<!-- RIGHT SIDE PROFILE -->
 <div class="profile-box" id="profileBox">
+
 <button class="profile-btn" onclick="toggleProfile(event)">
 <%= user ? user.name : "Account" %>
 </button>
 
 <div class="dropdown">
-<a href="/profile">Profile</a>
+
+<% if (user) { %>
+<a href="/profile">My Account</a>
 <a href="/logout">Logout</a>
+<% } else { %>
+<a href="/login">Login</a>
+<a href="/signup">Sign Up</a>
+<% } %>
+
 </div>
 </div>
+
 </div>
 
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
+<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
+
+<% if (user && user.role === "admin") { %>
+
 <a href="/admin/dashboard">Dashboard</a>
 <a href="/admin/products">Products</a>
 <a href="/admin/orders">Orders</a>
 <a href="/admin/payments">Payments</a>
 <a href="/admin/clients">Clients</a>
+
+<% } else { %>
+
+<a href="/client">Home</a>
+<a href="/client/cart">Cart</a>
 <a href="/profile">Profile</a>
+
+<% } %>
+
 <a href="/logout">Logout</a>
+
 </div>
 
 <div class="main">
