@@ -1,15 +1,31 @@
-<%- include("../partials/layout") %>
+<%- include("../partials/layout", { title: "All Orders" }) %>
 
+<div class="topbar">
 <h2>All Orders</h2>
+</div>
+
+<div class="table-box">
+
+<% if (orders && orders.length > 0) { %>
 
 <% orders.forEach(order => { %>
 
-<div class="card" style="margin-bottom:10px;">
-    <p><b>Order ID:</b> <%= order._id %></p>
-    <p><b>Status:</b> <%= order.status %></p>
-    <p><b>Total:</b> KES <%= order.totalAmount %></p>
+<div class="card" style="margin-bottom:15px;">
+
+<p><b>Order ID:</b> <%= order._id %></p>
+
+<p><b>Status:</b> <%= order.status %></p>
+
+<p><b>Total:</b> KES <%= order.totalAmount %></p>
+
 </div>
 
 <% }) %>
 
-</div></body></html>
+<% } else { %>
+
+<p class="empty">No orders found</p>
+
+<% } %>
+
+</div>
