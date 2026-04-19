@@ -1,0 +1,37 @@
+{
+  "name": "Corevester Investments",
+  "version": "1.0.0",
+  "description": "E-commerce system with client shop, admin subdomain, M-Pesa payments, authentication, checkout, and product management.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed-admin": "node models/seedAdmin.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "mongoose",
+    "ejs",
+    "mpesa",
+    "kenya",
+    "ecommerce"
+  ],
+  "author": "Licky Wekesa",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mongoose": "^8.6.2",
+    "multer": "^1.4.5-lts.1",
+    "vhost": "^3.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
