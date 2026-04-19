@@ -1,4 +1,4 @@
-<%- include("partials/layout") %>
+<%- include("partials/layout", { title: "Checkout" }) %>
 
 <style>
 .checkout-box{
@@ -23,6 +23,7 @@ border:1px solid #ddd;
 border-radius:10px;
 margin-bottom:12px;
 cursor:pointer;
+display:block;
 }
 
 button{
@@ -45,7 +46,7 @@ cursor:pointer;
 
 <h3>Items</h3>
 
-<% cart.forEach(item=>{ %>
+<% cart.forEach(item => { %>
 
 <div class="item">
 <div>
@@ -64,15 +65,9 @@ KES <%= (item.cost * item.quantity).toLocaleString() %>
 
 <h3>Total: KES <%= totals.total.toLocaleString() %></h3>
 
-<p>
-Deposit:
-KES <%= totals.deposit.toLocaleString() %>
-</p>
+<p>Deposit: KES <%= totals.deposit.toLocaleString() %></p>
 
-<p>
-Arrear:
-KES <%= totals.arrear.toLocaleString() %>
-</p>
+<p>Arrear: KES <%= totals.arrear.toLocaleString() %></p>
 
 <br>
 
@@ -81,52 +76,29 @@ KES <%= totals.arrear.toLocaleString() %>
 <h3>Select Payment Method</h3>
 
 <label class="pay-option">
-<input
-type="radio"
-name="paymentType"
-value="paid"
-required
->
+<input type="radio" name="paymentType" value="paid" required>
 Pay Full Now
 </label>
 
 <label class="pay-option">
-<input
-type="radio"
-name="paymentType"
-value="depositPaid"
->
+<input type="radio" name="paymentType" value="depositPaid">
 Pay Deposit Now
 </label>
 
 <label class="pay-option">
-<input
-type="radio"
-name="paymentType"
-value="payAfter"
->
+<input type="radio" name="paymentType" value="payAfter">
 Pay Later
 </label>
 
 <label class="pay-option">
-<input
-type="radio"
-name="paymentType"
-value="arrearAmount"
->
+<input type="radio" name="paymentType" value="arrearAmount">
 Pay Arrear Only
 </label>
 
 <br>
 
-<button type="submit">
-Proceed
-</button>
+<button type="submit">Proceed</button>
 
 </form>
 
 </div>
-
-</div>
-</body>
-</html>
