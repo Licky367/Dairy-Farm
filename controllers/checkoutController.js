@@ -1,37 +1,66 @@
-const Order = require("../models/Order");
-const cartService = require("../services/cartService");
-const mpesaService = require("../services/mpesaService");
+const checkoutService =
+require("../services/checkoutService");
 
-exports.processCheckout = async (req, res) => {
-    const cart = req.session.cart || [];
+exports.checkoutPage =
+async (req, res) => {
 
-    if (cart.length === 0) return res.send("Cart is empty");
+const cart =
+req.session.cart || [];
 
-    const total = cartService.getTotal(req);
+if (cart.length === 0) {
+return res.redirect("/client");
+}
 
-    const order = new Order({
-        userId: req.session.user._id,
-        items: cart,
-        totalAmount: total,
-        status: req.body.status
-    });
+const totals =
+checkoutService.calculateTotals(cart);
 
-    await order.save();
+res.render("checkout", {
+cart,
+totals,
+user:req.session.user || null
+});
+};
 
-    // 🟢 IF USER CHOSE PAID OR DEPOSIT → TRIGGER MPESA
-    if (req.body.status === "paid" || req.body.status === "depositPaid") {
+exports.processCheckout =
+async (req, res) => {
 
-        const phone = req.session.user.phone;
+try {
 
-        const amount = req.body.status === "depositPaid"
-            ? Math.floor(total * 0.3)
-            : total;
+const cart =
+req.session.cart || [];
 
-        await mpesaService.stkPush(phone, amount, order._id);
+if (cart.length === 0) {
+return res.send("Cart empty");
+}
 
-    }
+if (!req.session.user) {
+return res.redirect("/login");
+}
 
-    req.session.cart = [];
+const {
+paymentType
+} = req.body;
 
-    res.send("Order placed. Check phone for M-Pesa prompt.");
+const result =
+await checkoutService
+.createOrderAndHandlePayment(
+cart,
+req.session.user,
+paymentType
+);
+
+/* clear cart */
+req.session.cart = [];
+
+res.redirect(
+result.redirectUrl
+);
+
+} catch (err) {
+
+res.send(
+"Checkout failed"
+);
+
+}
 };
