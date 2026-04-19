@@ -10,7 +10,7 @@ const clientRoutes = require("./routes/client");
 const adminRoutes = require("./routes/admin");
 const checkoutRoutes = require("./routes/checkout");
 const productRoutes = require("./routes/product");
-const mpesaRoutes = require("./routes/mpesa");
+const mpesaRoutes = require("./routes/payment");
 
 const app = express();
 
@@ -56,7 +56,7 @@ app.use("/", clientRoutes);
 app.use("/", adminRoutes);
 app.use("/", checkoutRoutes);
 app.use("/", productRoutes);
-app.use("/", mpesaRoutes);
+app.use("/", paymentRoutes);
 
 /* 404 */
 app.use((req, res) => {
