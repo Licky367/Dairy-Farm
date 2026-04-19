@@ -1,36 +1,43 @@
-<%- include("../partials/layout") %>
+<%- include("../partials/layout", { title: "Create Product" }) %>
 
+<div class="topbar">
 <h2>Create Product</h2>
+</div>
 
-<form
- action="/admin/products/create"
- method="POST"
- enctype="multipart/form-data"
->
+<div class="table-box">
 
-<input name="id" placeholder="Product ID">
+<form action="/admin/products/create" method="POST" enctype="multipart/form-data">
 
-<input name="name" placeholder="Product Name">
+<div style="display:grid; gap:15px;">
 
-<input name="category" placeholder="Category">
+<input name="id" placeholder="Product ID" required>
 
-<input type="number" name="cost" placeholder="Cost">
+<input name="name" placeholder="Product Name" required>
 
-<input
- type="number"
- name="depositPercentage"
- placeholder="Deposit %"
->
+<input name="category" placeholder="Category" required>
 
-<textarea
- name="description"
- placeholder="Description"
-></textarea>
+<input type="number" name="cost" placeholder="Cost (KES)" required>
+
+<input type="number" name="depositPercentage" placeholder="Deposit %" required>
+
+<textarea name="description" placeholder="Description" rows="5" required></textarea>
 
 <input type="file" name="image">
 
-<button>Create Product</button>
+<button type="submit" style="
+background:#0b5d1e;
+color:white;
+padding:12px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:15px;
+">
+Create Product
+</button>
+
+</div>
 
 </form>
 
-</div></body></html>
+</div>
