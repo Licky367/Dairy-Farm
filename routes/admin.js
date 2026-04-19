@@ -7,7 +7,7 @@ const upload = require("../middleware/upload");
 const { isAdmin } = require("../middleware/auth");
 
 // Dashboard
-router.get("/admin", isAdmin, adminController.dashboard);
+router.get("/admin/dashboard", isAdmin, adminController.dashboard);
 
 // Products List
 router.get("/admin/products", isAdmin, adminController.products);
