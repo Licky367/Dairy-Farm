@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const path = require("path");
 require("dotenv").config();
+app.use(express.json());
 
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
