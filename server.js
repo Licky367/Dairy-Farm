@@ -1,11 +1,17 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const session = require("express-session");
 const path = require("path");
 const vhost = require("vhost");
 require("dotenv").config();
 
+const connectDB = require("./db");
+
 const app = express();
+
+/* ===============================
+   CONNECT DATABASE
+================================= */
+connectDB();
 
 /* ===============================
    IMPORT ROUTES
@@ -19,13 +25,6 @@ const productRoutes = require("./routes/product");
 const paymentRoutes = require("./routes/payment");
 
 /* ===============================
-   DATABASE
-================================= */
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected"))
-.catch((err) => console.log(err));
-
-/* ===============================
    VIEW ENGINE
 ================================= */
 app.set("view engine", "ejs");
@@ -34,51 +33,51 @@ app.set("views", path.join(__dirname, "views"));
 /* ===============================
    GLOBAL MIDDLEWARE
 ================================= */
-app.use(express.urlencoded({ extended:true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(express.static("public"));
+
 app.use(
-"/uploads",
-express.static(
-path.join(__dirname,"public/uploads")
-)
+  "/uploads",
+  express.static(
+    path.join(__dirname, "public/uploads")
+  )
 );
 
 /* ===============================
    SESSION
 ================================= */
 app.use(
-session({
-secret: process.env.SESSION_SECRET,
-resave:false,
-saveUninitialized:false,
-cookie:{
-maxAge:
-1000*60*60*24
-}
-})
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+      secure: false
+    }
+  })
 );
 
 /* ===============================
-   VIEW VARIABLES
+   GLOBAL VIEW VARIABLES
 ================================= */
-app.use((req,res,next)=>{
+app.use((req, res, next) => {
+  res.locals.user =
+    req.session.user || null;
 
-res.locals.user =
-req.session.user || null;
+  res.locals.cart =
+    req.session.cart || [];
 
-res.locals.cart =
-req.session.cart || [];
-
-next();
-
+  next();
 });
 
 /* ===============================
    MAIN CLIENT APP
-   domain.com
-   entry = /client
+   localhost:3000
+   entry => /client
 ================================= */
 const clientApp = express.Router();
 
@@ -89,15 +88,15 @@ clientApp.use("/", checkoutRoutes);
 clientApp.use("/", productRoutes);
 clientApp.use("/", paymentRoutes);
 
-/* redirect root */
-clientApp.get("/", (req,res)=>{
-res.redirect("/client");
+/* Redirect root */
+clientApp.get("/", (req, res) => {
+  res.redirect("/client");
 });
 
 /* ===============================
    ADMIN SUBDOMAIN APP
-   admin.domain.com
-   entry = /admin/dashboard
+   admin.localhost:3000
+   entry => /admin/dashboard
 ================================= */
 const adminApp = express.Router();
 
@@ -106,50 +105,41 @@ adminApp.use("/", profileRoutes);
 adminApp.use("/", adminRoutes);
 adminApp.use("/", productRoutes);
 
-/* redirect root */
-adminApp.get("/", (req,res)=>{
-res.redirect("/admin/dashboard");
+/* Redirect root */
+adminApp.get("/", (req, res) => {
+  res.redirect("/admin/dashboard");
 });
 
 /* ===============================
    SUBDOMAIN BINDING
 ================================= */
-
-/*
-LIVE:
-
-admin.yourdomain.com
-www.yourdomain.com
-*/
-
 app.use(
-vhost(
-process.env.ADMIN_SUBDOMAIN,
-adminApp
-)
+  vhost(
+    process.env.ADMIN_SUBDOMAIN,
+    adminApp
+  )
 );
 
-/*
-main site
-*/
+/* Main site */
 app.use(clientApp);
 
 /* ===============================
-   404
+   404 HANDLER
 ================================= */
-app.use((req,res)=>{
-res.status(404).send(
-"Page Not Found"
-);
+app.use((req, res) => {
+  res.status(404).send(
+    "Page Not Found"
+  );
 });
 
 /* ===============================
-   SERVER
+   SERVER START
 ================================= */
 app.listen(
-process.env.PORT,
-()=>{
-console.log(
-`Server running on port ${process.env.PORT}`
+  process.env.PORT,
+  () => {
+    console.log(
+      `Server running on port ${process.env.PORT}`
+    );
+  }
 );
-});
