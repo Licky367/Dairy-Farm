@@ -1,4 +1,69 @@
-<%- include("partials/layout") %>
+<%- include("partials/layout", { title: "My Profile" }) %>
+
+<style>
+.card{
+max-width:800px;
+margin:auto;
+background:white;
+padding:25px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+}
+
+.profile-top{
+display:flex;
+align-items:center;
+gap:20px;
+}
+
+.avatar{
+width:70px;
+height:70px;
+border-radius:50%;
+background:#0b5d1e;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:28px;
+font-weight:bold;
+}
+
+.info h2{
+margin-bottom:5px;
+}
+
+.info p{
+color:#666;
+font-size:14px;
+}
+
+label{
+display:block;
+margin-top:15px;
+margin-bottom:5px;
+font-weight:bold;
+}
+
+input{
+width:100%;
+padding:12px;
+border:1px solid #ddd;
+border-radius:8px;
+outline:none;
+}
+
+button{
+margin-top:20px;
+background:#0b5d1e;
+color:white;
+border:none;
+padding:12px;
+border-radius:8px;
+cursor:pointer;
+width:100%;
+}
+</style>
 
 <div class="card">
 
@@ -36,7 +101,3 @@
 </form>
 
 </div>
-
-</div>
-</body>
-</html>
