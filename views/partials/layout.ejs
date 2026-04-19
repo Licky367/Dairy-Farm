@@ -3,141 +3,239 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Chessy Dairies</title>
+<title><%= title || "Admin Panel" %></title>
 
 <style>
-
 *{
 margin:0;
 padding:0;
 box-sizing:border-box;
-font-family:Arial, Helvetica, sans-serif;
+font-family:Arial,sans-serif;
 }
 
 body{
-background:#f5f5f5;
+background:#f4f6f8;
+min-height:100vh;
 }
 
-header{
+/* HEADER */
+.header{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:70px;
 background:#0b5d1e;
-padding:15px 40px;
-color:white;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-header h2{
-font-size:24px;
-}
-
-nav a{
-color:white;
-text-decoration:none;
-margin-left:20px;
-font-weight:bold;
-}
-
-.container{
-max-width:1100px;
-margin:auto;
-padding:30px;
-}
-
-.card{
-background:white;
-padding:30px;
-border-radius:15px;
-box-shadow:0 4px 20px rgba(0,0,0,0.08);
-}
-
-input{
-width:100%;
-padding:14px;
-margin-top:8px;
-margin-bottom:18px;
-border:1px solid #ddd;
-border-radius:10px;
-font-size:16px;
-}
-
-button{
-background:#0b5d1e;
-color:white;
-border:none;
-padding:14px 20px;
-border-radius:10px;
-cursor:pointer;
-font-size:16px;
-width:100%;
-}
-
-button:hover{
-background:#084516;
-}
-
-.profile-top{
-display:flex;
-align-items:center;
-gap:25px;
-margin-bottom:30px;
-}
-
-.avatar{
-width:120px;
-height:120px;
-border-radius:50%;
-background:#0b5d1e;
-color:white;
-font-size:45px;
+color:#fff;
 display:flex;
 align-items:center;
 justify-content:center;
+font-size:24px;
 font-weight:bold;
-}
-
-.info h2{
-font-size:28px;
-color:#111;
-}
-
-.info p{
-color:gray;
-margin-top:5px;
-}
-
-@media(max-width:768px){
-
-.profile-top{
-flex-direction:column;
+z-index:1000;
+box-shadow:0 4px 10px rgba(0,0,0,.1);
+padding:0 20px;
 text-align:center;
 }
 
-header{
-flex-direction:column;
-gap:10px;
+/* TOP MENU */
+.topmenu{
+position:fixed;
+top:70px;
+left:0;
+right:0;
+height:60px;
+background:#fff;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 20px;
+box-shadow:0 4px 12px rgba(0,0,0,.05);
+z-index:999;
 }
 
-nav a{
-margin:0 10px;
+.menu-btn{
+font-size:28px;
+cursor:pointer;
+color:#0b5d1e;
+font-weight:bold;
+}
+
+.profile-box{
+position:relative;
+}
+
+.profile-btn{
+background:#0b5d1e;
+color:#fff;
+border:none;
+padding:10px 16px;
+border-radius:30px;
+cursor:pointer;
+font-size:14px;
+}
+
+.dropdown{
+position:absolute;
+right:0;
+top:48px;
+width:180px;
+background:#fff;
+border-radius:12px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+display:none;
+overflow:hidden;
+}
+
+.dropdown a{
+display:block;
+padding:14px;
+text-decoration:none;
+color:#333;
+border-bottom:1px solid #eee;
+}
+
+.dropdown a:hover{
+background:#f4f6f8;
+}
+
+.profile-box.active .dropdown{
+display:block;
+}
+
+/* SIDEBAR */
+.sidebar{
+position:fixed;
+top:0;
+left:-280px;
+width:260px;
+height:100%;
+background:#0b5d1e;
+padding:140px 20px 20px;
+z-index:1200;
+transition:.35s ease;
+overflow-y:auto;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.sidebar a{
+display:block;
+color:#fff;
+text-decoration:none;
+padding:14px;
+margin-bottom:10px;
+border-radius:10px;
+transition:.3s;
+}
+
+.sidebar a:hover{
+background:rgba(255,255,255,.15);
+}
+
+/* OVERLAY */
+.overlay{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,.35);
+display:none;
+z-index:1100;
+}
+
+.overlay.active{
+display:block;
+}
+
+/* MAIN */
+.main{
+padding:155px 30px 90px;
+}
+
+/* FOOTER */
+.footer{
+position:fixed;
+left:0;
+right:0;
+bottom:0;
+height:55px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:14px;
+z-index:1000;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+
+.header{
+font-size:18px;
+padding:0 10px;
+}
+
+.topmenu{
+padding:0 15px;
+}
+
+.main{
+padding:155px 15px 90px;
+}
+
+.profile-btn{
+font-size:13px;
+padding:9px 14px;
 }
 
 }
-
 </style>
 </head>
 
 <body>
 
-<header>
-<h2>Chessy Dairies</h2>
+<div class="header">
+Corevester Investments Limited
+</div>
 
-<nav>
-<a href="/">Home</a>
+<div class="topmenu">
+
+<div class="menu-btn" onclick="openSidebar()">
+☰
+</div>
+
+<div class="profile-box" id="profileBox">
+
+<button class="profile-btn" onclick="toggleProfile(event)">
+<%= user ? user.name : "Account" %>
+</button>
+
+<div class="dropdown">
 <a href="/profile">Profile</a>
 <a href="/logout">Logout</a>
-</nav>
-</header>
+</div>
 
-<div class="container">
+</div>
+
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+
+<a href="/admin/dashboard">Dashboard</a>
+<a href="/admin/products">Products</a>
+<a href="/admin/orders">Orders</a>
+<a href="/admin/payments">Payments</a>
+<a href="/admin/clients">Clients</a>
+<a href="/profile">Profile</a>
+<a href="/logout">Logout</a>
+
+</div>
+
+<div class="main">
