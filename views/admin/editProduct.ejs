@@ -1,53 +1,56 @@
-<%- include("../partials/layout") %>
+<%- include("../partials/layout", { title: "Edit Product" }) %>
 
+<div class="topbar">
 <h2>Edit Product</h2>
+</div>
 
-<div class="card">
+<div class="table-box">
 
-<form
- action="/admin/products/update/<%= product.id %>"
- method="POST"
- enctype="multipart/form-data"
->
+<form action="/admin/products/update/<%= product.id %>" method="POST" enctype="multipart/form-data">
+
+<div style="display:grid; gap:15px;">
 
 <label>Product Name</label>
-<input type="text" name="name" value="<%= product.name %>">
+<input type="text" name="name" value="<%= product.name %>" required>
 
 <label>Category</label>
-<input type="text" name="category" value="<%= product.category %>">
+<input type="text" name="category" value="<%= product.category %>" required>
 
 <label>Cost (KES)</label>
-<input type="number" name="cost" value="<%= product.cost %>">
+<input type="number" name="cost" value="<%= product.cost %>" required>
 
 <label>Deposit Percentage</label>
-<input
- type="number"
- name="depositPercentage"
- value="<%= product.depositPercentage %>"
->
+<input type="number" name="depositPercentage" value="<%= product.depositPercentage %>" required>
 
 <label>Description</label>
-<textarea name="description"><%= product.description %></textarea>
+<textarea name="description" rows="5" required><%= product.description %></textarea>
 
-<label>Current Image</label><br><br>
+<label>Current Image</label>
 
-<img
- src="<%= product.image %>"
- width="150"
- style="border-radius:10px;"
->
-
-<br><br>
+<% if (product.image) { %>
+<img src="<%= product.image %>" width="150" style="border-radius:10px;">
+<% } else { %>
+<p>No image available</p>
+<% } %>
 
 <label>Upload New Image</label>
 <input type="file" name="image">
 
-<br><br>
+<button type="submit" style="
+background:#0b5d1e;
+color:white;
+padding:12px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:15px;
+margin-top:10px;
+">
+Update Product
+</button>
 
-<button type="submit">Update Product</button>
+</div>
 
 </form>
 
 </div>
-
-</div></body></html>
