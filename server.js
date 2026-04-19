@@ -97,7 +97,7 @@ res.redirect("/client");
 /* ===============================
    ADMIN SUBDOMAIN APP
    admin.domain.com
-   entry = /admin
+   entry = /admin/dashboard
 ================================= */
 const adminApp = express.Router();
 
@@ -108,7 +108,7 @@ adminApp.use("/", productRoutes);
 
 /* redirect root */
 adminApp.get("/", (req,res)=>{
-res.redirect("/admin");
+res.redirect("/admin/dashboard");
 });
 
 /* ===============================
