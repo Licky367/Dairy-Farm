@@ -10,7 +10,7 @@
 margin:0;
 padding:0;
 box-sizing:border-box;
-font-family:Arial,sans-serif;
+font-family:Arial, sans-serif;
 }
 
 body{
@@ -30,12 +30,10 @@ color:#fff;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:24px;
+font-size:22px;
 font-weight:bold;
 z-index:1000;
 box-shadow:0 4px 10px rgba(0,0,0,.1);
-padding:0 20px;
-text-align:center;
 }
 
 /* TOP MENU */
@@ -54,6 +52,7 @@ box-shadow:0 4px 12px rgba(0,0,0,.05);
 z-index:999;
 }
 
+/* MENU ICON */
 .menu-btn{
 font-size:28px;
 cursor:pointer;
@@ -61,6 +60,7 @@ color:#0b5d1e;
 font-weight:bold;
 }
 
+/* PROFILE */
 .profile-box{
 position:relative;
 }
@@ -112,8 +112,8 @@ width:260px;
 height:100%;
 background:#0b5d1e;
 padding:140px 20px 20px;
-z-index:1200;
 transition:.35s ease;
+z-index:1200;
 overflow-y:auto;
 }
 
@@ -151,46 +151,41 @@ z-index:1100;
 display:block;
 }
 
-/* MAIN */
+/* MAIN CONTENT */
 .main{
-padding:155px 30px 90px;
+padding:140px 25px 80px;
 }
 
 /* FOOTER */
 .footer{
 position:fixed;
+bottom:0;
 left:0;
 right:0;
-bottom:0;
-height:55px;
+height:50px;
 background:#0b5d1e;
 color:#fff;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:14px;
+font-size:13px;
 z-index:1000;
 }
 
-/* MOBILE */
+/* RESPONSIVE */
 @media(max-width:768px){
 
 .header{
 font-size:18px;
-padding:0 10px;
-}
-
-.topmenu{
-padding:0 15px;
 }
 
 .main{
-padding:155px 15px 90px;
+padding:140px 15px 80px;
 }
 
 .profile-btn{
 font-size:13px;
-padding:9px 14px;
+padding:8px 12px;
 }
 
 }
@@ -199,10 +194,12 @@ padding:9px 14px;
 
 <body>
 
+<!-- HEADER -->
 <div class="header">
 Corevester Investments Limited
 </div>
 
+<!-- TOP MENU -->
 <div class="topmenu">
 
 <div class="menu-btn" onclick="openSidebar()">
@@ -224,8 +221,10 @@ Corevester Investments Limited
 
 </div>
 
+<!-- OVERLAY -->
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
+<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
 <a href="/admin/dashboard">Dashboard</a>
@@ -238,4 +237,5 @@ Corevester Investments Limited
 
 </div>
 
+<!-- MAIN -->
 <div class="main">
