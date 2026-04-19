@@ -1,0 +1,132 @@
+<%- include("partials/layout") %>
+
+<style>
+.checkout-box{
+max-width:900px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:16px;
+box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.item{
+display:flex;
+justify-content:space-between;
+padding:12px 0;
+border-bottom:1px solid #eee;
+}
+
+.pay-option{
+padding:14px;
+border:1px solid #ddd;
+border-radius:10px;
+margin-bottom:12px;
+cursor:pointer;
+}
+
+button{
+background:#0b5d1e;
+color:white;
+border:none;
+padding:15px 20px;
+border-radius:10px;
+width:100%;
+font-size:16px;
+cursor:pointer;
+}
+</style>
+
+<div class="checkout-box">
+
+<h1>Checkout</h1>
+
+<hr><br>
+
+<h3>Items</h3>
+
+<% cart.forEach(item=>{ %>
+
+<div class="item">
+<div>
+<b><%= item.name %></b><br>
+Qty: <%= item.quantity %>
+</div>
+
+<div>
+KES <%= (item.cost * item.quantity).toLocaleString() %>
+</div>
+</div>
+
+<% }) %>
+
+<br>
+
+<h3>Total: KES <%= totals.total.toLocaleString() %></h3>
+
+<p>
+Deposit:
+KES <%= totals.deposit.toLocaleString() %>
+</p>
+
+<p>
+Arrear:
+KES <%= totals.arrear.toLocaleString() %>
+</p>
+
+<br>
+
+<form method="POST" action="/checkout">
+
+<h3>Select Payment Method</h3>
+
+<label class="pay-option">
+<input
+type="radio"
+name="paymentType"
+value="paid"
+required
+>
+Pay Full Now
+</label>
+
+<label class="pay-option">
+<input
+type="radio"
+name="paymentType"
+value="depositPaid"
+>
+Pay Deposit Now
+</label>
+
+<label class="pay-option">
+<input
+type="radio"
+name="paymentType"
+value="payAfter"
+>
+Pay Later
+</label>
+
+<label class="pay-option">
+<input
+type="radio"
+name="paymentType"
+value="arrearAmount"
+>
+Pay Arrear Only
+</label>
+
+<br>
+
+<button type="submit">
+Proceed
+</button>
+
+</form>
+
+</div>
+
+</div>
+</body>
+</html>
