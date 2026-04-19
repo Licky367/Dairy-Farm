@@ -22,7 +22,7 @@ exports.login = async (req, res) => {
 
     // Redirect based on role
     if (user.role === "admin") {
-        return res.redirect("/admin");
+        return res.redirect("/admin/dashboard");
     } else {
         return res.redirect("/client");
     }
