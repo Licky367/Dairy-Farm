@@ -1,4 +1,25 @@
-<%- include("partials/layout") %>
+<%- include("partials/layout", { title: product.name }) %>
+
+<style>
+.card{
+background:white;
+padding:25px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+max-width:1000px;
+margin:auto;
+}
+
+button{
+background:#0b5d1e;
+color:white;
+padding:12px;
+border:none;
+border-radius:8px;
+width:200px;
+cursor:pointer;
+}
+</style>
 
 <div class="card">
 
@@ -22,16 +43,12 @@
 
         <p><b>Category:</b> <%= product.category %></p>
 
-        <button style="background:#0b5d1e; color:white; padding:12px; border:none; border-radius:8px; width:200px;">
-            Add to Cart
-        </button>
+        <form action="/cart/add/<%= product.id %>" method="POST">
+            <button type="submit">Add to Cart</button>
+        </form>
 
     </div>
 
 </div>
 
 </div>
-
-</div>
-</body>
-</html>
