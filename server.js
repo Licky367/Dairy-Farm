@@ -103,7 +103,6 @@ const adminApp = express.Router();
 adminApp.use("/", authRoutes);
 adminApp.use("/", profileRoutes);
 adminApp.use("/", adminRoutes);
-adminApp.use("/", productRoutes);
 
 /* Redirect root */
 adminApp.get("/", (req, res) => {
