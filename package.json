@@ -1,5 +1,5 @@
 {
-  "name": "Corevester Investments",
+  "name": "corevester-investments",
   "version": "1.0.0",
   "description": "E-commerce system with client shop, admin subdomain, M-Pesa payments, authentication, checkout, and product management.",
   "main": "server.js",
