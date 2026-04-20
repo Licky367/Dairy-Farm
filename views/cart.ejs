@@ -1,9 +1,277 @@
-<%- include("partials/layout", { title: "Your Cart" }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Cart</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f8;
+min-height:100vh;
+}
+
+.header{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:70px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:22px;
+font-weight:bold;
+z-index:1000;
+}
+
+.topmenu{
+position:fixed;
+top:70px;
+left:0;
+right:0;
+height:60px;
+background:#fff;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 20px;
+box-shadow:0 4px 12px rgba(0,0,0,.05);
+z-index:999;
+}
+
+.menu-btn{
+font-size:28px;
+cursor:pointer;
+color:#0b5d1e;
+font-weight:bold;
+}
+
+.icon-group{
+display:flex;
+align-items:center;
+gap:18px;
+}
+
+.icon-group a{
+text-decoration:none;
+font-size:22px;
+color:#0b5d1e;
+}
+
+.profile-box{
+position:relative;
+}
+
+.profile-btn{
+background:#0b5d1e;
+color:#fff;
+border:none;
+padding:10px 16px;
+border-radius:30px;
+cursor:pointer;
+font-size:14px;
+}
+
+.dropdown{
+position:absolute;
+right:0;
+top:48px;
+width:180px;
+background:#fff;
+border-radius:12px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+display:none;
+overflow:hidden;
+}
+
+.dropdown a{
+display:block;
+padding:14px;
+text-decoration:none;
+color:#333;
+border-bottom:1px solid #eee;
+}
+
+.profile-box.active .dropdown{
+display:block;
+}
+
+.sidebar{
+position:fixed;
+top:0;
+left:-280px;
+width:260px;
+height:100%;
+background:#0b5d1e;
+padding:140px 20px 20px;
+transition:.35s ease;
+z-index:1200;
+overflow-y:auto;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.sidebar a{
+display:block;
+color:#fff;
+text-decoration:none;
+padding:14px;
+margin-bottom:10px;
+border-radius:10px;
+transition:.3s;
+}
+
+.sidebar a:hover{
+background:rgba(255,255,255,.15);
+}
+
+.overlay{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,.35);
+display:none;
+z-index:1100;
+}
+
+.overlay.active{
+display:block;
+}
+
+.main{
+padding:150px 25px 90px;
+}
+
+.page-box{
+background:#fff;
+padding:25px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+}
+
+.card{
+background:#f8faf8;
+padding:18px;
+border-radius:14px;
+margin-top:12px;
+border:1px solid #e6e6e6;
+}
+
+.card h3{
+margin-bottom:8px;
+color:#111;
+}
+
+.card p{
+color:#666;
+}
+
+.total{
+margin-top:20px;
+font-size:22px;
+color:#0b5d1e;
+font-weight:bold;
+}
+
+.btn{
+margin-top:18px;
+background:#0b5d1e;
+color:#fff;
+border:none;
+padding:14px 18px;
+border-radius:10px;
+cursor:pointer;
+font-size:15px;
+}
+
+.footer{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+height:50px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:13px;
+z-index:1000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">Corevester Investments Limited</div>
+
+<div class="topmenu">
+
+<div style="display:flex;align-items:center;gap:15px;">
+
+<div class="menu-btn" onclick="openSidebar()">☰</div>
+
+<div class="icon-group">
+<a href="/client">🏠</a>
+<a href="/client/cart">🛒</a>
+</div>
+
+</div>
+
+<div class="profile-box" id="profileBox">
+
+<button class="profile-btn" onclick="toggleProfile(event)">
+<%= user ? user.name : "Account" %>
+</button>
+
+<div class="dropdown">
+
+<% if(user){ %>
+<a href="/profile">My Account</a>
+<a href="/logout">Logout</a>
+<% } else { %>
+<a href="/login">Login</a>
+<a href="/signup">Sign Up</a>
+<% } %>
+
+</div>
+</div>
+
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+<a href="/client">Home</a>
+<a href="/client/cart">Cart</a>
+<a href="/profile">Profile</a>
+<a href="/logout">Logout</a>
+</div>
+
+<div class="main">
+
+<div class="page-box">
 
 <h2>Your Cart</h2>
 
 <% if (!cart || cart.length === 0) { %>
-    <p style="color:#777;margin-top:15px;">Cart is empty</p>
+
+<p style="color:#777;margin-top:15px;">Cart is empty</p>
+
 <% } else { %>
 
 <% let total = 0; %>
@@ -12,29 +280,56 @@
 
 <% total += item.cost * item.quantity; %>
 
-<div class="card" style="margin-bottom:10px;">
-    <h3><%= item.name %></h3>
-    <p>KES <%= item.cost.toLocaleString() %> × <%= item.quantity %></p>
+<div class="card">
+<h3><%= item.name %></h3>
+<p>KES <%= item.cost.toLocaleString() %> × <%= item.quantity %></p>
 </div>
 
 <% }) %>
 
-<h3 style="margin-top:20px;">
+<div class="total">
 Total: KES <%= total.toLocaleString() %>
-</h3>
+</div>
 
 <a href="/checkout">
-    <button style="
-        margin-top:15px;
-        background:#0b5d1e;
-        color:white;
-        border:none;
-        padding:12px 18px;
-        border-radius:10px;
-        cursor:pointer;
-    ">
-        Proceed to Checkout
-    </button>
+<button class="btn">
+Proceed to Checkout
+</button>
 </a>
 
 <% } %>
+
+</div>
+
+</div>
+
+<div class="footer">
+© <%= new Date().getFullYear() %> Corevester Investments Limited
+</div>
+
+<script>
+function openSidebar(){
+document.getElementById("sidebar").classList.add("active");
+document.getElementById("overlay").classList.add("active");
+}
+
+function closeSidebar(){
+document.getElementById("sidebar").classList.remove("active");
+document.getElementById("overlay").classList.remove("active");
+}
+
+function toggleProfile(event){
+event.stopPropagation();
+document.getElementById("profileBox").classList.toggle("active");
+}
+
+document.addEventListener("click", function(e){
+const box=document.getElementById("profileBox");
+if(!box.contains(e.target)){
+box.classList.remove("active");
+}
+});
+</script>
+
+</body>
+</html>
