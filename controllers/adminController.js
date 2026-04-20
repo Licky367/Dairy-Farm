@@ -10,7 +10,7 @@ exports.products = async (req, res) => {
 };
 
 exports.createProductPage = (req, res) => {
-    res.render("admin/createProduct");
+    res.render("admin/product/create");
 };
 
 exports.createProduct = async (req, res) => {
@@ -20,7 +20,7 @@ exports.createProduct = async (req, res) => {
 
 exports.editProductPage = async (req, res) => {
     const product = await adminService.getProduct(req.params.id);
-    res.render("admin/editProduct", { product });
+    res.render("admin/product/edit", { product });
 };
 
 exports.updateProduct = async (req, res) => {
