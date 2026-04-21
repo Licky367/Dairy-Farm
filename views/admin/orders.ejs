@@ -25,7 +25,13 @@ box-shadow:0 8px 18px rgba(0,0,0,.04);
 margin-bottom:15px;border:1px solid #eee;
 }
 
-.card p{margin-bottom:8px;}
+.section-title{
+font-weight:bold;
+margin-top:10px;
+color:#0b5d1e;
+}
+
+.card p{margin-bottom:6px;}
 
 button{
 padding:8px 14px;border:none;border-radius:8px;
@@ -106,6 +112,7 @@ width:320px;text-align:center;
 
     <div class="card">
 
+      <!-- ORDER INFO -->
       <p><b>Order ID:</b> <%= order._id %></p>
 
       <p><b>Status:</b> 
@@ -130,7 +137,33 @@ width:320px;text-align:center;
         <%= new Date(order.orderedAt || order.createdAt).toLocaleString() %>
       </p>
 
+      <!-- 👤 CUSTOMER DETAILS -->
+      <div class="section-title">Customer Details</div>
+
+      <p><b>Name:</b> <%= order.customerName || "N/A" %></p>
+      <p><b>Email:</b> <%= order.customerEmail || "N/A" %></p>
+      <p><b>Phone:</b> <%= order.customerPhone || "N/A" %></p>
+
+      <!-- 📍 DELIVERY DETAILS -->
+      <div class="section-title">Delivery Location</div>
+
+      <p><b>Address:</b> <%= order.deliveryAddress || "N/A" %></p>
+
+      <% if(order.locationUrl){ %>
+        <p>
+          <b>Google Maps:</b>
+          <a href="<%= order.locationUrl %>" target="_blank">Open Map</a>
+        </p>
+      <% } %>
+
+      <% if(order.locationText){ %>
+        <p><b>Notes:</b> <%= order.locationText %></p>
+      <% } %>
+
+      <!-- 💳 PAYMENT INFO -->
       <% if(order.manualPayment){ %>
+        <div class="section-title">Payment</div>
+
         <p style="color:green;">
           Paid by <b><%= order.manualPayment.adminName %></b><br>
           Amount: KES <%= order.manualPayment.amount %><br>
@@ -138,8 +171,7 @@ width:320px;text-align:center;
         </p>
       <% } %>
 
-      <!-- ACTION BUTTONS -->
-
+      <!-- ACTIONS -->
       <% if(!order.manualPayment){ %>
         <button onclick="openPayPopup('<%= order._id %>', <%= amountToPay %>)">
           Mark as Paid (Cash)
