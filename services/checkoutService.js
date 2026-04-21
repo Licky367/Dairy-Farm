@@ -58,7 +58,7 @@ exports.calculateTotals = (cart) => {
 
     cart.forEach(item => {
         total += item.cost * item.quantity;
-        deposit += item.depositAmount * item.quantity;
+        deposit += item.depositAmountPaid * item.quantity;
     });
 
     return {
