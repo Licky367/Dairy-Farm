@@ -54,7 +54,16 @@ exports.markAsDelivered = async (req, res) => {
 
         const orderId = req.params.id;
 
-        await OrdersService.markAsDelivered(orderId, req.user);
+        // =========================
+        // NEW: shipping cost from form
+        // =========================
+        const { shippingCost } = req.body;
+
+        await OrdersService.markAsDelivered(
+            orderId,
+            req.user,
+            shippingCost
+        );
 
         return res.redirect("/admin/orders");
 
