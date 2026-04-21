@@ -358,6 +358,12 @@ Back to Products
 <input type="number" name="cost" id="cost" placeholder="Cost" required oninput="calculateDeposit()">
 </div>
 
+<!-- NEW FIELD -->
+<div class="field">
+<label>Purchase Price (KES)</label>
+<input type="number" name="purchasePrice" placeholder="Purchase Price" min="0" required>
+</div>
+
 <div class="field">
 <label>Deposit Percentage</label>
 <input type="number" name="depositPercentage" id="depositPercentage" placeholder="Deposit %" required oninput="calculateDeposit()">
@@ -381,6 +387,7 @@ Back to Products
 </div>
 
 <div class="preview-box">
+Deposit Percentage: <b><span id="depositPreview">0</span>%</b><br>
 Estimated Deposit Amount: <b>KES <span id="depositAmount">0</span></b>
 </div>
 
@@ -433,6 +440,9 @@ let total = (cost * percent) / 100;
 
 document.getElementById("depositAmount").innerText =
 total.toLocaleString();
+
+document.getElementById("depositPreview").innerText =
+percent;
 }
 </script>
 
