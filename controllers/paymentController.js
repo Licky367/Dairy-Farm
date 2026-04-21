@@ -1,15 +1,7 @@
-const Order =
-require("../models/Order");
-
-const Transaction =
-require("../models/Transaction");
-
-const mpesaService =
-require("../services/mpesaService");
-
-const {
-formatPhone
-} = require("../utils/phone");
+const Order = require("../models/Order");
+const Transaction = require("../models/Transaction");
+const mpesaService = require("../services/mpesaService");
+const { formatPhone } = require("../utils/phone");
 
 /*
 paymentType can be:
@@ -20,250 +12,162 @@ payAfter
 arrearAmount
 */
 
-exports.initiatePayment =
-async (req, res) => {
+exports.initiatePayment = async (req, res) => {
 
-try {
+    try {
 
-const {
-orderId,
-paymentType
-} = req.body;
+        const { orderId, paymentType } = req.body;
 
-const order =
-await Order.findById(orderId);
+        const order = await Order.findById(orderId);
 
-if (!order)
-return res.send("Order not found");
+        if (!order)
+            return res.send("Order not found");
 
-const phone =
-formatPhone(
-req.session.user.phone
-);
+        const phone = formatPhone(req.session.user.phone);
 
-if (!phone)
-return res.send("Invalid phone");
+        if (!phone)
+            return res.send("Invalid phone");
 
-let amount = 0;
+        let amount = 0;
 
-/* FULL PAYMENT */
-if (
-paymentType === "paid"
-) {
-amount =
-order.totalAmount;
-}
+        /* ================= PAYMENT RULES ================= */
 
-/* DEPOSIT PAYMENT */
-else if (
-paymentType === "depositPaid"
-) {
+        // FULL PAYMENT or PAY LATER PAYMENT
+        if (paymentType === "paid" || paymentType === "payAfter") {
+            amount = order.totalAmount;
+        }
 
-amount = Math.floor(
-order.totalAmount * 0.30
-);
+        // DEPOSIT PAYMENT
+        else if (paymentType === "depositPaid") {
+            amount = order.depositAmount;
 
-/* update order status */
-await Order.findByIdAndUpdate(
-orderId,
-{
-status:
-"depositPending"
-}
-);
-}
+            await Order.findByIdAndUpdate(orderId, {
+                status: "payAfter"
+            });
+        }
 
-/* PAY AFTER */
-else if (
-paymentType === "payAfter"
-) {
+        // ARREARS PAYMENT
+        else if (paymentType === "arrearAmount") {
+            amount = order.arrearAmount;
 
-await Order.findByIdAndUpdate(
-orderId,
-{
-status:
-"payAfter"
-}
-);
+            if (!amount || amount <= 0) {
+                return res.send("No arrears balance.");
+            }
+        }
 
-return res.send(
-"Order saved. Pay later."
-);
-}
+        // INVALID TYPE
+        else {
+            return res.send("Invalid payment type");
+        }
 
-/* ARREARS PAYMENT */
-else if (
-paymentType ===
-"arrearAmount"
-) {
+        /* ================= STK PUSH ================= */
 
-const arrear =
-order.totalAmount -
-order.depositAmount;
+        const response = await mpesaService.stkPush(
+            phone,
+            amount,
+            order._id
+        );
 
-if (arrear <= 0) {
-return res.send(
-"No arrears balance."
-);
-}
+        /* ================= SAVE TRANSACTION ================= */
 
-amount = arrear;
-}
+        await Transaction.create({
+            orderId: order._id,
+            phone,
+            amount,
+            paymentType,
+            checkoutRequestID: response.CheckoutRequestID,
+            merchantRequestID: response.MerchantRequestID
+        });
 
-/* invalid */
-else {
-return res.send(
-"Invalid payment type"
-);
-}
+        res.send("STK Push sent. Check phone.");
 
-/* send STK PUSH */
-const response =
-await mpesaService.stkPush(
-phone,
-amount,
-order._id
-);
-
-/* save transaction */
-await Transaction.create({
-orderId: order._id,
-phone,
-amount,
-paymentType,
-checkoutRequestID:
-response.CheckoutRequestID,
-merchantRequestID:
-response.MerchantRequestID
-});
-
-res.send(
-"STK Push sent. Check phone."
-);
-
-} catch (err) {
-
-res.send(
-"Payment initiation failed"
-);
-
-}
+    } catch (err) {
+        console.error(err);
+        res.send("Payment initiation failed");
+    }
 };
 
-/* CALLBACK */
-exports.mpesaCallback =
-async (req, res) => {
 
-try {
+/* ================= CALLBACK ================= */
 
-const callback =
-req.body.Body.stkCallback;
+exports.mpesaCallback = async (req, res) => {
 
-const tx =
-await Transaction.findOne({
-checkoutRequestID:
-callback.CheckoutRequestID
-});
+    try {
 
-if (!tx) {
-return res.json({
-ResultCode:0,
-ResultDesc:"OK"
-});
-}
+        const callback = req.body.Body.stkCallback;
 
-tx.resultCode =
-callback.ResultCode;
+        const tx = await Transaction.findOne({
+            checkoutRequestID: callback.CheckoutRequestID
+        });
 
-tx.resultDesc =
-callback.ResultDesc;
+        if (!tx) {
+            return res.json({
+                ResultCode: 0,
+                ResultDesc: "OK"
+            });
+        }
 
-if (
-callback.ResultCode === 0
-) {
+        tx.resultCode = callback.ResultCode;
+        tx.resultDesc = callback.ResultDesc;
 
-tx.status = "success";
+        if (callback.ResultCode === 0) {
 
-const items =
-callback.CallbackMetadata
-.Item;
+            tx.status = "success";
 
-const receipt =
-items.find(
-i =>
-i.Name ===
-"MpesaReceiptNumber"
-);
+            const items = callback.CallbackMetadata.Item;
 
-if (receipt) {
-tx.mpesaReceiptNumber =
-receipt.Value;
-}
+            const receipt = items.find(
+                i => i.Name === "MpesaReceiptNumber"
+            );
 
-/* ORDER STATUS LOGIC */
+            if (receipt) {
+                tx.mpesaReceiptNumber = receipt.Value;
+            }
 
-if (
-tx.paymentType ===
-"paid"
-) {
+            /* ================= ORDER STATUS UPDATE ================= */
 
-await Order.findByIdAndUpdate(
-tx.orderId,
-{
-status:"paid"
-}
-);
+            if (tx.paymentType === "paid") {
 
-}
+                await Order.findByIdAndUpdate(tx.orderId, {
+                    status: "paid"
+                });
 
-else if (
-tx.paymentType ===
-"depositPaid"
-) {
+            }
 
-await Order.findByIdAndUpdate(
-tx.orderId,
-{
-status:"depositPaid"
-}
-);
+            else if (tx.paymentType === "depositPaid") {
 
-}
+                await Order.findByIdAndUpdate(tx.orderId, {
+                    status: "depositPaid"
+                });
 
-else if (
-tx.paymentType ===
-"arrearAmount"
-) {
+            }
 
-await Order.findByIdAndUpdate(
-tx.orderId,
-{
-status:"paid"
-}
-);
+            else if (tx.paymentType === "arrearAmount") {
 
-}
+                await Order.findByIdAndUpdate(tx.orderId, {
+                    status: "paid"
+                });
 
-}
-else {
+            }
 
-tx.status = "failed";
+        } else {
+            tx.status = "failed";
+        }
 
-}
+        await tx.save();
 
-await tx.save();
+        res.json({
+            ResultCode: 0,
+            ResultDesc: "OK"
+        });
 
-res.json({
-ResultCode:0,
-ResultDesc:"OK"
-});
+    } catch (err) {
 
-} catch (err) {
+        console.error(err);
 
-res.json({
-ResultCode:0,
-ResultDesc:"OK"
-});
-
-}
+        res.json({
+            ResultCode: 0,
+            ResultDesc: "OK"
+        });
+    }
 };
