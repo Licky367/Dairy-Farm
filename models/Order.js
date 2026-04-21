@@ -1,103 +1,175 @@
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: String,
-      required: true
-    },
+{
+userId: {
+type: String,
+required: true
+},
 
-    // 👤 CUSTOMER SNAPSHOT (from checkoutService)
-    customerName: String,
-    customerEmail: String,
-    customerPhone: String,
+// 👤 CUSTOMER SNAPSHOT
+customerName: String,
+customerEmail: String,
+customerPhone: String,
 
-    // 📦 ITEMS
-    items: [
-      {
-        id: String,
-        name: String,
-        cost: Number,
-        quantity: Number,
-        image: String,
+// 📦 ITEMS
+items: [
+{
+id: String,
+name: String,
+cost: Number,
+quantity: Number,
+image: String,
 
-        depositAmount: {
-          type: Number,
-          default: 0
-        }
-      }
-    ],
+// NEW: required for revenue calculation
+purchasePrice: {
+type: Number,
+default: 0
+},
 
-    // 💰 FINANCIALS
-    totalAmount: {
-      type: Number,
-      required: true
-    },
+shippingCost: {
+type: Number,
+default: 0
+},
 
-    depositAmount: {
-      type: Number,
-      default: 0
-    },
+depositAmount: {
+type: Number,
+default: 0
+},
 
-    arrearAmount: {
-      type: Number,
-      default: 0
-    },
+// computed per item
+revenue: {
+type: Number,
+default: 0
+}
+}
+],
 
-    // 🕒 ORDER TIME
-    orderedAt: {
-      type: Date,
-      default: Date.now
-    },
+// 💰 FINANCIALS
+totalAmount: {
+type: Number,
+required: true
+},
 
-    // 💳 PAYMENT STATUS
-    status: {
-      type: String,
-      enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
-      default: "payAfter"
-    },
+depositAmount: {
+type: Number,
+default: 0
+},
 
-    // 🧾 CASH PAYMENT TRACKING
-    manualPayment: {
-      adminId: String,
-      adminName: String,
-      amount: Number,
-      method: {
-        type: String,
-        default: "cash"
-      },
-      paidAt: Date
-    },
+arrearAmount: {
+type: Number,
+default: 0
+},
 
-    // 🚚 DELIVERY STATUS
-    delivered: {
-      type: Boolean,
-      default: false
-    },
+// 🧾 TOTAL ORDER REVENUE (NEW)
+totalRevenue: {
+type: Number,
+default: 0
+},
 
-    deliveredBy: {
-      adminId: String,
-      adminName: String
-    },
+// 🕒 ORDER TIME
+orderedAt: {
+type: Date,
+default: Date.now
+},
 
-    deliveredAt: {
-      type: Date
-    },
+// 💳 PAYMENT STATUS
+status: {
+type: String,
+enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
+default: "payAfter"
+},
 
-    // 📍 DELIVERY LOCATION SYSTEM (NEW)
-    deliveryAddress: String,
+// 🧾 CASH PAYMENT TRACKING
+manualPayment: {
+adminId: String,
+adminName: String,
+amount: Number,
+method: {
+type: String,
+default: "cash"
+},
+paidAt: Date
+},
 
-    locationUrl: String,
+// 🚚 DELIVERY STATUS
+delivered: {
+type: Boolean,
+default: false
+},
 
-    locationLat: Number,
+deliveredBy: {
+adminId: String,
+adminName: String
+},
 
-    locationLng: Number,
+deliveredAt: {
+type: Date
+},
 
-    locationText: String
-  },
-  {
-    timestamps: true
-  }
+// 📍 DELIVERY LOCATION
+deliveryAddress: String,
+locationUrl: String,
+locationLat: Number,
+locationLng: Number,
+locationText: String
+},
+{
+timestamps: true
+}
 );
+
+/* ========================= */
+/* REVENUE CALCULATION LOGIC */
+/* ========================= */
+
+function calculateOrderRevenue(doc) {
+if (!doc.delivered) {
+doc.totalRevenue = 0;
+return;
+}
+
+let total = 0;
+
+doc.items.forEach(item => {
+const cost = Number(item.cost || 0);
+const purchasePrice = Number(item.purchasePrice || 0);
+const shippingCost = Number(item.shippingCost || 0);
+const qty = Number(item.quantity || 1);
+
+// revenue per item
+const itemRevenue =
+(cost - (purchasePrice + shippingCost)) * qty;
+
+item.revenue = itemRevenue;
+total += itemRevenue;
+});
+
+doc.totalRevenue = total;
+}
+
+/* BEFORE SAVE */
+orderSchema.pre("save", function (next) {
+calculateOrderRevenue(this);
+next();
+});
+
+/* BEFORE UPDATE */
+orderSchema.pre("findOneAndUpdate", function (next) {
+const update = this.getUpdate() || {};
+
+/*
+If items or delivered is updated, we recalculate.
+For safety, we rely on full doc recalculation pattern.
+*/
+
+if (update.delivered !== undefined || update.items !== undefined) {
+const doc = update.$set || update;
+calculateOrderRevenue(doc);
+this.setUpdate(update);
+}
+
+next();
+});
 
 module.exports = mongoose.model("Order", orderSchema);
