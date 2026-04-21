@@ -7,6 +7,12 @@ const orderSchema = new mongoose.Schema(
       required: true
     },
 
+    // 👤 CUSTOMER SNAPSHOT (from checkoutService)
+    customerName: String,
+    customerEmail: String,
+    customerPhone: String,
+
+    // 📦 ITEMS
     items: [
       {
         id: String,
@@ -22,7 +28,7 @@ const orderSchema = new mongoose.Schema(
       }
     ],
 
-    // financials (from service)
+    // 💰 FINANCIALS
     totalAmount: {
       type: Number,
       required: true
@@ -38,35 +44,32 @@ const orderSchema = new mongoose.Schema(
       default: 0
     },
 
-    // 🕒 order creation time
+    // 🕒 ORDER TIME
     orderedAt: {
       type: Date,
       default: Date.now
     },
 
-    // payment status
+    // 💳 PAYMENT STATUS
     status: {
       type: String,
       enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
       default: "payAfter"
     },
 
-    // 🧾 manual cash payment tracking
+    // 🧾 CASH PAYMENT TRACKING
     manualPayment: {
       adminId: String,
       adminName: String,
-
       amount: Number,
-
       method: {
         type: String,
         default: "cash"
       },
-
       paidAt: Date
     },
 
-    // 🚚 DELIVERY TRACKING (NEW)
+    // 🚚 DELIVERY STATUS
     delivered: {
       type: Boolean,
       default: false
@@ -79,7 +82,18 @@ const orderSchema = new mongoose.Schema(
 
     deliveredAt: {
       type: Date
-    }
+    },
+
+    // 📍 DELIVERY LOCATION SYSTEM (NEW)
+    deliveryAddress: String,
+
+    locationUrl: String,
+
+    locationLat: Number,
+
+    locationLng: Number,
+
+    locationText: String
   },
   {
     timestamps: true
