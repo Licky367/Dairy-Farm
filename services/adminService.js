@@ -15,12 +15,16 @@ exports.createProduct = async (data, file) => {
     const itemsAvailable =
         Number(data.itemsAvailable) || 0;
 
+    const purchasePrice =
+        Number(data.purchasePrice) || 0;
+
     await Product.create({
         id: data.id,
         name: data.name,
         category: data.category,
         image: file ? "/uploads/" + file.filename : "",
         cost: cost,
+        purchasePrice: purchasePrice, // ✅ ADDED ONLY
         depositPercentage: depositPercentage,
         depositAmount:
             (cost * depositPercentage) / 100,
@@ -36,10 +40,14 @@ exports.updateProduct = async (id, data, file) => {
     const itemsAvailable =
         Number(data.itemsAvailable) || 0;
 
+    const purchasePrice =
+        Number(data.purchasePrice) || 0;
+
     const updateData = {
         name: data.name,
         category: data.category,
         cost: cost,
+        purchasePrice: purchasePrice, // ✅ ADDED ONLY
         depositPercentage: depositPercentage,
         depositAmount:
             (cost * depositPercentage) / 100,
