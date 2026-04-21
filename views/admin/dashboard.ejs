@@ -6,16 +6,24 @@
 <title>Admin Dashboard</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
 
 body{
 background:#f4f6f8;
 min-height:100vh;
+color:#222;
 }
 
 .header{
 position:fixed;
-top:0;left:0;right:0;
+top:0;
+left:0;
+right:0;
 height:70px;
 background:#0b5d1e;
 color:#fff;
@@ -25,11 +33,15 @@ justify-content:center;
 font-size:22px;
 font-weight:bold;
 z-index:1000;
+padding:0 15px;
+text-align:center;
 }
 
 .topmenu{
 position:fixed;
-top:70px;left:0;right:0;
+top:70px;
+left:0;
+right:0;
 height:60px;
 background:#fff;
 display:flex;
@@ -47,7 +59,9 @@ color:#0b5d1e;
 font-weight:bold;
 }
 
-.profile-box{position:relative;}
+.profile-box{
+position:relative;
+}
 
 .profile-btn{
 background:#0b5d1e;
@@ -79,6 +93,10 @@ color:#333;
 border-bottom:1px solid #eee;
 }
 
+.dropdown a:hover{
+background:#f7f7f7;
+}
+
 .profile-box.active .dropdown{
 display:block;
 }
@@ -96,7 +114,9 @@ z-index:1200;
 overflow-y:auto;
 }
 
-.sidebar.active{left:0;}
+.sidebar.active{
+left:0;
+}
 
 .sidebar a{
 display:block;
@@ -114,27 +134,38 @@ background:rgba(255,255,255,.15);
 
 .overlay{
 position:fixed;
-top:0;left:0;right:0;bottom:0;
+top:0;
+left:0;
+right:0;
+bottom:0;
 background:rgba(0,0,0,.35);
 display:none;
 z-index:1100;
 }
 
-.overlay.active{display:block;}
+.overlay.active{
+display:block;
+}
 
 .main{
 padding:150px 25px 80px;
 }
 
 .topbar{
-background:white;
+background:#fff;
 padding:20px;
 border-radius:14px;
 box-shadow:0 8px 20px rgba(0,0,0,.05);
 display:flex;
 justify-content:space-between;
 align-items:center;
+gap:15px;
 margin-bottom:25px;
+flex-wrap:wrap;
+}
+
+.topbar small{
+color:#666;
 }
 
 .cards{
@@ -145,7 +176,7 @@ margin-bottom:25px;
 }
 
 .card{
-background:white;
+background:#fff;
 padding:25px;
 border-radius:16px;
 box-shadow:0 10px 25px rgba(0,0,0,.05);
@@ -155,24 +186,38 @@ box-shadow:0 10px 25px rgba(0,0,0,.05);
 color:#666;
 margin-bottom:10px;
 font-size:15px;
+font-weight:600;
 }
 
 .card h1{
 color:#0b5d1e;
 font-size:30px;
+margin-bottom:6px;
+}
+
+.card p{
+font-size:13px;
+color:#777;
 }
 
 .table-box{
-background:white;
+background:#fff;
 padding:25px;
 border-radius:16px;
 box-shadow:0 10px 25px rgba(0,0,0,.05);
 overflow:auto;
+margin-bottom:25px;
+}
+
+.section-title{
+margin-bottom:18px;
+color:#222;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
+min-width:650px;
 }
 
 th,td{
@@ -183,14 +228,32 @@ border-bottom:1px solid #eee;
 
 th{
 color:#555;
+font-size:14px;
+background:#fafafa;
+}
+
+td{
+font-size:14px;
 }
 
 .status{
 padding:6px 10px;
 border-radius:20px;
-font-size:13px;
+font-size:12px;
 background:#e8f5e9;
 color:#0b5d1e;
+font-weight:bold;
+display:inline-block;
+}
+
+.low-stock{
+background:#fff3cd;
+color:#8a6d00;
+}
+
+.out-stock{
+background:#fdecea;
+color:#b42318;
 }
 
 .empty{
@@ -201,7 +264,9 @@ color:#777;
 
 .footer{
 position:fixed;
-bottom:0;left:0;right:0;
+bottom:0;
+left:0;
+right:0;
 height:50px;
 background:#0b5d1e;
 color:#fff;
@@ -210,6 +275,30 @@ align-items:center;
 justify-content:center;
 font-size:13px;
 z-index:1000;
+padding:0 10px;
+text-align:center;
+}
+
+@media(max-width:768px){
+
+.main{
+padding:145px 15px 80px;
+}
+
+.topbar{
+flex-direction:column;
+align-items:flex-start;
+}
+
+.header{
+font-size:18px;
+}
+
+.profile-btn{
+padding:8px 12px;
+font-size:13px;
+}
+
 }
 </style>
 </head>
@@ -250,8 +339,14 @@ z-index:1000;
 <div class="main">
 
 <div class="topbar">
+<div>
 <h2>Admin Dashboard</h2>
-<div>Welcome, <%= user ? user.name : "" %></div>
+<small>Welcome, <%= user ? user.name : "Administrator" %></small>
+</div>
+
+<div>
+<small><%= new Date().toDateString() %></small>
+</div>
 </div>
 
 <div class="cards">
@@ -259,28 +354,44 @@ z-index:1000;
 <div class="card">
 <h3>Total Products</h3>
 <h1><%= totalProducts || 0 %></h1>
+<p>Registered products</p>
 </div>
 
 <div class="card">
 <h3>Total Orders</h3>
 <h1><%= totalOrders || 0 %></h1>
+<p>Orders received</p>
 </div>
 
 <div class="card">
 <h3>Total Clients</h3>
 <h1><%= totalClients || 0 %></h1>
+<p>Customer accounts</p>
 </div>
 
 <div class="card">
 <h3>Revenue</h3>
 <h1>KES <%= revenue || 0 %></h1>
+<p>Total collected</p>
+</div>
+
+<div class="card">
+<h3>Items In Stock</h3>
+<h1><%= totalItemsAvailable || 0 %></h1>
+<p>All available units</p>
+</div>
+
+<div class="card">
+<h3>Low Stock Products</h3>
+<h1><%= lowStockCount || 0 %></h1>
+<p>Need restocking soon</p>
 </div>
 
 </div>
 
 <div class="table-box">
 
-<h3 style="margin-bottom:20px;">Recent Orders</h3>
+<h3 class="section-title">Recent Orders</h3>
 
 <table>
 
@@ -299,9 +410,7 @@ z-index:1000;
 <td><%= order.id %></td>
 <td><%= order.clientName %></td>
 <td>KES <%= order.amount %></td>
-<td>
-<span class="status"><%= order.status %></span>
-</td>
+<td><span class="status"><%= order.status %></span></td>
 </tr>
 
 <% }) %>
@@ -310,6 +419,56 @@ z-index:1000;
 
 <tr>
 <td colspan="4" class="empty">No recent orders found</td>
+</tr>
+
+<% } %>
+
+</table>
+
+</div>
+
+<div class="table-box">
+
+<h3 class="section-title">Stock Overview</h3>
+
+<table>
+
+<tr>
+<th>Product</th>
+<th>Category</th>
+<th>Items Available</th>
+<th>Status</th>
+</tr>
+
+<% if (products && products.length > 0) { %>
+
+<% products.forEach(product => { %>
+
+<tr>
+<td><%= product.name %></td>
+<td><%= product.category %></td>
+<td><%= product.itemsAvailable || 0 %></td>
+<td>
+
+<% if ((product.itemsAvailable || 0) === 0) { %>
+<span class="status out-stock">Out of Stock</span>
+
+<% } else if ((product.itemsAvailable || 0) <= 5) { %>
+<span class="status low-stock">Low Stock</span>
+
+<% } else { %>
+<span class="status">Available</span>
+<% } %>
+
+</td>
+</tr>
+
+<% }) %>
+
+<% } else { %>
+
+<tr>
+<td colspan="4" class="empty">No products found</td>
 </tr>
 
 <% } %>
