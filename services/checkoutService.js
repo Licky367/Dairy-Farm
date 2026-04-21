@@ -10,7 +10,6 @@ function normalizeGoogleMaps(url) {
     try {
         const parsed = new URL(url);
 
-        // Accept only Google Maps domains
         const allowedHosts = [
             "google.com",
             "www.google.com",
@@ -30,7 +29,6 @@ function normalizeGoogleMaps(url) {
         let lat = null;
         let lng = null;
 
-        // Try extracting coordinates from URL
         const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
         if (match) {
             lat = parseFloat(match[1]);
@@ -58,7 +56,9 @@ exports.calculateTotals = (cart) => {
 
     cart.forEach(item => {
         total += item.cost * item.quantity;
-        deposit += item.depositAmountPaid * item.quantity;
+
+        // ✅ FIXED: use depositAmount (NOT depositAmountPaid)
+        deposit += item.depositAmount * item.quantity;
     });
 
     return {
@@ -136,11 +136,13 @@ exports.createOrderAndHandlePayment = async (
 
         totalAmount: totals.total,
         depositAmount: totals.deposit,
-        arrearAmount: totals.arrear,
+
+        // ❌ DO NOT set arrearAmount manually anymore
+        // it will be auto-calculated in schema
+        // arrearAmount: totals.arrear,
 
         status: paymentType,
 
-        // 📍 CLEAN LOCATION STORAGE
         deliveryAddress: deliveryData.address || null,
 
         locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
