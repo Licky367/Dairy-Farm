@@ -6,118 +6,19 @@
 <title>Checkout</title>
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
 
-body{
-background:#f4f6f8;
-min-height:100vh;
-}
+body{background:#f4f6f8;min-height:100vh;}
 
 .header{
-position:fixed;
-top:0;
-left:0;
-right:0;
-height:70px;
-background:#0b5d1e;
-color:#fff;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:22px;
-font-weight:bold;
+position:fixed;top:0;left:0;right:0;height:70px;
+background:#0b5d1e;color:#fff;
+display:flex;align-items:center;justify-content:center;
+font-size:22px;font-weight:bold;
 z-index:1000;
 }
 
-.topmenu{
-position:fixed;
-top:70px;
-left:0;
-right:0;
-height:60px;
-background:#fff;
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding:0 20px;
-box-shadow:0 4px 12px rgba(0,0,0,.05);
-z-index:999;
-}
-
-.menu-btn{font-size:28px;cursor:pointer;color:#0b5d1e;}
-
-.icon-group{display:flex;gap:18px;}
-
-.icon-group a{
-text-decoration:none;
-font-size:22px;
-color:#0b5d1e;
-}
-
-.profile-box{position:relative;}
-
-.profile-btn{
-background:#0b5d1e;
-color:#fff;
-border:none;
-padding:10px 16px;
-border-radius:30px;
-cursor:pointer;
-font-size:14px;
-}
-
-.dropdown{
-position:absolute;
-right:0;
-top:48px;
-width:180px;
-background:#fff;
-border-radius:12px;
-box-shadow:0 10px 25px rgba(0,0,0,.08);
-display:none;
-}
-
-.profile-box.active .dropdown{display:block;}
-
-.sidebar{
-position:fixed;
-top:0;
-left:-280px;
-width:260px;
-height:100%;
-background:#0b5d1e;
-padding:140px 20px;
-transition:.35s ease;
-z-index:1200;
-}
-
-.sidebar.active{left:0;}
-
-.sidebar a{
-display:block;
-color:#fff;
-padding:14px;
-text-decoration:none;
-}
-
-.overlay{
-position:fixed;
-top:0;left:0;right:0;bottom:0;
-background:rgba(0,0,0,.35);
-display:none;
-z-index:1100;
-}
-
-.overlay.active{display:block;}
-
-.main{
-padding:150px 25px 90px;
-}
+.main{padding:150px 25px 90px;}
 
 .checkout-box{
 max-width:900px;
@@ -135,10 +36,18 @@ padding:14px 0;
 border-bottom:1px solid #eee;
 }
 
-.summary{
-margin-top:20px;
-line-height:2;
+.summary{margin-top:20px;line-height:2;}
+
+input, textarea{
+width:100%;
+padding:10px;
+margin-top:6px;
+margin-bottom:12px;
+border-radius:8px;
+border:1px solid #ccc;
 }
+
+label{font-size:14px;color:#333;}
 
 button{
 background:#0b5d1e;
@@ -151,10 +60,7 @@ cursor:pointer;
 font-size:16px;
 }
 
-button:disabled{
-background:#999;
-cursor:not-allowed;
-}
+button:disabled{background:#999;cursor:not-allowed;}
 
 .warning{
 color:#b42318;
@@ -162,18 +68,10 @@ margin-top:12px;
 display:none;
 }
 
-.footer{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-height:50px;
-background:#0b5d1e;
-color:#fff;
-display:flex;
-align-items:center;
-justify-content:center;
+.note{
 font-size:13px;
+color:#666;
+margin-bottom:10px;
 }
 </style>
 </head>
@@ -181,39 +79,6 @@ font-size:13px;
 <body>
 
 <div class="header">Corevester Investments Limited</div>
-
-<div class="topmenu">
-
-<div style="display:flex;align-items:center;gap:15px;">
-<div class="menu-btn" onclick="openSidebar()">☰</div>
-
-<div class="icon-group">
-<a href="/client">🏠</a>
-<a href="/cart">🛒</a>
-</div>
-</div>
-
-<div class="profile-box" id="profileBox">
-<button class="profile-btn" onclick="toggleProfile(event)">
-<%= user ? user.name : "Account" %>
-</button>
-
-<div class="dropdown">
-<a href="/profile">My Account</a>
-<a href="/logout">Logout</a>
-</div>
-</div>
-
-</div>
-
-<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-
-<div class="sidebar" id="sidebar">
-<a href="/client">Home</a>
-<a href="/cart">Cart</a>
-<a href="/profile">Profile</a>
-<a href="/logout">Logout</a>
-</div>
 
 <div class="main">
 
@@ -256,10 +121,29 @@ KES <%= (item.cost * item.quantity).toLocaleString() %>
 ⚠ Some items exceed available stock. Please adjust your cart.
 </p>
 
+<!-- 📍 DELIVERY INFO -->
+<h3 style="margin-top:25px;">Delivery Information</h3>
+
+<p class="note">
+Enter exact location or paste Google Maps pinned link
+</p>
+
+<label>Delivery Address</label>
+<textarea name="address" id="address" placeholder="e.g. Kilimani, Nairobi, House No..." required></textarea>
+
+<label>Google Maps Location URL</label>
+<input type="text" id="locationUrl" placeholder="Paste pinned Google Maps link">
+
+<label>Location Notes (optional)</label>
+<textarea id="locationText" placeholder="Landmarks, directions, gate color, etc."></textarea>
+
 <form method="POST" action="/checkout" id="checkoutForm">
 
-<!-- 🔥 Send structured cart to backend -->
+<!-- cart -->
 <input type="hidden" name="cartData" value='<%= JSON.stringify(cart) %>'>
+
+<!-- delivery payload -->
+<input type="hidden" name="deliveryData" id="deliveryData">
 
 <h3 style="margin:15px 0;">Payment Method</h3>
 
@@ -279,27 +163,7 @@ Proceed to Payment
 
 </div>
 
-<div class="footer">
-© <%= new Date().getFullYear() %> Corevester Investments Limited
-</div>
-
 <script>
-function openSidebar(){
-document.getElementById("sidebar").classList.add("active");
-document.getElementById("overlay").classList.add("active");
-}
-
-function closeSidebar(){
-document.getElementById("sidebar").classList.remove("active");
-document.getElementById("overlay").classList.remove("active");
-}
-
-function toggleProfile(e){
-e.stopPropagation();
-document.getElementById("profileBox").classList.toggle("active");
-}
-
-/* STOCK VALIDATION */
 const hasIssue = <%= hasStockIssue ? "true" : "false" %>;
 
 const btn = document.getElementById("checkoutBtn");
@@ -309,6 +173,21 @@ if(hasIssue){
 btn.disabled = true;
 warning.style.display = "block";
 }
+
+/**
+ * Attach delivery data before submit
+ */
+document.getElementById("checkoutForm").addEventListener("submit", function(e){
+
+const deliveryData = {
+    address: document.getElementById("address").value,
+    locationUrl: document.getElementById("locationUrl").value,
+    locationText: document.getElementById("locationText").value
+};
+
+document.getElementById("deliveryData").value = JSON.stringify(deliveryData);
+
+});
 </script>
 
 </body>
