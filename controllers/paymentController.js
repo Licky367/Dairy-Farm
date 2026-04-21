@@ -46,7 +46,6 @@ exports.initiatePayment = async (req, res) => {
         else if (paymentType === "depositPaid") {
             amount = order.depositAmount;
 
-            // optional business flow (kept as you had it)
             await Order.findByIdAndUpdate(orderId, {
                 status: "payAfter"
             });
@@ -130,7 +129,7 @@ exports.mpesaCallback = async (req, res) => {
                 tx.mpesaReceiptNumber = receipt.Value;
             }
 
-            /* ================= ORDER STATUS UPDATE ================= */
+            /* ================= ORDER STATUS + PAYMENT STORAGE ================= */
 
             if (
                 tx.paymentType === "paid" ||
@@ -146,8 +145,15 @@ exports.mpesaCallback = async (req, res) => {
 
             else if (tx.paymentType === "depositPaid") {
 
+                const depositItem = items.find(
+                    i => i.Name === "Amount"
+                );
+
+                const paidDeposit = depositItem ? depositItem.Value : tx.amount;
+
                 await Order.findByIdAndUpdate(tx.orderId, {
-                    status: "depositPaid"
+                    status: "depositPaid",
+                    depositAmountPaid: paidDeposit   // ✅ ADDED HERE
                 });
 
             }
