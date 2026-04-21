@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f8;
+min-height:100vh;
+color:#222;
+}
+
+/* HEADER */
+.header{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:70px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:22px;
+font-weight:bold;
+z-index:1000;
+padding:0 15px;
+text-align:center;
+}
+
+/* TOP MENU */
+.topmenu{
+position:fixed;
+top:70px;
+left:0;
+right:0;
+height:60px;
+background:#fff;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 20px;
+box-shadow:0 4px 12px rgba(0,0,0,.05);
+z-index:999;
+}
+
+.menu-btn{
+font-size:28px;
+cursor:pointer;
+color:#0b5d1e;
+font-weight:bold;
+}
+
+.profile-box{
+position:relative;
+}
+
+.profile-btn{
+background:#0b5d1e;
+color:#fff;
+border:none;
+padding:10px 16px;
+border-radius:30px;
+cursor:pointer;
+font-size:14px;
+}
+
+.dropdown{
+position:absolute;
+right:0;
+top:48px;
+width:180px;
+background:#fff;
+border-radius:12px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+display:none;
+overflow:hidden;
+}
+
+.dropdown a{
+display:block;
+padding:14px;
+text-decoration:none;
+color:#333;
+border-bottom:1px solid #eee;
+}
+
+.profile-box.active .dropdown{
+display:block;
+}
+
+/* SIDEBAR */
+.sidebar{
+position:fixed;
+top:0;
+left:-280px;
+width:260px;
+height:100%;
+background:#0b5d1e;
+padding:140px 20px 20px;
+transition:.35s ease;
+z-index:1200;
+overflow-y:auto;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.sidebar a{
+display:block;
+color:#fff;
+text-decoration:none;
+padding:14px;
+margin-bottom:10px;
+border-radius:10px;
+transition:.3s;
+}
+
+.sidebar a:hover{
+background:rgba(255,255,255,.15);
+}
+
+/* OVERLAY */
+.overlay{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,.35);
+display:none;
+z-index:1100;
+}
+
+.overlay.active{
+display:block;
+}
+
+/* MAIN */
+.main{
+padding:150px 25px 80px;
+}
+
+/* CARD */
+.card{
+background:#fff;
+padding:25px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+margin-bottom:20px;
+}
+
+.card h2{
+color:#0b5d1e;
+margin-bottom:10px;
+}
+
+.card p{
+color:#666;
+margin-bottom:6px;
+}
+
+/* FORM */
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:15px;
+margin-top:15px;
+}
+
+.field{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+label{
+font-size:14px;
+font-weight:bold;
+color:#444;
+}
+
+select, input{
+padding:12px;
+border:1px solid #ddd;
+border-radius:10px;
+font-size:15px;
+outline:none;
+}
+
+select:focus, input:focus{
+border-color:#0b5d1e;
+}
+
+/* BUTTON */
+button{
+background:#0b5d1e;
+color:#fff;
+padding:13px 18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:15px;
+margin-top:15px;
+}
+
+button:hover{
+opacity:.9;
+}
+
+/* AMOUNT BOX */
+.amount-box{
+margin-top:15px;
+padding:15px;
+background:#f8f8f8;
+border-radius:12px;
+font-weight:bold;
+color:#0b5d1e;
+}
+
+/* FOOTER */
+.footer{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+height:50px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:13px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">Corevester Investments Limited</div>
+
+<div class="topmenu">
+
+<div class="menu-btn" onclick="toggleSidebar()">☰</div>
+
+<div class="profile-box" id="profileBox">
+<button class="profile-btn" onclick="toggleProfile(event)">
+<%= user ? user.name : "Account" %>
+</button>
+
+<div class="dropdown">
+<a href="/profile">My Account</a>
+<a href="/logout">Logout</a>
+</div>
+</div>
+
+</div>
+
+<div class="sidebar" id="sidebar">
+<a href="/admin/dashboard">Dashboard</a>
+<a href="/admin/products">Products</a>
+<a href="/admin/orders">Orders</a>
+<a href="/admin/payments">Payments</a>
+<a href="/logout">Logout</a>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="main">
+
+<!-- ORDER INFO -->
+<div class="card">
+<h2>Payment Processing</h2>
+
+<p><b>Order ID:</b> <%= order._id %></p>
+<p><b>Total Amount:</b> KES <%= order.totalAmount %></p>
+<p><b>Deposit:</b> KES <%= order.depositAmount %></p>
+<p><b>Arrears:</b> KES <%= order.arrearAmount %></p>
+</div>
+
+<!-- PAYMENT FORM -->
+<div class="card">
+
+<h2>Select Payment Type</h2>
+
+<form action="/payment/initiate" method="POST">
+
+<input type="hidden" name="orderId" value="<%= order._id %>">
+
+<div class="grid">
+
+<div class="field">
+<label>Payment Type</label>
+<select name="paymentType" id="paymentType" onchange="updateAmount()" required>
+<option value="">-- Select --</option>
+<option value="paid">Full Payment</option>
+<option value="depositPaid">Deposit Payment</option>
+<option value="payAfter">Pay Later</option>
+<option value="arrearAmount">Arrears Payment</option>
+</select>
+</div>
+
+</div>
+
+<div class="amount-box">
+Amount to Pay: KES <span id="amountDisplay">0</span>
+</div>
+
+<button type="submit">Proceed with M-Pesa</button>
+
+</form>
+
+</div>
+
+</div>
+
+<div class="footer">
+© <%= new Date().getFullYear() %> Corevester Investments Limited
+</div>
+
+<script>
+
+function toggleSidebar(){
+document.getElementById("sidebar").classList.add("active");
+document.getElementById("overlay").classList.add("active");
+}
+
+function closeSidebar(){
+document.getElementById("sidebar").classList.remove("active");
+document.getElementById("overlay").classList.remove("active");
+}
+
+function toggleProfile(event){
+event.stopPropagation();
+document.getElementById("profileBox").classList.toggle("active");
+}
+
+document.addEventListener("click", function(e){
+const box = document.getElementById("profileBox");
+if(!box.contains(e.target)){
+box.classList.remove("active");
+}
+});
+
+/* AMOUNT LOGIC */
+function updateAmount(){
+
+const type = document.getElementById("paymentType").value;
+
+let amount = 0;
+
+const total = <%= order.totalAmount %>;
+const deposit = <%= order.depositAmount %>;
+const arrear = <%= order.arrearAmount %>;
+
+if(type === "paid"){
+amount = total;
+}
+else if(type === "depositPaid"){
+amount = deposit;
+}
+else if(type === "payAfter"){
+amount = total;
+}
+else if(type === "arrearAmount"){
+amount = arrear;
+}
+
+document.getElementById("amountDisplay").innerText = amount;
+}
+
+</script>
+
+</body>
+</html>
