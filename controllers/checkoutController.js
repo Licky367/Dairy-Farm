@@ -1,5 +1,8 @@
 const checkoutService = require("../services/checkoutService");
 
+/**
+ * GET checkout page
+ */
 exports.checkoutPage = async (req, res) => {
     const cart = req.session.cart || [];
 
@@ -8,23 +11,31 @@ exports.checkoutPage = async (req, res) => {
     }
 
     try {
-        const data = await checkoutService.prepareCheckout(cart);
 
-        res.render("checkout", {
-            cart: data.cart,
-            totals: data.totals,
+        // ✅ correct service function
+        const totals = checkoutService.calculateTotals(cart);
+
+        return res.render("checkout", {
+            cart,
+            totals,
             user: req.session.user || null
         });
 
     } catch (err) {
+        console.error(err);
+
         return res.status(400).render("checkout-error", {
             message: err.message || "Checkout preparation failed"
         });
     }
 };
 
+/**
+ * POST checkout process
+ */
 exports.processCheckout = async (req, res) => {
     try {
+
         const cart = req.session.cart || [];
 
         if (!req.session.user) {
@@ -37,18 +48,23 @@ exports.processCheckout = async (req, res) => {
 
         const { paymentType } = req.body;
 
-        const result = await checkoutService.processOrder({
+        // ✅ correct service function
+        const result = await checkoutService.createOrderAndHandlePayment(
             cart,
-            user: req.session.user,
+            req.session.user,
             paymentType
-        });
+        );
 
+        // clear cart after successful order
         req.session.cart = [];
 
         return res.redirect(result.redirectUrl);
 
     } catch (err) {
         console.error(err);
-        return res.status(500).send(err.message || "Checkout failed");
+
+        return res.status(500).send(
+            err.message || "Checkout failed"
+        );
     }
 };
