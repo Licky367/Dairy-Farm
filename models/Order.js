@@ -56,6 +56,12 @@ type: Number,
 default: 0
 },
 
+// ✅ NEW FIELD (what you requested)
+depositAmountPaid: {
+type: Number,
+default: 0
+},
+
 arrearAmount: {
 type: Number,
 default: 0
@@ -157,11 +163,6 @@ next();
 /* BEFORE UPDATE */
 orderSchema.pre("findOneAndUpdate", function (next) {
 const update = this.getUpdate() || {};
-
-/*
-If items or delivered is updated, we recalculate.
-For safety, we rely on full doc recalculation pattern.
-*/
 
 if (update.delivered !== undefined || update.items !== undefined) {
 const doc = update.$set || update;
