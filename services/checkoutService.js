@@ -2,7 +2,55 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 
 /**
- * Calculate totals from cart
+ * Validate & normalize Google Maps URL
+ */
+function normalizeGoogleMaps(url) {
+    if (!url) return { valid: false };
+
+    try {
+        const parsed = new URL(url);
+
+        // Accept only Google Maps domains
+        const allowedHosts = [
+            "google.com",
+            "www.google.com",
+            "maps.google.com",
+            "goo.gl",
+            "maps.app.goo.gl"
+        ];
+
+        const isValidHost = allowedHosts.some(host =>
+            parsed.hostname.includes(host)
+        );
+
+        if (!isValidHost) {
+            return { valid: false };
+        }
+
+        let lat = null;
+        let lng = null;
+
+        // Try extracting coordinates from URL
+        const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (match) {
+            lat = parseFloat(match[1]);
+            lng = parseFloat(match[2]);
+        }
+
+        return {
+            valid: true,
+            normalizedUrl: url.trim(),
+            lat,
+            lng
+        };
+
+    } catch (err) {
+        return { valid: false };
+    }
+}
+
+/**
+ * Calculate totals
  */
 exports.calculateTotals = (cart) => {
     let total = 0;
@@ -21,7 +69,7 @@ exports.calculateTotals = (cart) => {
 };
 
 /**
- * Validate stock BEFORE order creation
+ * Validate stock
  */
 async function validateStock(cart) {
     for (const item of cart) {
@@ -36,13 +84,11 @@ async function validateStock(cart) {
                 `Insufficient stock for ${item.name}. Available: ${product.itemsAvailable}`
             );
         }
-
-        item._productDoc = product;
     }
 }
 
 /**
- * Deduct stock AFTER order creation
+ * Deduct stock
  */
 async function deductStock(cart) {
     for (const item of cart) {
@@ -58,51 +104,55 @@ async function deductStock(cart) {
 }
 
 /**
- * MAIN ORDER CREATION FLOW
+ * MAIN ORDER FLOW
  */
 exports.createOrderAndHandlePayment = async (
     cart,
     user,
     paymentType,
-    deliveryData = {} // 👈 NEW: frontend location input
+    deliveryData = {}
 ) => {
 
-    // STEP 1: Validate stock
     await validateStock(cart);
 
-    // STEP 2: Totals
     const totals = exports.calculateTotals(cart);
 
-    // STEP 3: Create order WITH CUSTOMER + LOCATION DATA
+    // 📍 VALIDATE GOOGLE MAPS
+    const locationCheck = normalizeGoogleMaps(deliveryData.locationUrl);
+
+    if (deliveryData.locationUrl && !locationCheck.valid) {
+        throw new Error("Invalid Google Maps location URL");
+    }
+
     const order = await Order.create({
         userId: user._id,
 
-        // 👤 CUSTOMER DETAILS (NEW)
+        // 👤 customer snapshot
         customerName: user.name,
         customerEmail: user.email,
         customerPhone: user.phone,
 
-        // 📦 CART ITEMS
         items: cart,
 
-        // 💰 FINANCIALS
         totalAmount: totals.total,
         depositAmount: totals.deposit,
         arrearAmount: totals.arrear,
 
-        // 🕒 STATUS
         status: paymentType,
 
-        // 📍 DELIVERY DATA (NEW)
+        // 📍 CLEAN LOCATION STORAGE
         deliveryAddress: deliveryData.address || null,
-        locationUrl: deliveryData.locationUrl || null,
+
+        locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
+
+        locationLat: locationCheck.lat || null,
+        locationLng: locationCheck.lng || null,
+
         locationText: deliveryData.locationText || null
     });
 
-    // STEP 4: Deduct stock
     await deductStock(cart);
 
-    // STEP 5: PAYMENT ROUTING (UNCHANGED)
     if (
         paymentType === "paid" ||
         paymentType === "depositPaid" ||
