@@ -1,27 +1,30 @@
-const express =
-require("express");
+const express = require("express");
+const router = express.Router();
 
-const router =
-express.Router();
+const paymentController = require("../controllers/paymentController");
 
-const paymentController =
-require(
-"../controllers/paymentController"
+/* =========================
+   PAYMENT PAGE (NEW ADDITION)
+========================= */
+router.get(
+    "/payment-page/:orderId",
+    paymentController.paymentPage
 );
 
-/* initiate */
+/* =========================
+   INITIATE PAYMENT (M-PESA)
+========================= */
 router.post(
-"/payment/initiate",
-paymentController
-.initiatePayment
+    "/payment/initiate",
+    paymentController.initiatePayment
 );
 
-/* callback */
+/* =========================
+   M-PESA CALLBACK
+========================= */
 router.post(
-"/mpesa/callback",
-paymentController
-.mpesaCallback
+    "/mpesa/callback",
+    paymentController.mpesaCallback
 );
 
-module.exports =
-router;
+module.exports = router;
