@@ -133,7 +133,6 @@ text-decoration:none;
 padding:14px;
 margin-bottom:10px;
 border-radius:10px;
-transition:.3s;
 }
 
 .sidebar a:hover{
@@ -223,22 +222,63 @@ object-fit:cover;
 }
 
 .card h3{
-margin-bottom:10px;
+margin-bottom:8px;
 }
 
 .card p{
 font-size:14px;
 color:#666;
-margin-bottom:12px;
+margin-bottom:10px;
 }
 
 .price{
-font-size:22px;
+font-size:20px;
 color:#0b5d1e;
 font-weight:bold;
 margin-bottom:10px;
 }
 
+.stock{
+font-size:13px;
+margin-bottom:10px;
+font-weight:bold;
+}
+
+.instock{color:#0b5d1e;}
+.lowstock{color:#b7791f;}
+.outstock{color:#b42318;}
+
+/* QTY */
+.qty-box{
+margin:10px 0;
+}
+
+.qty-controls{
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.qty-controls button{
+width:36px;
+height:36px;
+border:none;
+border-radius:8px;
+background:#0b5d1e;
+color:#fff;
+cursor:pointer;
+font-size:18px;
+}
+
+.qty-controls input{
+width:60px;
+text-align:center;
+padding:8px;
+border:1px solid #ddd;
+border-radius:8px;
+}
+
+/* BUTTON */
 .card button{
 width:100%;
 background:#0b5d1e;
@@ -247,6 +287,12 @@ border:none;
 padding:12px;
 border-radius:10px;
 cursor:pointer;
+margin-top:10px;
+}
+
+.card button:disabled{
+background:#999;
+cursor:not-allowed;
 }
 
 /* FOOTER */
@@ -264,30 +310,12 @@ justify-content:center;
 font-size:13px;
 z-index:1000;
 }
-
-@media(max-width:768px){
-
-.hero h1{
-font-size:30px;
-}
-
-.main{
-padding:140px 15px 80px;
-}
-
-.products{
-grid-template-columns:1fr;
-}
-
-}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-Corevester Investments Limited
-</div>
+<div class="header">Corevester Investments Limited</div>
 
 <div class="topmenu">
 
@@ -301,13 +329,11 @@ Corevester Investments Limited
 </div>
 
 <div class="profile-box" id="profileBox">
-
 <button class="profile-btn" onclick="toggleProfile(event)">
 <%= user ? user.name : "Account" %>
 </button>
 
 <div class="dropdown">
-
 <% if(user){ %>
 <a href="/profile">My Account</a>
 <a href="/logout">Logout</a>
@@ -315,7 +341,6 @@ Corevester Investments Limited
 <a href="/login">Login</a>
 <a href="/signup">Sign Up</a>
 <% } %>
-
 </div>
 </div>
 
@@ -340,14 +365,18 @@ Corevester Investments Limited
 <section class="hero">
 <h1>Medical Equipment Store</h1>
 <p>Quality medical equipment with deposit payments and M-Pesa support.</p>
-<button onclick="window.location='#products'">Shop Now</button>
+<button onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})">
+Shop Now
+</button>
 </section>
 
 <section class="products" id="products">
 
 <% if(products && products.length > 0){ %>
 
-<% products.forEach(product => { %>
+<% products.forEach(product => { 
+const stock = product.itemsAvailable || 0;
+%>
 
 <div class="card">
 
@@ -365,8 +394,40 @@ Corevester Investments Limited
 KES <%= Number(product.cost).toLocaleString() %>
 </div>
 
+<div class="stock 
+<%= stock === 0 ? 'outstock' : stock <= 5 ? 'lowstock' : 'instock' %>">
+Items Available: <%= stock %>
+</div>
+
 <form action="/cart/add/<%= product.id %>" method="POST">
+
+<% if(stock > 0){ %>
+
+<div class="qty-box">
+
+<div class="qty-controls">
+<button type="button" onclick="changeQty(this,-1,<%= stock %>)">−</button>
+
+<input type="number"
+name="quantity"
+value="1"
+min="1"
+max="<%= stock %>"
+readonly>
+
+<button type="button" onclick="changeQty(this,1,<%= stock %>)">+</button>
+</div>
+
+</div>
+
 <button type="submit">Add to Cart</button>
+
+<% } else { %>
+
+<button type="button" disabled>Out of Stock</button>
+
+<% } %>
+
 </form>
 
 </div>
@@ -398,8 +459,8 @@ document.getElementById("sidebar").classList.remove("active");
 document.getElementById("overlay").classList.remove("active");
 }
 
-function toggleProfile(event){
-event.stopPropagation();
+function toggleProfile(e){
+e.stopPropagation();
 document.getElementById("profileBox").classList.toggle("active");
 }
 
@@ -409,6 +470,19 @@ if(!box.contains(e.target)){
 box.classList.remove("active");
 }
 });
+
+/* QTY CONTROL */
+function changeQty(btn, change, max){
+const input = btn.parentElement.querySelector("input");
+let value = parseInt(input.value);
+
+value = value + change;
+
+if(value < 1) value = 1;
+if(value > max) value = max;
+
+input.value = value;
+}
 </script>
 
 </body>
