@@ -6,6 +6,7 @@
 <title>Payment</title>
 
 <style>
+/* (UNCHANGED STYLES — EXACTLY AS YOU HAD THEM) */
 *{
 margin:0;
 padding:0;
@@ -19,7 +20,6 @@ min-height:100vh;
 color:#222;
 }
 
-/* HEADER */
 .header{
 position:fixed;
 top:0;
@@ -38,7 +38,6 @@ padding:0 15px;
 text-align:center;
 }
 
-/* TOP MENU */
 .topmenu{
 position:fixed;
 top:70px;
@@ -99,7 +98,6 @@ border-bottom:1px solid #eee;
 display:block;
 }
 
-/* SIDEBAR */
 .sidebar{
 position:fixed;
 top:0;
@@ -131,7 +129,6 @@ transition:.3s;
 background:rgba(255,255,255,.15);
 }
 
-/* OVERLAY */
 .overlay{
 position:fixed;
 top:0;
@@ -147,12 +144,10 @@ z-index:1100;
 display:block;
 }
 
-/* MAIN */
 .main{
 padding:150px 25px 80px;
 }
 
-/* CARD */
 .card{
 background:#fff;
 padding:25px;
@@ -171,7 +166,6 @@ color:#666;
 margin-bottom:6px;
 }
 
-/* FORM */
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
@@ -203,7 +197,6 @@ select:focus, input:focus{
 border-color:#0b5d1e;
 }
 
-/* BUTTON */
 button{
 background:#0b5d1e;
 color:#fff;
@@ -219,7 +212,6 @@ button:hover{
 opacity:.9;
 }
 
-/* AMOUNT BOX */
 .amount-box{
 margin-top:15px;
 padding:15px;
@@ -229,7 +221,6 @@ font-weight:bold;
 color:#0b5d1e;
 }
 
-/* FOOTER */
 .footer{
 position:fixed;
 bottom:0;
@@ -243,7 +234,6 @@ align-items:center;
 justify-content:center;
 font-size:13px;
 }
-
 </style>
 </head>
 
@@ -252,7 +242,6 @@ font-size:13px;
 <div class="header">Corevester Investments Limited</div>
 
 <div class="topmenu">
-
 <div class="menu-btn" onclick="toggleSidebar()">☰</div>
 
 <div class="profile-box" id="profileBox">
@@ -265,13 +254,12 @@ font-size:13px;
 <a href="/logout">Logout</a>
 </div>
 </div>
-
 </div>
 
 <div class="sidebar" id="sidebar">
-<a href="/admin/dashboard">Dashboard</a>
-<a href="/admin/products">Products</a>
-<a href="/admin/orders">Orders</a>
+<a href="/client">Home</a>
+<a href="/cart">Cart</a>
+<a href="/profile">Profile</a>
 <a href="/admin/payments">Payments</a>
 <a href="/logout">Logout</a>
 </div>
@@ -280,19 +268,16 @@ font-size:13px;
 
 <div class="main">
 
-<!-- ORDER INFO -->
 <div class="card">
 <h2>Payment Processing</h2>
 
 <p><b>Order ID:</b> <%= order._id %></p>
 <p><b>Total Amount:</b> KES <%= order.totalAmount %></p>
-<p><b>Deposit:</b> KES <%= order.depositAmount %></p>
+<p><b>Paid Deposit:</b> KES <%= order.depositAmountPaid %></p>
 <p><b>Arrears:</b> KES <%= order.arrearAmount %></p>
 </div>
 
-<!-- PAYMENT FORM -->
 <div class="card">
-
 <h2>Select Payment Type</h2>
 
 <form action="/payment/initiate" method="POST">
@@ -303,13 +288,24 @@ font-size:13px;
 
 <div class="field">
 <label>Payment Type</label>
+
 <select name="paymentType" id="paymentType" onchange="updateAmount()" required>
+
 <option value="">-- Select --</option>
-<option value="paid">Full Payment</option>
-<option value="depositPaid">Deposit Payment</option>
-<option value="payAfter">Pay Later</option>
-<option value="arrearAmount">Arrears Payment</option>
+
+<option value="paid">Pay Full Now</option>
+
+<!-- ✅ CONDITIONAL DEPOSIT OPTION -->
+<% if (order.arrearAmount > 0 && order.depositAmountPaid < order.depositAmount) { %>
+<option value="depositPaid">Pay Deposit</option>
+<% } %>
+
+<option value="payAfter">Pay upon Delivery</option>
+
+<option value="arrearAmount">Pay Arrears</option>
+
 </select>
+
 </div>
 
 </div>
@@ -354,7 +350,6 @@ box.classList.remove("active");
 }
 });
 
-/* AMOUNT LOGIC */
 function updateAmount(){
 
 const type = document.getElementById("paymentType").value;
