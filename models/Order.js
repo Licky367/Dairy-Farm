@@ -21,7 +21,6 @@ cost: Number,
 quantity: Number,
 image: String,
 
-// NEW: required for revenue calculation
 purchasePrice: {
 type: Number,
 default: 0
@@ -37,7 +36,6 @@ type: Number,
 default: 0
 },
 
-// computed per item
 revenue: {
 type: Number,
 default: 0
@@ -56,18 +54,18 @@ type: Number,
 default: 0
 },
 
-// ✅ NEW FIELD (what you requested)
+// ✅ TRACK ACTUAL PAID DEPOSIT
 depositAmountPaid: {
 type: Number,
 default: 0
 },
 
+// ✅ AUTO-CALCULATED FIELD
 arrearAmount: {
 type: Number,
 default: 0
 },
 
-// 🧾 TOTAL ORDER REVENUE (NEW)
 totalRevenue: {
 type: Number,
 default: 0
@@ -86,7 +84,6 @@ enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
 default: "payAfter"
 },
 
-// 🧾 CASH PAYMENT TRACKING
 manualPayment: {
 adminId: String,
 adminName: String,
@@ -98,7 +95,7 @@ default: "cash"
 paidAt: Date
 },
 
-// 🚚 DELIVERY STATUS
+// 🚚 DELIVERY
 delivered: {
 type: Boolean,
 default: false
@@ -113,7 +110,7 @@ deliveredAt: {
 type: Date
 },
 
-// 📍 DELIVERY LOCATION
+// 📍 LOCATION
 deliveryAddress: String,
 locationUrl: String,
 locationLat: Number,
@@ -126,16 +123,24 @@ timestamps: true
 );
 
 /* ========================= */
-/* REVENUE CALCULATION LOGIC */
+/* CALCULATIONS */
 /* ========================= */
 
-function calculateOrderRevenue(doc) {
+function calculateFinancials(doc) {
+
+// ✅ ARREARS AUTO-CALCULATION
+const total = Number(doc.totalAmount || 0);
+const paidDeposit = Number(doc.depositAmountPaid || 0);
+
+doc.arrearAmount = Math.max(0, total - paidDeposit);
+
+// ✅ REVENUE CALCULATION (ONLY IF DELIVERED)
 if (!doc.delivered) {
 doc.totalRevenue = 0;
 return;
 }
 
-let total = 0;
+let totalRevenue = 0;
 
 doc.items.forEach(item => {
 const cost = Number(item.cost || 0);
@@ -143,32 +148,39 @@ const purchasePrice = Number(item.purchasePrice || 0);
 const shippingCost = Number(item.shippingCost || 0);
 const qty = Number(item.quantity || 1);
 
-// revenue per item
 const itemRevenue =
 (cost - (purchasePrice + shippingCost)) * qty;
 
 item.revenue = itemRevenue;
-total += itemRevenue;
+totalRevenue += itemRevenue;
 });
 
-doc.totalRevenue = total;
+doc.totalRevenue = totalRevenue;
 }
 
 /* BEFORE SAVE */
 orderSchema.pre("save", function (next) {
-calculateOrderRevenue(this);
+calculateFinancials(this);
 next();
 });
 
 /* BEFORE UPDATE */
 orderSchema.pre("findOneAndUpdate", function (next) {
-const update = this.getUpdate() || {};
+let update = this.getUpdate() || {};
 
-if (update.delivered !== undefined || update.items !== undefined) {
-const doc = update.$set || update;
-calculateOrderRevenue(doc);
-this.setUpdate(update);
+let doc = update.$set || update;
+
+// run calculation
+calculateFinancials(doc);
+
+// push back update safely
+if (update.$set) {
+update.$set = doc;
+} else {
+update = doc;
 }
+
+this.setUpdate(update);
 
 next();
 });
