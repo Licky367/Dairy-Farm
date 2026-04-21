@@ -37,7 +37,6 @@ async function validateStock(cart) {
             );
         }
 
-        // attach latest stock (important for safety)
         item._productDoc = product;
     }
 }
@@ -64,29 +63,46 @@ async function deductStock(cart) {
 exports.createOrderAndHandlePayment = async (
     cart,
     user,
-    paymentType
+    paymentType,
+    deliveryData = {} // 👈 NEW: frontend location input
 ) => {
 
-    // 🔥 STEP 1: Validate stock FIRST (critical)
+    // STEP 1: Validate stock
     await validateStock(cart);
 
-    // 🔥 STEP 2: Calculate totals
+    // STEP 2: Totals
     const totals = exports.calculateTotals(cart);
 
-    // 🔥 STEP 3: Create order
+    // STEP 3: Create order WITH CUSTOMER + LOCATION DATA
     const order = await Order.create({
         userId: user._id,
+
+        // 👤 CUSTOMER DETAILS (NEW)
+        customerName: user.name,
+        customerEmail: user.email,
+        customerPhone: user.phone,
+
+        // 📦 CART ITEMS
         items: cart,
+
+        // 💰 FINANCIALS
         totalAmount: totals.total,
         depositAmount: totals.deposit,
         arrearAmount: totals.arrear,
-        status: paymentType
+
+        // 🕒 STATUS
+        status: paymentType,
+
+        // 📍 DELIVERY DATA (NEW)
+        deliveryAddress: deliveryData.address || null,
+        locationUrl: deliveryData.locationUrl || null,
+        locationText: deliveryData.locationText || null
     });
 
-    // 🔥 STEP 4: Deduct stock AFTER order creation
+    // STEP 4: Deduct stock
     await deductStock(cart);
 
-    // 🔥 STEP 5: Payment routing logic
+    // STEP 5: PAYMENT ROUTING (UNCHANGED)
     if (
         paymentType === "paid" ||
         paymentType === "depositPaid" ||
@@ -97,7 +113,6 @@ exports.createOrderAndHandlePayment = async (
         };
     }
 
-    // pay later
     return {
         redirectUrl: "/client?success=1"
     };
