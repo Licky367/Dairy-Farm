@@ -15,7 +15,6 @@ const orderSchema = new mongoose.Schema(
         quantity: Number,
         image: String,
 
-        // used in service calculations
         depositAmount: {
           type: Number,
           default: 0
@@ -39,30 +38,24 @@ const orderSchema = new mongoose.Schema(
       default: 0
     },
 
-    // 🕒 explicit order time (recommended)
+    // 🕒 order creation time
     orderedAt: {
       type: Date,
       default: Date.now
     },
 
-    // payment status (extended)
+    // payment status
     status: {
       type: String,
       enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
       default: "payAfter"
     },
 
-    // manual admin payment (cash settlement)
+    // 🧾 manual cash payment tracking
     manualPayment: {
       adminId: String,
       adminName: String,
 
-      /**
-       * RULE:
-       * - depositPaid → arrearAmount
-       * - payAfter → totalAmount
-       * (handled in backend)
-       */
       amount: Number,
 
       method: {
@@ -71,6 +64,21 @@ const orderSchema = new mongoose.Schema(
       },
 
       paidAt: Date
+    },
+
+    // 🚚 DELIVERY TRACKING (NEW)
+    delivered: {
+      type: Boolean,
+      default: false
+    },
+
+    deliveredBy: {
+      adminId: String,
+      adminName: String
+    },
+
+    deliveredAt: {
+      type: Date
     }
   },
   {
