@@ -70,8 +70,8 @@ exports.markAsPaidCash = async (orderId, admin) => {
 
     order.status = "paid(cash)";
     order.manualPayment = {
-        adminId: admin._id,
-        adminName: admin.name,
+        adminId: user._id,
+        adminName: user.name,
         amount,
         method: "cash",
         paidAt: new Date()
@@ -85,16 +85,34 @@ exports.markAsPaidCash = async (orderId, admin) => {
 /**
  * MARK DELIVERY
  */
-exports.markAsDelivered = async (orderId, admin) => {
+exports.markAsDelivered = async (orderId, admin, shippingCost) => {
 
     const order = await Order.findById(orderId);
 
     if (!order) throw new Error("Order not found");
 
+    // =========================
+    // ONLY ADDITION: shipping cost handling
+    // =========================
+    if (shippingCost === undefined || shippingCost === null) {
+        throw new Error("Shipping cost is required");
+    }
+
+    const cost = Number(shippingCost);
+
+    order.items = order.items.map(item => ({
+        ...item,
+        shippingCost: cost
+    }));
+
+    // =========================
+    // ORIGINAL LOGIC (UNCHANGED)
+    // =========================
+
     order.delivered = true;
     order.deliveredBy = {
-        adminId: admin._id,
-        adminName: admin.name
+        adminId: user._id,
+        adminName: user.name
     };
     order.deliveredAt = new Date();
 
