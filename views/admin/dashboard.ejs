@@ -11,8 +11,8 @@ body{background:#f4f6f8;min-height:100vh;color:#222;}
 
 .header{
 position:fixed;top:0;left:0;right:0;height:70px;
-background:#0b5d1e;color:#fff;display:flex;
-align-items:center;justify-content:center;
+background:#0b5d1e;color:#fff;
+display:flex;align-items:center;justify-content:center;
 font-size:22px;font-weight:bold;z-index:1000;
 padding:0 15px;text-align:center;
 }
@@ -27,6 +27,7 @@ box-shadow:0 4px 12px rgba(0,0,0,.05);z-index:999;
 .menu-btn{font-size:28px;cursor:pointer;color:#0b5d1e;font-weight:bold;}
 
 .profile-box{position:relative;}
+
 .profile-btn{
 background:#0b5d1e;color:#fff;border:none;
 padding:10px 16px;border-radius:30px;
@@ -44,6 +45,7 @@ display:none;overflow:hidden;
 display:block;padding:14px;text-decoration:none;
 color:#333;border-bottom:1px solid #eee;
 }
+
 .dropdown a:hover{background:#f7f7f7;}
 .profile-box.active .dropdown{display:block;}
 
@@ -52,6 +54,7 @@ position:fixed;top:0;left:-280px;width:260px;height:100%;
 background:#0b5d1e;padding:140px 20px 20px;
 transition:.35s ease;z-index:1200;overflow-y:auto;
 }
+
 .sidebar.active{left:0;}
 
 .sidebar a{
@@ -59,12 +62,14 @@ display:block;color:#fff;text-decoration:none;
 padding:14px;margin-bottom:10px;border-radius:10px;
 transition:.3s;
 }
+
 .sidebar a:hover{background:rgba(255,255,255,.15);}
 
 .overlay{
 position:fixed;top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,.35);display:none;z-index:1100;
 }
+
 .overlay.active{display:block;}
 
 .main{padding:150px 25px 80px;}
@@ -88,7 +93,7 @@ box-shadow:0 10px 25px rgba(0,0,0,.05);
 }
 
 .card h3{color:#666;margin-bottom:10px;font-size:15px;}
-.card h1{color:#0b5d1e;font-size:28px;}
+.card h1{color:#0b5d1e;font-size:30px;margin-bottom:6px;}
 .card p{font-size:13px;color:#777;}
 
 .filters{
@@ -107,13 +112,62 @@ border-radius:6px;
 border:1px solid #ccc;
 }
 
+.table-box{
+background:#fff;
+padding:25px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+overflow:auto;
+margin-bottom:25px;
+}
+
+.section-title{
+margin-bottom:18px;
+color:#222;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+min-width:650px;
+}
+
+th,td{
+padding:14px;
+text-align:left;
+border-bottom:1px solid #eee;
+}
+
+th{
+color:#555;
+font-size:14px;
+background:#fafafa;
+}
+
+td{font-size:14px;}
+
+.status{
+padding:6px 10px;
+border-radius:20px;
+font-size:12px;
+background:#e8f5e9;
+color:#0b5d1e;
+font-weight:bold;
+display:inline-block;
+}
+
+.empty{
+padding:20px;
+text-align:center;
+color:#777;
+}
+
 .footer{
 position:fixed;bottom:0;left:0;right:0;height:50px;
 background:#0b5d1e;color:#fff;
 display:flex;align-items:center;justify-content:center;
 font-size:13px;z-index:1000;
 }
-
 </style>
 </head>
 
@@ -155,15 +209,13 @@ font-size:13px;z-index:1000;
 <h2>Admin Dashboard</h2>
 <small>Welcome, <%= user ? user.name : "Administrator" %></small>
 </div>
-
 <div>
 <small><%= new Date().toDateString() %></small>
 </div>
 </div>
 
-<!-- ✅ FILTERS -->
+<!-- FILTER -->
 <form method="GET" action="/admin/dashboard" class="filters">
-
 <select name="month">
 <option value="">Month</option>
 <% for(let i=1;i<=12;i++){ %>
@@ -174,7 +226,6 @@ font-size:13px;z-index:1000;
 <input type="number" name="year" placeholder="Year" value="<%= query.year || '' %>">
 
 <button type="submit">Filter</button>
-
 </form>
 
 <div class="cards">
@@ -194,11 +245,11 @@ font-size:13px;z-index:1000;
 <div class="card">
 <h3>Total Clients</h3>
 <h1><%= totalClients || 0 %></h1>
-<p>All client accounts</p>
+<p>Customer accounts</p>
 </div>
 
 <div class="card">
-<h3>Revenue (Monthly)</h3>
+<h3>Revenue</h3>
 <h1>KES <%= revenue || 0 %></h1>
 <p>Year Total: <b>KES <%= yearRevenue || 0 %></b></p>
 </div>
@@ -214,6 +265,45 @@ font-size:13px;z-index:1000;
 <h1><%= lowStockCount || 0 %></h1>
 <p>Need restocking soon</p>
 </div>
+
+</div>
+
+<!-- ✅ RECENT ORDERS TABLE RESTORED -->
+<div class="table-box">
+
+<h3 class="section-title">Recent Orders</h3>
+
+<table>
+
+<tr>
+<th>Order ID</th>
+<th>Client</th>
+<th>Amount</th>
+<th>Status</th>
+</tr>
+
+<% if (recentOrders && recentOrders.length > 0) { %>
+
+<% recentOrders.forEach(order => { %>
+
+<tr>
+<td><%= order._id %></td>
+<td><%= order.customerName %></td>
+<td>KES <%= order.totalAmount %></td>
+<td><span class="status"><%= order.status %></span></td>
+</tr>
+
+<% }) %>
+
+<% } else { %>
+
+<tr>
+<td colspan="4" class="empty">No recent orders found</td>
+</tr>
+
+<% } %>
+
+</table>
 
 </div>
 
