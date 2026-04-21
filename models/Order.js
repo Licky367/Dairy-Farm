@@ -26,6 +26,18 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["paid", "depositPaid", "payAfter"],
       default: "payAfter"
+    },
+
+    // Manual payment tracking (cash)
+    manualPayment: {
+      adminId: String,
+      adminName: String,
+      amount: Number,
+      method: {
+        type: String,
+        default: "cash"
+      },
+      paidAt: Date
     }
   },
   {
