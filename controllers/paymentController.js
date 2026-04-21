@@ -12,6 +12,8 @@ payAfter
 arrearAmount
 */
 
+/* ================= INITIATE PAYMENT ================= */
+
 exports.initiatePayment = async (req, res) => {
 
     try {
@@ -32,8 +34,11 @@ exports.initiatePayment = async (req, res) => {
 
         /* ================= PAYMENT RULES ================= */
 
-        // FULL PAYMENT or PAY LATER PAYMENT
-        if (paymentType === "paid" || paymentType === "payAfter") {
+        // FULL PAYMENT OR PAY LATER
+        if (
+            paymentType === "paid" ||
+            paymentType === "payAfter"
+        ) {
             amount = order.totalAmount;
         }
 
@@ -41,6 +46,7 @@ exports.initiatePayment = async (req, res) => {
         else if (paymentType === "depositPaid") {
             amount = order.depositAmount;
 
+            // optional business flow (kept as you had it)
             await Order.findByIdAndUpdate(orderId, {
                 status: "payAfter"
             });
@@ -88,7 +94,7 @@ exports.initiatePayment = async (req, res) => {
 };
 
 
-/* ================= CALLBACK ================= */
+/* ================= MPESA CALLBACK ================= */
 
 exports.mpesaCallback = async (req, res) => {
 
@@ -126,7 +132,11 @@ exports.mpesaCallback = async (req, res) => {
 
             /* ================= ORDER STATUS UPDATE ================= */
 
-            if (tx.paymentType === "paid") {
+            if (
+                tx.paymentType === "paid" ||
+                tx.paymentType === "payAfter" ||
+                tx.paymentType === "arrearAmount"
+            ) {
 
                 await Order.findByIdAndUpdate(tx.orderId, {
                     status: "paid"
@@ -138,14 +148,6 @@ exports.mpesaCallback = async (req, res) => {
 
                 await Order.findByIdAndUpdate(tx.orderId, {
                     status: "depositPaid"
-                });
-
-            }
-
-            else if (tx.paymentType === "arrearAmount") {
-
-                await Order.findByIdAndUpdate(tx.orderId, {
-                    status: "paid"
                 });
 
             }
