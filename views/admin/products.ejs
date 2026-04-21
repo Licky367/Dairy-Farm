@@ -16,6 +16,7 @@ font-family:Arial,sans-serif;
 body{
 background:#f4f6f8;
 min-height:100vh;
+color:#222;
 }
 
 /* HEADER */
@@ -33,6 +34,8 @@ justify-content:center;
 font-size:22px;
 font-weight:bold;
 z-index:1000;
+text-align:center;
+padding:0 15px;
 }
 
 /* TOP MENU */
@@ -90,6 +93,10 @@ padding:14px;
 text-decoration:none;
 color:#333;
 border-bottom:1px solid #eee;
+}
+
+.dropdown a:hover{
+background:#f7f7f7;
 }
 
 .profile-box.active .dropdown{
@@ -159,7 +166,22 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 flex-wrap:wrap;
+gap:12px;
+}
+
+.summary{
+display:flex;
 gap:10px;
+flex-wrap:wrap;
+}
+
+.badge{
+background:#eef7ef;
+color:#0b5d1e;
+padding:8px 14px;
+border-radius:30px;
+font-size:13px;
+font-weight:bold;
 }
 
 /* BUTTONS */
@@ -183,10 +205,14 @@ background:#b71c1c;
 background:#1565c0;
 }
 
+.btn:hover{
+opacity:.92;
+}
+
 /* PRODUCT GRID */
 .grid{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
 gap:20px;
 }
 
@@ -195,11 +221,16 @@ background:#fff;
 padding:20px;
 border-radius:16px;
 box-shadow:0 10px 25px rgba(0,0,0,.05);
+transition:.25s ease;
+}
+
+.card:hover{
+transform:translateY(-3px);
 }
 
 .card img{
 width:100%;
-height:180px;
+height:190px;
 object-fit:cover;
 border-radius:12px;
 margin-bottom:15px;
@@ -209,20 +240,57 @@ background:#eee;
 .card h3{
 margin-bottom:10px;
 color:#222;
+font-size:20px;
 }
 
 .card p{
 margin-bottom:8px;
 color:#666;
+font-size:14px;
+line-height:1.5;
+}
+
+.stock{
+margin-top:10px;
+display:inline-block;
+padding:8px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+}
+
+.instock{
+background:#e8f5e9;
+color:#0b5d1e;
+}
+
+.lowstock{
+background:#fff3cd;
+color:#8a6d00;
+}
+
+.outstock{
+background:#fdecea;
+color:#b42318;
 }
 
 .actions{
 display:flex;
 gap:10px;
-margin-top:15px;
+margin-top:16px;
 flex-wrap:wrap;
 }
 
+.empty-box{
+background:#fff;
+padding:30px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+text-align:center;
+color:#777;
+}
+
+/* FOOTER */
 .footer{
 position:fixed;
 bottom:0;
@@ -236,6 +304,30 @@ align-items:center;
 justify-content:center;
 font-size:13px;
 z-index:1000;
+padding:0 10px;
+text-align:center;
+}
+
+@media(max-width:768px){
+
+.main{
+padding:145px 15px 80px;
+}
+
+.topbar{
+flex-direction:column;
+align-items:flex-start;
+}
+
+.header{
+font-size:18px;
+}
+
+.profile-btn{
+font-size:13px;
+padding:8px 12px;
+}
+
 }
 </style>
 </head>
@@ -276,11 +368,21 @@ z-index:1000;
 <div class="main">
 
 <div class="topbar">
+
+<div>
 <h2>Manage Products</h2>
+</div>
+
+<div class="summary">
+<span class="badge">
+Total: <%= products ? products.length : 0 %>
+</span>
 
 <a href="/admin/products/create" class="btn">
 Add Product
 </a>
+</div>
+
 </div>
 
 <div class="grid">
@@ -295,9 +397,31 @@ Add Product
 
 <h3><%= product.name %></h3>
 
+<p><b>ID:</b> <%= product.id %></p>
+
 <p><b>Category:</b> <%= product.category %></p>
 
 <p><b>Price:</b> KES <%= product.cost %></p>
+
+<p><b>Deposit:</b> <%= product.depositPercentage %>% (KES <%= product.depositAmount %>)</p>
+
+<p><b>Description:</b> <%= product.description || "No description" %></p>
+
+<% if((product.itemsAvailable || 0) === 0){ %>
+<span class="stock outstock">
+Out of Stock
+</span>
+
+<% } else if((product.itemsAvailable || 0) <= 5){ %>
+<span class="stock lowstock">
+Low Stock: <%= product.itemsAvailable %> left
+</span>
+
+<% } else { %>
+<span class="stock instock">
+In Stock: <%= product.itemsAvailable %>
+</span>
+<% } %>
 
 <div class="actions">
 
@@ -305,7 +429,7 @@ Add Product
 Edit
 </a>
 
-<form action="/admin/products/delete/<%= product.id %>" method="POST">
+<form action="/admin/products/delete/<%= product.id %>" method="POST" onsubmit="return confirm('Delete this product?')">
 <button class="btn btn-danger" type="submit">
 Delete
 </button>
@@ -319,7 +443,7 @@ Delete
 
 <% } else { %>
 
-<div class="card">
+<div class="empty-box">
 <p>No products found.</p>
 </div>
 
