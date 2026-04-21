@@ -6,21 +6,45 @@
 <title><%= product.name %></title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
 
-body{background:#f4f6f8;min-height:100vh;}
+body{
+background:#f4f6f8;
+min-height:100vh;
+color:#222;
+}
 
 /* HEADER */
 .header{
-position:fixed;top:0;left:0;right:0;height:70px;
-background:#0b5d1e;color:#fff;
-display:flex;align-items:center;justify-content:center;
-font-size:22px;font-weight:bold;z-index:1000;
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:70px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:22px;
+font-weight:bold;
+z-index:1000;
+text-align:center;
+padding:0 15px;
 }
 
 /* TOP MENU */
 .topmenu{
-position:fixed;top:70px;left:0;right:0;height:60px;
+position:fixed;
+top:70px;
+left:0;
+right:0;
+height:60px;
 background:#fff;
 display:flex;
 align-items:center;
@@ -49,7 +73,10 @@ font-size:20px;
 color:#0b5d1e;
 }
 
-.profile-box{position:relative;}
+/* PROFILE */
+.profile-box{
+position:relative;
+}
 
 .profile-btn{
 background:#0b5d1e;
@@ -81,6 +108,10 @@ color:#333;
 border-bottom:1px solid #eee;
 }
 
+.dropdown a:hover{
+background:#f7f7f7;
+}
+
 .profile-box.active .dropdown{
 display:block;
 }
@@ -99,7 +130,9 @@ z-index:1200;
 overflow-y:auto;
 }
 
-.sidebar.active{left:0;}
+.sidebar.active{
+left:0;
+}
 
 .sidebar a{
 display:block;
@@ -118,22 +151,27 @@ background:rgba(255,255,255,.15);
 /* OVERLAY */
 .overlay{
 position:fixed;
-top:0;left:0;right:0;bottom:0;
+top:0;
+left:0;
+right:0;
+bottom:0;
 background:rgba(0,0,0,.35);
 display:none;
 z-index:1100;
 }
 
-.overlay.active{display:block;}
+.overlay.active{
+display:block;
+}
 
 /* MAIN */
 .main{
 padding:140px 25px 80px;
 }
 
-/* PRODUCT CARD */
+/* CARD */
 .card{
-background:white;
+background:#fff;
 padding:25px;
 border-radius:16px;
 box-shadow:0 10px 25px rgba(0,0,0,.05);
@@ -145,27 +183,133 @@ margin:auto;
 display:flex;
 gap:30px;
 flex-wrap:wrap;
+align-items:flex-start;
 }
 
 .product-image{
-width:300px;
-border-radius:10px;
+width:320px;
+max-width:100%;
+border-radius:12px;
 object-fit:cover;
+background:#eee;
 }
 
 .product-info{
 flex:1;
+min-width:280px;
 }
 
-button{
-background:#0b5d1e;
-color:white;
-padding:12px;
+.product-info h2{
+font-size:30px;
+margin-bottom:10px;
+}
+
+.description{
+color:#666;
+line-height:1.7;
+margin-bottom:15px;
+}
+
+.price{
+font-size:28px;
+font-weight:bold;
+color:#0b5d1e;
+margin-bottom:10px;
+}
+
+.meta{
+font-size:15px;
+margin-bottom:10px;
+line-height:1.6;
+}
+
+/* STOCK BADGES */
+.stock{
+display:inline-block;
+padding:8px 14px;
+border-radius:30px;
+font-size:13px;
+font-weight:bold;
+margin:10px 0;
+}
+
+.instock{
+background:#e8f5e9;
+color:#0b5d1e;
+}
+
+.lowstock{
+background:#fff3cd;
+color:#8a6d00;
+}
+
+.outstock{
+background:#fdecea;
+color:#b42318;
+}
+
+/* QUANTITY SELECTOR */
+.qty-box{
+margin-top:15px;
+margin-bottom:10px;
+}
+
+.qty-box label{
+display:block;
+margin-bottom:8px;
+font-weight:bold;
+font-size:14px;
+}
+
+.qty-controls{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.qty-controls button{
+width:40px;
+height:40px;
 border:none;
 border-radius:8px;
-width:200px;
+background:#0b5d1e;
+color:#fff;
+font-size:20px;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.qty-controls input{
+width:70px;
+text-align:center;
+padding:10px;
+border:1px solid #ddd;
+border-radius:8px;
+font-size:16px;
+}
+
+small{
+color:gray;
+}
+
+/* BUTTON */
+button.add-btn{
+background:#0b5d1e;
+color:#fff;
+padding:13px 18px;
+border:none;
+border-radius:8px;
 cursor:pointer;
 margin-top:15px;
+font-size:15px;
+min-width:220px;
+}
+
+button:disabled{
+background:#999;
+cursor:not-allowed;
 }
 
 /* FOOTER */
@@ -182,18 +326,26 @@ align-items:center;
 justify-content:center;
 font-size:13px;
 z-index:1000;
+padding:0 10px;
+text-align:center;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+.main{padding:140px 15px 80px;}
+.product-info h2{font-size:24px;}
+.price{font-size:24px;}
+button.add-btn{width:100%;min-width:auto;}
 }
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div class="header">
 Corevester Investments Limited
 </div>
 
-<!-- TOP MENU -->
 <div class="topmenu">
 
 <div style="display:flex;align-items:center;gap:15px;">
@@ -206,13 +358,11 @@ Corevester Investments Limited
 </div>
 
 <div class="profile-box" id="profileBox">
-
 <button class="profile-btn" onclick="toggleProfile(event)">
 <%= user ? user.name : "Account" %>
 </button>
 
 <div class="dropdown">
-
 <% if(user){ %>
 <a href="/profile">My Account</a>
 <a href="/logout">Logout</a>
@@ -220,16 +370,13 @@ Corevester Investments Limited
 <a href="/login">Login</a>
 <a href="/signup">Sign Up</a>
 <% } %>
-
 </div>
 </div>
 
 </div>
 
-<!-- OVERLAY -->
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
-<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 <a href="/client">Home</a>
 <a href="/client/cart">Cart</a>
@@ -242,39 +389,90 @@ Corevester Investments Limited
 <% } %>
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
 <div class="card">
 
 <div class="product-wrapper">
 
-    <img 
-        src="<%= product.image || 'https://via.placeholder.com/300' %>" 
-        class="product-image"
-        alt="<%= product.name %>"
-    >
+<img src="<%= product.image || 'https://via.placeholder.com/300' %>"
+class="product-image"
+alt="<%= product.name %>">
 
-    <div class="product-info">
+<div class="product-info">
 
-        <h2><%= product.name %></h2>
+<h2><%= product.name %></h2>
 
-        <p style="color:gray;"><%= product.description %></p>
+<p class="description"><%= product.description %></p>
 
-        <h3>KES <%= Number(product.cost).toLocaleString() %></h3>
+<div class="price">
+KES <%= Number(product.cost).toLocaleString() %>
+</div>
 
-        <p>
-            Deposit: <b><%= product.depositPercentage %>%</b>
-            (KES <%= Number(product.depositAmount).toLocaleString() %>)
-        </p>
+<div class="meta">
+Deposit: <b><%= product.depositPercentage %>%</b>
+(KES <%= Number(product.depositAmount).toLocaleString() %>)
+</div>
 
-        <p><b>Category:</b> <%= product.category %></p>
+<div class="meta">
+<b>Category:</b> <%= product.category %>
+</div>
 
-        <form action="/cart/add/<%= product.id %>" method="POST">
-            <button type="submit">Add to Cart</button>
-        </form>
+<div class="meta">
+<b>Items Available:</b> <%= product.itemsAvailable || 0 %>
+</div>
 
-    </div>
+<% if((product.itemsAvailable || 0) === 0){ %>
+<div class="stock outstock">Out of Stock</div>
+<% } else if((product.itemsAvailable || 0) <= 5){ %>
+<div class="stock lowstock">Low Stock</div>
+<% } else { %>
+<div class="stock instock">In Stock</div>
+<% } %>
+
+<form action="/cart/add/<%= product.id %>" method="POST">
+
+<% if((product.itemsAvailable || 0) > 0){ %>
+
+<div class="qty-box">
+
+<label>Quantity</label>
+
+<div class="qty-controls">
+
+<button type="button" onclick="decreaseQty()">−</button>
+
+<input
+type="number"
+name="quantity"
+id="quantity"
+value="1"
+min="1"
+max="<%= product.itemsAvailable || 0 %>"
+readonly
+>
+
+<button type="button" onclick="increaseQty()">+</button>
+
+</div>
+
+<small>Max available: <%= product.itemsAvailable || 0 %></small>
+
+</div>
+
+<button type="submit" class="add-btn">
+Add to Cart
+</button>
+
+<% } else { %>
+
+<button type="button" class="add-btn" disabled>
+Unavailable
+</button>
+
+<% } %>
+
+</form>
 
 </div>
 
@@ -282,7 +480,8 @@ Corevester Investments Limited
 
 </div>
 
-<!-- FOOTER -->
+</div>
+
 <div class="footer">
 © <%= new Date().getFullYear() %> Corevester Investments Limited
 </div>
@@ -304,11 +503,32 @@ document.getElementById("profileBox").classList.toggle("active");
 }
 
 document.addEventListener("click", function(e){
-const box = document.getElementById("profileBox");
+const box=document.getElementById("profileBox");
 if(!box.contains(e.target)){
 box.classList.remove("active");
 }
 });
+
+/* QUANTITY LOGIC */
+const maxQty = <%= product.itemsAvailable || 0 %>;
+
+function increaseQty(){
+let qty = document.getElementById("quantity");
+let val = parseInt(qty.value);
+
+if(val < maxQty){
+qty.value = val + 1;
+}
+}
+
+function decreaseQty(){
+let qty = document.getElementById("quantity");
+let val = parseInt(qty.value);
+
+if(val > 1){
+qty.value = val - 1;
+}
+}
 </script>
 
 </body>
