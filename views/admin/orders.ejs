@@ -112,7 +112,6 @@ width:320px;text-align:center;
 
     <div class="card">
 
-      <!-- ORDER INFO -->
       <p><b>Order ID:</b> <%= order._id %></p>
 
       <p><b>Status:</b> 
@@ -137,16 +136,12 @@ width:320px;text-align:center;
         <%= new Date(order.orderedAt || order.createdAt).toLocaleString() %>
       </p>
 
-      <!-- 👤 CUSTOMER DETAILS -->
       <div class="section-title">Customer Details</div>
-
       <p><b>Name:</b> <%= order.customerName || "N/A" %></p>
       <p><b>Email:</b> <%= order.customerEmail || "N/A" %></p>
       <p><b>Phone:</b> <%= order.customerPhone || "N/A" %></p>
 
-      <!-- 📍 DELIVERY DETAILS -->
       <div class="section-title">Delivery Location</div>
-
       <p><b>Address:</b> <%= order.deliveryAddress || "N/A" %></p>
 
       <% if(order.locationUrl){ %>
@@ -160,7 +155,6 @@ width:320px;text-align:center;
         <p><b>Notes:</b> <%= order.locationText %></p>
       <% } %>
 
-      <!-- 💳 PAYMENT INFO -->
       <% if(order.manualPayment){ %>
         <div class="section-title">Payment</div>
 
@@ -171,7 +165,6 @@ width:320px;text-align:center;
         </p>
       <% } %>
 
-      <!-- ACTIONS -->
       <% if(!order.manualPayment){ %>
         <button onclick="openPayPopup('<%= order._id %>', <%= amountToPay %>)">
           Mark as Paid (Cash)
@@ -214,17 +207,28 @@ width:320px;text-align:center;
   </div>
 </div>
 
-<!-- DELIVERY POPUP -->
+<!-- DELIVERY POPUP (UPDATED) -->
 <div class="popup" id="deliveryPopup">
   <div class="popup-box">
 
     <h3>Confirm Delivery</h3>
-    <p>Mark this order as delivered?</p>
+    <p>Enter shipping cost before confirming delivery</p>
 
     <form method="POST" id="deliveryForm">
+
+      <input
+        type="number"
+        name="shippingCost"
+        placeholder="Shipping Cost (KES)"
+        min="0"
+        required
+        style="width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:8px;"
+      />
+
       <button type="submit">Yes, Confirm</button>
       <br><br>
       <button type="button" onclick="closePopups()">Cancel</button>
+
     </form>
 
   </div>
@@ -239,7 +243,8 @@ function openPayPopup(orderId, amount){
 
 function openDeliveryPopup(orderId){
   document.getElementById("deliveryPopup").style.display = "flex";
-  document.getElementById("deliveryForm").action = "/admin/orders/" + orderId + "/deliver";
+  document.getElementById("deliveryForm").action =
+    "/admin/orders/" + orderId + "/deliver";
 }
 
 function closePopups(){
