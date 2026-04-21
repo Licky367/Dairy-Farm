@@ -6,16 +6,24 @@
 <title>Create Product</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
 
 body{
 background:#f4f6f8;
 min-height:100vh;
+color:#222;
 }
 
 .header{
 position:fixed;
-top:0;left:0;right:0;
+top:0;
+left:0;
+right:0;
 height:70px;
 background:#0b5d1e;
 color:#fff;
@@ -25,11 +33,15 @@ justify-content:center;
 font-size:22px;
 font-weight:bold;
 z-index:1000;
+text-align:center;
+padding:0 15px;
 }
 
 .topmenu{
 position:fixed;
-top:70px;left:0;right:0;
+top:70px;
+left:0;
+right:0;
 height:60px;
 background:#fff;
 display:flex;
@@ -47,7 +59,9 @@ color:#0b5d1e;
 font-weight:bold;
 }
 
-.profile-box{position:relative;}
+.profile-box{
+position:relative;
+}
 
 .profile-btn{
 background:#0b5d1e;
@@ -79,6 +93,10 @@ color:#333;
 border-bottom:1px solid #eee;
 }
 
+.dropdown a:hover{
+background:#f7f7f7;
+}
+
 .profile-box.active .dropdown{
 display:block;
 }
@@ -96,7 +114,9 @@ z-index:1200;
 overflow-y:auto;
 }
 
-.sidebar.active{left:0;}
+.sidebar.active{
+left:0;
+}
 
 .sidebar a{
 display:block;
@@ -114,55 +134,123 @@ background:rgba(255,255,255,.15);
 
 .overlay{
 position:fixed;
-top:0;left:0;right:0;bottom:0;
+top:0;
+left:0;
+right:0;
+bottom:0;
 background:rgba(0,0,0,.35);
 display:none;
 z-index:1100;
 }
 
-.overlay.active{display:block;}
+.overlay.active{
+display:block;
+}
 
 .main{
 padding:150px 25px 80px;
 }
 
 .topbar{
-background:white;
+background:#fff;
 padding:20px;
 border-radius:14px;
 box-shadow:0 8px 20px rgba(0,0,0,.05);
 margin-bottom:25px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:10px;
 }
 
-.table-box{
-background:white;
+.form-box{
+background:#fff;
 padding:25px;
 border-radius:16px;
 box-shadow:0 10px 25px rgba(0,0,0,.05);
 }
 
-input,textarea{
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:15px;
+}
+
+.field{
+display:flex;
+flex-direction:column;
+gap:7px;
+}
+
+label{
+font-size:14px;
+font-weight:bold;
+color:#444;
+}
+
+input,
+textarea,
+select{
 width:100%;
 padding:14px;
 border:1px solid #ddd;
 border-radius:10px;
 outline:none;
 font-size:15px;
+background:#fff;
 }
 
-button{
+input:focus,
+textarea:focus,
+select:focus{
+border-color:#0b5d1e;
+}
+
+textarea{
+resize:vertical;
+min-height:130px;
+}
+
+.preview-box{
+margin-top:10px;
+padding:14px;
+background:#f8f8f8;
+border-radius:12px;
+font-size:14px;
+color:#444;
+line-height:1.7;
+}
+
+.actions{
+margin-top:20px;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+button,
+.btn{
 background:#0b5d1e;
-color:white;
-padding:12px;
+color:#fff;
+padding:13px 18px;
 border:none;
 border-radius:10px;
 cursor:pointer;
 font-size:15px;
+text-decoration:none;
+display:inline-block;
+}
+
+.btn-secondary{
+background:#1565c0;
 }
 
 .footer{
 position:fixed;
-bottom:0;left:0;right:0;
+bottom:0;
+left:0;
+right:0;
 height:50px;
 background:#0b5d1e;
 color:#fff;
@@ -171,6 +259,30 @@ align-items:center;
 justify-content:center;
 font-size:13px;
 z-index:1000;
+padding:0 10px;
+text-align:center;
+}
+
+@media(max-width:768px){
+
+.main{
+padding:145px 15px 80px;
+}
+
+.header{
+font-size:18px;
+}
+
+.topbar{
+flex-direction:column;
+align-items:flex-start;
+}
+
+.profile-btn{
+font-size:13px;
+padding:8px 12px;
+}
+
 }
 </style>
 </head>
@@ -214,30 +326,70 @@ z-index:1000;
 
 <div class="topbar">
 <h2>Create Product</h2>
+
+<a href="/admin/products" class="btn btn-secondary">
+Back to Products
+</a>
 </div>
 
-<div class="table-box">
+<div class="form-box">
 
 <form action="/admin/products/create" method="POST" enctype="multipart/form-data">
 
-<div style="display:grid;gap:15px;">
+<div class="grid">
 
+<div class="field">
+<label>Product ID</label>
 <input name="id" placeholder="Product ID" required>
+</div>
 
+<div class="field">
+<label>Product Name</label>
 <input name="name" placeholder="Product Name" required>
+</div>
 
+<div class="field">
+<label>Category</label>
 <input name="category" placeholder="Category" required>
+</div>
 
-<input type="number" name="cost" placeholder="Cost (KES)" required>
+<div class="field">
+<label>Cost (KES)</label>
+<input type="number" name="cost" id="cost" placeholder="Cost" required oninput="calculateDeposit()">
+</div>
 
-<input type="number" name="depositPercentage" placeholder="Deposit %" required>
+<div class="field">
+<label>Deposit Percentage</label>
+<input type="number" name="depositPercentage" id="depositPercentage" placeholder="Deposit %" required oninput="calculateDeposit()">
+</div>
 
-<textarea name="description" placeholder="Description" rows="5" required></textarea>
+<div class="field">
+<label>Items Available</label>
+<input type="number" name="itemsAvailable" placeholder="Stock Quantity" min="0" required>
+</div>
 
+<div class="field">
+<label>Product Image</label>
 <input type="file" name="image">
+</div>
 
+</div>
+
+<div class="field" style="margin-top:15px;">
+<label>Description</label>
+<textarea name="description" placeholder="Description" required></textarea>
+</div>
+
+<div class="preview-box">
+Estimated Deposit Amount: <b>KES <span id="depositAmount">0</span></b>
+</div>
+
+<div class="actions">
 <button type="submit">Create Product</button>
 
+<a href="/admin/products" class="btn btn-secondary">
+Cancel
+</a>
 </div>
 
 </form>
@@ -272,6 +424,16 @@ if(!box.contains(e.target)){
 box.classList.remove("active");
 }
 });
+
+function calculateDeposit(){
+let cost = Number(document.getElementById("cost").value) || 0;
+let percent = Number(document.getElementById("depositPercentage").value) || 0;
+
+let total = (cost * percent) / 100;
+
+document.getElementById("depositAmount").innerText =
+total.toLocaleString();
+}
 </script>
 
 </body>
