@@ -1,12 +1,14 @@
-const productService = require("../services/productService");
 const cartService = require("../services/cartService");
 
 exports.addToCart = async (req, res) => {
-    const product = await productService.getProductById(req.params.id);
+    try {
+        await cartService.addToCart(req, req.params.id);
 
-    cartService.addToCart(req, product);
+        return res.redirect("/cart");
 
-    res.redirect("/cart");
+    } catch (err) {
+        return res.status(400).send(err.message || "Failed to add to cart");
+    }
 };
 
 exports.viewCart = (req, res) => {
