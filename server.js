@@ -22,6 +22,7 @@ const clientRoutes = require("./routes/client");
 const adminRoutes = require("./routes/admin");
 const checkoutRoutes = require("./routes/checkout");
 const productRoutes = require("./routes/product");
+const cartRoutes = require("./routes/cart");
 const paymentRoutes = require("./routes/payment");
 
 /* ===============================
@@ -87,6 +88,7 @@ clientApp.use("/", clientRoutes);
 clientApp.use("/", checkoutRoutes);
 clientApp.use("/", productRoutes);
 clientApp.use("/", paymentRoutes);
+clientApp.use("/", cartRoutes);
 
 /* Redirect root */
 clientApp.get("/", (req, res) => {
