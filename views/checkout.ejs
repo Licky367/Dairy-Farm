@@ -49,18 +49,9 @@ box-shadow:0 4px 12px rgba(0,0,0,.05);
 z-index:999;
 }
 
-.menu-btn{
-font-size:28px;
-cursor:pointer;
-color:#0b5d1e;
-font-weight:bold;
-}
+.menu-btn{font-size:28px;cursor:pointer;color:#0b5d1e;}
 
-.icon-group{
-display:flex;
-align-items:center;
-gap:18px;
-}
+.icon-group{display:flex;gap:18px;}
 
 .icon-group a{
 text-decoration:none;
@@ -68,9 +59,7 @@ font-size:22px;
 color:#0b5d1e;
 }
 
-.profile-box{
-position:relative;
-}
+.profile-box{position:relative;}
 
 .profile-btn{
 background:#0b5d1e;
@@ -91,20 +80,9 @@ background:#fff;
 border-radius:12px;
 box-shadow:0 10px 25px rgba(0,0,0,.08);
 display:none;
-overflow:hidden;
 }
 
-.dropdown a{
-display:block;
-padding:14px;
-text-decoration:none;
-color:#333;
-border-bottom:1px solid #eee;
-}
-
-.profile-box.active .dropdown{
-display:block;
-}
+.profile-box.active .dropdown{display:block;}
 
 .sidebar{
 position:fixed;
@@ -113,44 +91,29 @@ left:-280px;
 width:260px;
 height:100%;
 background:#0b5d1e;
-padding:140px 20px 20px;
+padding:140px 20px;
 transition:.35s ease;
 z-index:1200;
-overflow-y:auto;
 }
 
-.sidebar.active{
-left:0;
-}
+.sidebar.active{left:0;}
 
 .sidebar a{
 display:block;
 color:#fff;
-text-decoration:none;
 padding:14px;
-margin-bottom:10px;
-border-radius:10px;
-transition:.3s;
-}
-
-.sidebar a:hover{
-background:rgba(255,255,255,.15);
+text-decoration:none;
 }
 
 .overlay{
 position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
+top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,.35);
 display:none;
 z-index:1100;
 }
 
-.overlay.active{
-display:block;
-}
+.overlay.active{display:block;}
 
 .main{
 padding:150px 25px 90px;
@@ -168,40 +131,35 @@ box-shadow:0 10px 30px rgba(0,0,0,.08);
 .item{
 display:flex;
 justify-content:space-between;
-gap:15px;
 padding:14px 0;
 border-bottom:1px solid #eee;
 }
 
-.pay-option{
-padding:14px;
-border:1px solid #ddd;
-border-radius:10px;
-margin-bottom:12px;
-cursor:pointer;
-display:block;
-}
-
-.pay-option:hover{
-border-color:#0b5d1e;
-background:#f8faf8;
+.summary{
+margin-top:20px;
+line-height:2;
 }
 
 button{
 background:#0b5d1e;
 color:#fff;
 border:none;
-padding:15px 20px;
+padding:15px;
 border-radius:10px;
 width:100%;
-font-size:16px;
 cursor:pointer;
+font-size:16px;
 }
 
-.summary{
-margin-top:18px;
-line-height:2;
-color:#333;
+button:disabled{
+background:#999;
+cursor:not-allowed;
+}
+
+.warning{
+color:#b42318;
+margin-top:12px;
+display:none;
 }
 
 .footer{
@@ -216,7 +174,6 @@ display:flex;
 align-items:center;
 justify-content:center;
 font-size:13px;
-z-index:1000;
 }
 </style>
 </head>
@@ -228,32 +185,22 @@ z-index:1000;
 <div class="topmenu">
 
 <div style="display:flex;align-items:center;gap:15px;">
-
 <div class="menu-btn" onclick="openSidebar()">☰</div>
 
 <div class="icon-group">
 <a href="/client">🏠</a>
 <a href="/cart">🛒</a>
 </div>
-
 </div>
 
 <div class="profile-box" id="profileBox">
-
 <button class="profile-btn" onclick="toggleProfile(event)">
 <%= user ? user.name : "Account" %>
 </button>
 
 <div class="dropdown">
-
-<% if(user){ %>
 <a href="/profile">My Account</a>
 <a href="/logout">Logout</a>
-<% } else { %>
-<a href="/login">Login</a>
-<a href="/signup">Sign Up</a>
-<% } %>
-
 </div>
 </div>
 
@@ -274,23 +221,25 @@ z-index:1000;
 
 <h1>Checkout</h1>
 
-<hr style="margin:18px 0;">
+<hr style="margin:15px 0;">
 
 <h3>Items</h3>
 
+<% let hasStockIssue = false; %>
+
 <% cart.forEach(item => { %>
 
-<div class="item">
+<% if(item.quantity > (item.itemsAvailable || 0)) hasStockIssue = true; %>
 
+<div class="item">
 <div>
 <b><%= item.name %></b><br>
-Qty: <%= item.quantity %>
+Qty: <%= item.quantity %> | Stock: <%= item.itemsAvailable || 0 %>
 </div>
 
 <div>
 KES <%= (item.cost * item.quantity).toLocaleString() %>
 </div>
-
 </div>
 
 <% }) %>
@@ -298,42 +247,31 @@ KES <%= (item.cost * item.quantity).toLocaleString() %>
 <div class="summary">
 
 <h3>Total: KES <%= totals.total.toLocaleString() %></h3>
-
 <p>Deposit: KES <%= totals.deposit.toLocaleString() %></p>
-
 <p>Arrear: KES <%= totals.arrear.toLocaleString() %></p>
 
 </div>
 
-<br>
+<p class="warning" id="warning">
+⚠ Some items exceed available stock. Please adjust your cart.
+</p>
 
-<form method="POST" action="/checkout">
+<form method="POST" action="/checkout" id="checkoutForm">
 
-<h3 style="margin-bottom:15px;">Select Payment Method</h3>
+<!-- 🔥 Send structured cart to backend -->
+<input type="hidden" name="cartData" value='<%= JSON.stringify(cart) %>'>
 
-<label class="pay-option">
-<input type="radio" name="paymentType" value="paid" required>
-Pay Full Now
-</label>
+<h3 style="margin:15px 0;">Payment Method</h3>
 
-<label class="pay-option">
-<input type="radio" name="paymentType" value="depositPaid">
-Pay Deposit Now
-</label>
-
-<label class="pay-option">
-<input type="radio" name="paymentType" value="payAfter">
-Pay Later
-</label>
-
-<label class="pay-option">
-<input type="radio" name="paymentType" value="arrearAmount">
-Pay Arrear Only
-</label>
+<label><input type="radio" name="paymentType" value="paid" required> Pay Full</label><br>
+<label><input type="radio" name="paymentType" value="depositPaid"> Pay Deposit</label><br>
+<label><input type="radio" name="paymentType" value="payAfter"> Pay Later</label><br>
 
 <br>
 
-<button type="submit">Proceed</button>
+<button type="submit" id="checkoutBtn">
+Proceed to Payment
+</button>
 
 </form>
 
@@ -356,17 +294,21 @@ document.getElementById("sidebar").classList.remove("active");
 document.getElementById("overlay").classList.remove("active");
 }
 
-function toggleProfile(event){
-event.stopPropagation();
+function toggleProfile(e){
+e.stopPropagation();
 document.getElementById("profileBox").classList.toggle("active");
 }
 
-document.addEventListener("click", function(e){
-const box=document.getElementById("profileBox");
-if(!box.contains(e.target)){
-box.classList.remove("active");
+/* STOCK VALIDATION */
+const hasIssue = <%= hasStockIssue ? "true" : "false" %>;
+
+const btn = document.getElementById("checkoutBtn");
+const warning = document.getElementById("warning");
+
+if(hasIssue){
+btn.disabled = true;
+warning.style.display = "block";
 }
-});
 </script>
 
 </body>
