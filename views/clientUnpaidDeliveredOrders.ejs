@@ -85,21 +85,12 @@ color:#777;
 
 <div class="container">
 
-<% 
-let totalArrears = 0;
-if (orders && orders.length > 0) {
-    orders.forEach(o => {
-        totalArrears += Number(o.arrearAmount || 0);
-    });
-}
-%>
-
 <!-- ================= TOTAL ARREARS ================= -->
 <% if (orders && orders.length > 0) { %>
 
 <div class="summary">
 
-<h3>Total Arrears: KES <%= totalArrears.toLocaleString() %></h3>
+<h3>Total Arrears: KES <%= Number(totalArrears || 0).toLocaleString() %></h3>
 
 <a href="/payment-page?type=payArrears">
     <button>Pay All Arrears</button>
