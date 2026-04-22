@@ -1,15 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
-const ordersController = require("../controllers/orders");
+const ordersController = require("../controllers/ordersController");
 
-// GET admin orders page
-router.get("/", ordersController.getAllOrders);
+/* ================= ADMIN ORDERS LIST ================= */
+router.get("/admin/orders", ordersController.getAllOrders);
 
-// MARK CASH PAYMENT
-router.post("/:id/pay", ordersController.markAsPaidCash);
+/* ================= ADMIN ORDER DETAILS ================= */
+router.get("/admin/orders/:id", ordersController.getOrderDetails);
 
-// MARK DELIVERY
-router.post("/:id/deliver", ordersController.markAsDelivered);
+/* ================= MARK AS PAID (CASH) ================= */
+router.post("/admin/orders/:id/pay", ordersController.markAsPaidCash);
+
+/* ================= MARK AS DELIVERED ================= */
+router.post("/admin/orders/:id/deliver", ordersController.markAsDelivered);
 
 module.exports = router;
