@@ -48,11 +48,23 @@ exports.processCheckout = async (req, res) => {
 
         const { paymentType } = req.body;
 
-        // ✅ correct service function
+        /* ================= ALIGNMENT FIX: DELIVERY DATA ================= */
+
+        const deliveryData = {
+            address: req.body.address || null,
+            locationUrl: req.body.locationUrl || null,
+            locationLat: req.body.locationLat || null,
+            locationLng: req.body.locationLng || null,
+            locationText: req.body.locationText || null,
+            expectedDeliveryDate: req.body.expectedDeliveryDate || null
+        };
+
+        // ✅ correct service function (now fully aligned)
         const result = await checkoutService.createOrderAndHandlePayment(
             cart,
             req.session.user,
-            paymentType
+            paymentType,
+            deliveryData
         );
 
         // clear cart after successful order
