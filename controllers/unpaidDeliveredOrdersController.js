@@ -4,8 +4,10 @@ const service = require("../services/unpaidDeliveredOrdersService");
 exports.getAdminUnpaidDeliveredOrders = async (req, res) => {
     try {
 
-        // (optional) add admin auth check if you have one
-        // if (!req.session.admin) return res.redirect("/admin/login");
+        // Optional: enforce admin auth if available
+        // if (!req.session.admin) {
+        //     return res.redirect("/admin/login");
+        // }
 
         const orders = await service.getUnpaidDeliveredOrders();
 
@@ -28,25 +30,17 @@ exports.getClientUnpaidDeliveredOrders = async (req, res) => {
             return res.redirect("/login");
         }
 
-        const orders = await service.getUnpaidDeliveredOrdersByUser(
+        /* ================= GET DATA FROM SERVICE ================= */
+        const result = await service.getUnpaidDeliveredOrdersByUser(
             req.session.user._id
         );
 
-        /* ================= 🔥 ADD TOTAL ARREARS ================= */
-        let totalArrears = 0;
-
-        const normalizedOrders = orders.map(order => {
-            const arrears = Number(order.arrearAmount || 0);
-            totalArrears += arrears;
-
-            return {
-                ...order,
-                arrearAmount: arrears
-            };
-        });
+        /* ================= SAFE FALLBACK ================= */
+        const orders = result?.orders || [];
+        const totalArrears = Number(result?.totalArrears || 0);
 
         return res.render("clientUnpaidDeliveredOrders", {
-            orders: normalizedOrders,
+            orders,
             totalArrears
         });
 
