@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Orders</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#f4f6f8;
+}
+
+.header{
+background:#0b5d1e;
+color:white;
+padding:20px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+}
+
+.container{
+max-width:1000px;
+margin:30px auto;
+padding:20px;
+}
+
+.order-card{
+background:white;
+padding:20px;
+margin-bottom:15px;
+border-radius:12px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.order-info{
+line-height:1.6;
+}
+
+.status{
+padding:5px 10px;
+border-radius:8px;
+font-size:12px;
+display:inline-block;
+}
+
+.paid{background:#d1fae5;color:#065f46;}
+.depositPaid{background:#fef3c7;color:#92400e;}
+.payAfter{background:#e0e7ff;color:#3730a3;}
+
+button{
+background:#0b5d1e;
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:8px;
+cursor:pointer;
+}
+
+button:hover{
+opacity:0.9;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">My Orders</div>
+
+<div class="container">
+
+<% if (!orders || orders.length === 0) { %>
+<p>No orders found.</p>
+<% } %>
+
+<% orders.forEach(order => { %>
+
+<div class="order-card">
+
+<div class="order-info">
+
+<strong>Order #<%= order._id %></strong><br>
+
+Total: KES <%= order.totalAmount.toLocaleString() %><br>
+
+<span class="status <%= order.status %>">
+<%= order.status %>
+</span><br>
+
+Delivered:
+<%= order.delivered ? "Yes" : "No" %>
+
+</div>
+
+<a href="/client/orders/<%= order._id %>">
+<button>Track Order</button>
+</a>
+
+</div>
+
+<% }) %>
+
+</div>
+
+</body>
+</html>
