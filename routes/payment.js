@@ -4,10 +4,10 @@ const router = express.Router();
 const paymentController = require("../controllers/paymentController");
 
 /* =========================
-   PAYMENT PAGE (NEW ADDITION)
+   PAYMENT PAGE (ALL TYPES)
 ========================= */
 router.get(
-    "/payment-page/:orderId",
+    "/payment-page",
     paymentController.paymentPage
 );
 
