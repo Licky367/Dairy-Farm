@@ -64,6 +64,14 @@ type: Number,
 default: 0
 },
 
+/* ========================= */
+/* ✅ NEW ADDITION */
+/* ========================= */
+totalArrears: {
+type: Number,
+default: 0
+},
+
 totalRevenue: {
 type: Number,
 default: 0
@@ -75,11 +83,22 @@ type: Date,
 default: Date.now
 },
 
-// 💳 PAYMENT STATUS
+/* ========================= */
+/* 💳 PAYMENT STATUS (UNCHANGED) */
+/* ========================= */
 status: {
 type: String,
 enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
 default: "payAfter"
+},
+
+/* ========================= */
+/* ✅ NEW ADDITION: PAYMENT TYPE */
+/* ========================= */
+paymentType: {
+type: String,
+enum: ["paid", "depositPaid", "payAfter", "arrearAmount", "payArrears"],
+default: null
 },
 
 manualPayment: {
@@ -116,9 +135,8 @@ locationLng: Number,
 locationText: String,
 
 /* ========================= */
-/* ✅ NEW ADDITION */
+/* ✅ EXISTING ADDITION */
 /* ========================= */
-
 expectedDeliveryDate: {
 type: Date,
 default: null
@@ -139,8 +157,10 @@ function calculateFinancials(doc) {
 const total = Number(doc.totalAmount || 0);
 const paidDeposit = Number(doc.depositAmountPaid || 0);
 
+/* ✅ EXISTING LOGIC (UNCHANGED) */
 doc.arrearAmount = Math.max(0, total - paidDeposit);
 
+/* 🚚 DELIVERY REVENUE */
 if (!doc.delivered) {
 doc.totalRevenue = 0;
 return;
