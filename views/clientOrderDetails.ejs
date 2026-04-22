@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Order Details</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#f4f6f8;
+}
+
+.header{
+background:#0b5d1e;
+color:white;
+padding:20px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+}
+
+.container{
+max-width:900px;
+margin:30px auto;
+background:white;
+padding:20px;
+border-radius:12px;
+}
+
+.section{
+margin-bottom:20px;
+}
+
+label{
+display:block;
+margin-top:10px;
+font-size:13px;
+color:#333;
+}
+
+input, textarea{
+width:100%;
+padding:10px;
+margin-top:5px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+button{
+background:#0b5d1e;
+color:white;
+border:none;
+padding:12px;
+border-radius:8px;
+cursor:pointer;
+margin-top:15px;
+width:100%;
+}
+
+.item{
+padding:10px;
+border-bottom:1px solid #eee;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">Order Details</div>
+
+<div class="container">
+
+<!-- ORDER SUMMARY -->
+<div class="section">
+<h3>Order Info</h3>
+<p>ID: <%= order._id %></p>
+<p>Status: <b><%= order.status %></b></p>
+<p>Delivered: <%= order.delivered ? "Yes" : "No" %></p>
+<p>Total: KES <%= order.totalAmount.toLocaleString() %></p>
+<p>Deposit: KES <%= order.depositAmount.toLocaleString() %></p>
+<p>Arrear: KES <%= order.arrearAmount.toLocaleString() %></p>
+</div>
+
+<!-- ITEMS -->
+<div class="section">
+<h3>Items</h3>
+
+<% order.items.forEach(item => { %>
+<div class="item">
+<b><%= item.name %></b><br>
+Qty: <%= item.quantity %><br>
+KES <%= item.cost %>
+</div>
+<% }) %>
+
+</div>
+
+<!-- DELIVERY EDITABLE SECTION -->
+<form method="POST" action="/client/orders/update/<%= order._id %>">
+
+<div class="section">
+<h3>Delivery Information (Editable)</h3>
+
+<label>Address</label>
+<textarea name="deliveryAddress"><%= order.deliveryAddress %></textarea>
+
+<label>Google Maps URL</label>
+<input type="text" name="locationUrl" value="<%= order.locationUrl %>">
+
+<label>Location Notes</label>
+<textarea name="locationText"><%= order.locationText %></textarea>
+
+<label>Expected Delivery Date</label>
+<input type="date" name="expectedDeliveryDate"
+value="<%= order.expectedDeliveryDate ? order.expectedDeliveryDate.toISOString().split('T')[0] : '' %>">
+
+</div>
+
+<button type="submit">Update Delivery Info</button>
+
+</form>
+
+</div>
+
+</body>
+</html>
