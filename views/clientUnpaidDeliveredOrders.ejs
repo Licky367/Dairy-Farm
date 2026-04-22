@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pending Payments</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f4f6f8;
+margin:0;
+}
+
+.header{
+background:#0b5d1e;
+color:#fff;
+padding:20px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+}
+
+.container{
+padding:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:#fff;
+border-radius:10px;
+overflow:hidden;
+}
+
+th, td{
+padding:12px;
+border-bottom:1px solid #eee;
+text-align:left;
+}
+
+th{
+background:#0b5d1e;
+color:white;
+}
+
+button{
+background:#0b5d1e;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.empty{
+text-align:center;
+padding:20px;
+color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">Delivered Orders Pending Payment</div>
+
+<div class="container">
+
+<% if (orders && orders.length > 0) { %>
+
+<table>
+<thead>
+<tr>
+<th>Order ID</th>
+<th>Date Delivered</th>
+<th>Amount Due (KES)</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+
+<% orders.forEach(order => { %>
+
+<tr>
+
+<td><%= order._id %></td>
+
+<td>
+<%= order.deliveredAt 
+    ? new Date(order.deliveredAt).toLocaleDateString() 
+    : "N/A" %>
+</td>
+
+<td>
+<%= Number(order.arrearAmount || 0).toLocaleString() %>
+</td>
+
+<td>
+<a href="/payment?orderId=<%= order._id %>">
+<button>Pay Now</button>
+</a>
+</td>
+
+</tr>
+
+<% }) %>
+
+</tbody>
+</table>
+
+<% } else { %>
+
+<p class="empty">No pending payments found</p>
+
+<% } %>
+
+</div>
+
+</body>
+</html>
