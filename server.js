@@ -25,6 +25,7 @@ const productRoutes = require("./routes/product");
 const cartRoutes = require("./routes/cart");
 const paymentRoutes = require("./routes/payment");
 const clientOrderRoutes = require("./routes/clientOrder");
+const unpaidRoutes = require("./routes/unpaidDeliveredOrders");
 
 /* ===============================
    VIEW ENGINE
@@ -107,6 +108,7 @@ const adminApp = express.Router();
 adminApp.use("/", authRoutes);
 adminApp.use("/", profileRoutes);
 adminApp.use("/", adminRoutes);
+adminApp.use("/", unpaidRoutes);
 
 /* Redirect root */
 adminApp.get("/", (req, res) => {
