@@ -56,8 +56,6 @@ exports.calculateTotals = (cart) => {
 
     cart.forEach(item => {
         total += item.cost * item.quantity;
-
-        // ✅ FIXED: use depositAmount (NOT depositAmountPaid)
         deposit += item.depositAmount * item.quantity;
     });
 
@@ -104,7 +102,7 @@ async function deductStock(cart) {
 }
 
 /**
- * MAIN ORDER FLOW
+ * MAIN CHECKOUT FLOW
  */
 exports.createOrderAndHandlePayment = async (
     cart,
@@ -117,55 +115,114 @@ exports.createOrderAndHandlePayment = async (
 
     const totals = exports.calculateTotals(cart);
 
-    // 📍 VALIDATE GOOGLE MAPS
+    // 📍 Validate Google Maps
     const locationCheck = normalizeGoogleMaps(deliveryData.locationUrl);
 
     if (deliveryData.locationUrl && !locationCheck.valid) {
         throw new Error("Invalid Google Maps location URL");
     }
 
-    const order = await Order.create({
-        userId: user._id,
+    /**
+     * ✅ PAY AFTER → create order immediately
+     */
+    if (paymentType === "payAfter") {
 
-        // 👤 customer snapshot
-        customerName: user.name,
-        customerEmail: user.email,
-        customerPhone: user.phone,
+        const order = await Order.create({
+            userId: user._id,
 
-        items: cart,
+            customerName: user.name,
+            customerEmail: user.email,
+            customerPhone: user.phone,
 
-        totalAmount: totals.total,
-        depositAmount: totals.deposit,
+            items: cart,
 
-        // ❌ DO NOT set arrearAmount manually anymore
-        // it will be auto-calculated in schema
-        // arrearAmount: totals.arrear,
+            totalAmount: totals.total,
+            depositAmount: totals.deposit,
 
-        status: paymentType,
+            status: paymentType,
 
-        deliveryAddress: deliveryData.address || null,
+            deliveryAddress: deliveryData.address || null,
 
-        locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
+            locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
+            locationLat: locationCheck.lat || null,
+            locationLng: locationCheck.lng || null,
 
-        locationLat: locationCheck.lat || null,
-        locationLng: locationCheck.lng || null,
+            locationText: deliveryData.locationText || null
+        });
 
-        locationText: deliveryData.locationText || null
-    });
+        await deductStock(cart);
 
-    await deductStock(cart);
+        return {
+            redirectUrl: "/client?success=1"
+        };
+    }
 
+    /**
+     * ✅ PAID / DEPOSIT → delay order creation
+     */
     if (
         paymentType === "paid" ||
         paymentType === "depositPaid" ||
         paymentType === "arrearAmount"
     ) {
+
         return {
-            redirectUrl: `/payment-page/${order._id}?type=${paymentType}`
+            redirectUrl: `/payment-page?type=${paymentType}`,
+            checkoutData: {
+                cart,
+                user,
+                totals,
+                paymentType,
+                deliveryData: {
+                    address: deliveryData.address || null,
+                    locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
+                    locationLat: locationCheck.lat || null,
+                    locationLng: locationCheck.lng || null,
+                    locationText: deliveryData.locationText || null
+                }
+            }
         };
     }
 
-    return {
-        redirectUrl: "/client?success=1"
-    };
+    throw new Error("Invalid payment type");
+};
+
+/**
+ * ✅ CREATE ORDER AFTER PAYMENT SUCCESS
+ */
+exports.createOrderAfterPayment = async (checkoutData) => {
+
+    if (!checkoutData) {
+        throw new Error("Missing checkout data");
+    }
+
+    // Optional: revalidate stock (safer in real-world cases)
+    await validateStock(checkoutData.cart);
+
+    const order = await Order.create({
+        userId: checkoutData.user._id,
+
+        customerName: checkoutData.user.name,
+        customerEmail: checkoutData.user.email,
+        customerPhone: checkoutData.user.phone,
+
+        items: checkoutData.cart,
+
+        totalAmount: checkoutData.totals.total,
+        depositAmount: checkoutData.totals.deposit,
+
+        status: checkoutData.paymentType,
+
+        deliveryAddress: checkoutData.deliveryData.address,
+
+        locationUrl: checkoutData.deliveryData.locationUrl,
+        locationLat: checkoutData.deliveryData.locationLat,
+        locationLng: checkoutData.deliveryData.locationLng,
+
+        locationText: checkoutData.deliveryData.locationText
+    });
+
+    await deductStock(checkoutData.cart);
+
+    return order;
 };
