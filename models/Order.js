@@ -54,13 +54,11 @@ type: Number,
 default: 0
 },
 
-// ✅ TRACK ACTUAL PAID DEPOSIT
 depositAmountPaid: {
 type: Number,
 default: 0
 },
 
-// ✅ AUTO-CALCULATED FIELD
 arrearAmount: {
 type: Number,
 default: 0
@@ -95,7 +93,7 @@ default: "cash"
 paidAt: Date
 },
 
-// 🚚 DELIVERY
+// 🚚 DELIVERY STATUS
 delivered: {
 type: Boolean,
 default: false
@@ -110,12 +108,22 @@ deliveredAt: {
 type: Date
 },
 
-// 📍 LOCATION
+// 📍 DELIVERY INFO
 deliveryAddress: String,
 locationUrl: String,
 locationLat: Number,
 locationLng: Number,
-locationText: String
+locationText: String,
+
+/* ========================= */
+/* ✅ NEW ADDITION */
+/* ========================= */
+
+expectedDeliveryDate: {
+type: Date,
+default: null
+}
+
 },
 {
 timestamps: true
@@ -128,13 +136,11 @@ timestamps: true
 
 function calculateFinancials(doc) {
 
-// ✅ ARREARS AUTO-CALCULATION
 const total = Number(doc.totalAmount || 0);
 const paidDeposit = Number(doc.depositAmountPaid || 0);
 
 doc.arrearAmount = Math.max(0, total - paidDeposit);
 
-// ✅ REVENUE CALCULATION (ONLY IF DELIVERED)
 if (!doc.delivered) {
 doc.totalRevenue = 0;
 return;
@@ -170,10 +176,8 @@ let update = this.getUpdate() || {};
 
 let doc = update.$set || update;
 
-// run calculation
 calculateFinancials(doc);
 
-// push back update safely
 if (update.$set) {
 update.$set = doc;
 } else {
