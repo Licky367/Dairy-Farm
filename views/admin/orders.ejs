@@ -20,7 +20,7 @@ font-size:22px;font-weight:bold;z-index:1000;
 .main{padding:110px 25px 80px;}
 
 .card{
-background:#fff;padding:20px;border-radius:14px;
+background:#fff;padding:18px;border-radius:14px;
 box-shadow:0 8px 18px rgba(0,0,0,.04);
 margin-bottom:15px;border:1px solid #eee;
 }
@@ -36,7 +36,7 @@ color:#0b5d1e;
 button{
 padding:8px 14px;border:none;border-radius:8px;
 background:#0b5d1e;color:#fff;cursor:pointer;
-margin-right:5px;
+margin-top:10px;
 }
 
 .empty{text-align:center;padding:20px;color:#777;}
@@ -55,19 +55,6 @@ flex-wrap:wrap;
 padding:8px;
 border-radius:6px;
 border:1px solid #ccc;
-}
-
-.popup{
-position:fixed;top:0;left:0;right:0;bottom:0;
-background:rgba(0,0,0,.4);
-display:none;
-align-items:center;justify-content:center;
-z-index:2000;
-}
-
-.popup-box{
-background:#fff;padding:25px;border-radius:12px;
-width:320px;text-align:center;
 }
 </style>
 </head>
@@ -104,25 +91,27 @@ width:320px;text-align:center;
 
 <% if (orders && orders.length > 0) { %>
 
-  <% orders.forEach(order => { 
-    let amountToPay = order.status === "depositPaid"
-      ? order.arrearAmount
-      : order.totalAmount;
-  %>
+  <% orders.forEach(order => { %>
 
     <div class="card">
 
       <p><b>Order ID:</b> <%= order._id %></p>
 
-      <p><b>Status:</b> 
+      <p><b>Customer:</b> <%= order.customerName || "N/A" %></p>
+
+      <p><b>Phone:</b> <%= order.customerPhone || "N/A" %></p>
+
+      <p><b>Total:</b> KES <%= order.totalAmount %></p>
+
+      <p><b>Status:</b>
         <% if(order.manualPayment){ %>
-          <span style="color:green;">paid(cash)</span>
+          <span style="color:green;">paid (cash)</span>
         <% } else { %>
           <span style="color:orange;"><%= order.status %></span>
         <% } %>
       </p>
 
-      <p><b>Delivery:</b> 
+      <p><b>Delivery Status:</b>
         <% if(order.delivered){ %>
           <span style="color:green;">Delivered</span>
         <% } else { %>
@@ -130,54 +119,29 @@ width:320px;text-align:center;
         <% } %>
       </p>
 
-      <p><b>Total:</b> KES <%= order.totalAmount %></p>
+      <!-- DELIVERY DATE -->
+      <p><b>Delivery Date:</b>
+        <%= order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "Not set" %>
+      </p>
 
-      <p><b>Ordered At:</b> 
+      <!-- GPS LOCATION -->
+      <p><b>GPS Location:</b>
+        <% if(order.locationUrl){ %>
+          <a href="<%= order.locationUrl %>" target="_blank">Open Map</a>
+        <% } else if(order.gpsLocation){ %>
+          <%= order.gpsLocation %>
+        <% } else { %>
+          N/A
+        <% } %>
+      </p>
+
+      <p><b>Ordered At:</b>
         <%= new Date(order.orderedAt || order.createdAt).toLocaleString() %>
       </p>
 
-      <div class="section-title">Customer Details</div>
-      <p><b>Name:</b> <%= order.customerName || "N/A" %></p>
-      <p><b>Email:</b> <%= order.customerEmail || "N/A" %></p>
-      <p><b>Phone:</b> <%= order.customerPhone || "N/A" %></p>
-
-      <div class="section-title">Delivery Location</div>
-      <p><b>Address:</b> <%= order.deliveryAddress || "N/A" %></p>
-
-      <% if(order.locationUrl){ %>
-        <p>
-          <b>Google Maps:</b>
-          <a href="<%= order.locationUrl %>" target="_blank">Open Map</a>
-        </p>
-      <% } %>
-
-      <% if(order.locationText){ %>
-        <p><b>Notes:</b> <%= order.locationText %></p>
-      <% } %>
-
-      <% if(order.manualPayment){ %>
-        <div class="section-title">Payment</div>
-
-        <p style="color:green;">
-          Paid by <b><%= order.manualPayment.adminName %></b><br>
-          Amount: KES <%= order.manualPayment.amount %><br>
-          Time: <%= new Date(order.manualPayment.paidAt).toLocaleString() %>
-        </p>
-      <% } %>
-
-      <% if(!order.manualPayment){ %>
-        <button onclick="openPayPopup('<%= order._id %>', <%= amountToPay %>)">
-          Mark as Paid (Cash)
-        </button>
-      <% } %>
-
-      <% if(!order.delivered){ %>
-        <button onclick="openDeliveryPopup('<%= order._id %>')">
-          Mark as Delivered
-        </button>
-      <% } else { %>
-        <p style="color:green;font-weight:bold;">Already Delivered</p>
-      <% } %>
+      <button onclick="window.location.href='/admin/orders/<%= order._id %>'">
+        View Details
+      </button>
 
     </div>
 
@@ -190,68 +154,6 @@ width:320px;text-align:center;
 <% } %>
 
 </div>
-
-<!-- PAYMENT POPUP -->
-<div class="popup" id="payPopup">
-  <div class="popup-box">
-
-    <h3>Confirm Payment</h3>
-    <p id="amountText"></p>
-
-    <form method="POST" id="payForm">
-      <button type="submit">Confirm</button>
-      <br><br>
-      <button type="button" onclick="closePopups()">Cancel</button>
-    </form>
-
-  </div>
-</div>
-
-<!-- DELIVERY POPUP (UPDATED) -->
-<div class="popup" id="deliveryPopup">
-  <div class="popup-box">
-
-    <h3>Confirm Delivery</h3>
-    <p>Enter shipping cost before confirming delivery</p>
-
-    <form method="POST" id="deliveryForm">
-
-      <input
-        type="number"
-        name="shippingCost"
-        placeholder="Shipping Cost (KES)"
-        min="0"
-        required
-        style="width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:8px;"
-      />
-
-      <button type="submit">Yes, Confirm</button>
-      <br><br>
-      <button type="button" onclick="closePopups()">Cancel</button>
-
-    </form>
-
-  </div>
-</div>
-
-<script>
-function openPayPopup(orderId, amount){
-  document.getElementById("payPopup").style.display = "flex";
-  document.getElementById("payForm").action = "/admin/orders/" + orderId + "/pay";
-  document.getElementById("amountText").innerText = "Amount: KES " + amount;
-}
-
-function openDeliveryPopup(orderId){
-  document.getElementById("deliveryPopup").style.display = "flex";
-  document.getElementById("deliveryForm").action =
-    "/admin/orders/" + orderId + "/deliver";
-}
-
-function closePopups(){
-  document.getElementById("payPopup").style.display = "none";
-  document.getElementById("deliveryPopup").style.display = "none";
-}
-</script>
 
 </body>
 </html>
