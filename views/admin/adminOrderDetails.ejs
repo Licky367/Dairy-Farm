@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Details</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f8;
+min-height:100vh;
+}
+
+.header{
+position:fixed;
+top:0;left:0;right:0;
+height:70px;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;
+font-weight:bold;
+z-index:1000;
+}
+
+.main{
+padding:100px 25px 60px;
+max-width:900px;
+margin:auto;
+}
+
+.card{
+background:#fff;
+padding:20px;
+border-radius:14px;
+box-shadow:0 8px 18px rgba(0,0,0,.05);
+margin-bottom:15px;
+border:1px solid #eee;
+}
+
+.section-title{
+font-weight:bold;
+margin:15px 0 8px;
+color:#0b5d1e;
+font-size:16px;
+}
+
+p{margin-bottom:6px;}
+
+.badge{
+padding:4px 10px;
+border-radius:20px;
+font-size:12px;
+display:inline-block;
+}
+
+.green{background:#e6f6ea;color:#0b5d1e;}
+.orange{background:#fff3e0;color:#b26a00;}
+.red{background:#fde8e8;color:#b00020;}
+
+button{
+padding:10px 14px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+background:#0b5d1e;
+color:#fff;
+margin-right:10px;
+margin-top:10px;
+}
+
+button.secondary{
+background:#444;
+}
+
+input{
+width:100%;
+padding:10px;
+border-radius:8px;
+border:1px solid #ccc;
+margin-top:8px;
+}
+
+hr{
+margin:15px 0;
+border:0;
+border-top:1px solid #eee;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+Order Details
+</div>
+
+<div class="main">
+
+<!-- BASIC INFO -->
+<div class="card">
+
+  <p><b>Order ID:</b> <%= order._id %></p>
+
+  <p><b>Status:</b>
+    <% if(order.manualPayment){ %>
+      <span class="badge green">Paid (Cash)</span>
+    <% } else { %>
+      <span class="badge orange"><%= order.status %></span>
+    <% } %>
+  </p>
+
+  <p><b>Delivery:</b>
+    <% if(order.delivered){ %>
+      <span class="badge green">Delivered</span>
+    <% } else { %>
+      <span class="badge red">Undelivered</span>
+    <% } %>
+  </p>
+
+  <p><b>Total Amount:</b> KES <%= order.totalAmount %></p>
+
+  <p><b>Arrear Amount:</b> KES <%= order.arrearAmount || 0 %></p>
+
+  <p><b>Ordered At:</b>
+    <%= new Date(order.orderedAt || order.createdAt).toLocaleString() %>
+  </p>
+
+</div>
+
+<!-- CUSTOMER -->
+<div class="card">
+
+  <div class="section-title">Customer Details</div>
+
+  <p><b>Name:</b> <%= order.customerName || "N/A" %></p>
+  <p><b>Email:</b> <%= order.customerEmail || "N/A" %></p>
+  <p><b>Phone:</b> <%= order.customerPhone || "N/A" %></p>
+
+</div>
+
+<!-- DELIVERY -->
+<div class="card">
+
+  <div class="section-title">Delivery Info</div>
+
+  <p><b>Address:</b> <%= order.deliveryAddress || "N/A" %></p>
+
+  <p><b>Delivery Date:</b>
+    <%= order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "Not set" %>
+  </p>
+
+  <p><b>GPS Location:</b></p>
+
+  <% if(order.locationUrl){ %>
+    <p>
+      <a href="<%= order.locationUrl %>" target="_blank">
+        Open Google Maps
+      </a>
+    </p>
+  <% } else if(order.gpsLocation){ %>
+    <p><%= order.gpsLocation %></p>
+  <% } else { %>
+    <p>N/A</p>
+  <% } %>
+
+  <% if(order.locationText){ %>
+    <p><b>Notes:</b> <%= order.locationText %></p>
+  <% } %>
+
+</div>
+
+<!-- PAYMENT -->
+<div class="card">
+
+  <div class="section-title">Payment</div>
+
+  <% if(order.manualPayment){ %>
+
+    <p style="color:green;">
+      Paid by <b><%= order.manualPayment.adminName %></b><br>
+      Amount: KES <%= order.manualPayment.amount %><br>
+      Time: <%= new Date(order.manualPayment.paidAt).toLocaleString() %>
+    </p>
+
+  <% } else { %>
+
+    <form method="POST" action="/admin/orders/<%= order._id %>/pay">
+      <button type="submit">
+        Mark as Paid (Cash)
+      </button>
+    </form>
+
+  <% } %>
+
+</div>
+
+<!-- DELIVERY ACTION -->
+<div class="card">
+
+  <div class="section-title">Delivery Action</div>
+
+  <% if(!order.delivered){ %>
+
+    <form method="POST" action="/admin/orders/<%= order._id %>/deliver">
+
+      <label>Shipping Cost (KES)</label>
+      <input
+        type="number"
+        name="shippingCost"
+        min="0"
+        required
+      />
+
+      <button type="submit">Confirm Delivery</button>
+    </form>
+
+  <% } else { %>
+
+    <p style="color:green;font-weight:bold;">
+      Order already delivered
+    </p>
+
+  <% } %>
+
+</div>
+
+<!-- BACK BUTTON -->
+<div class="card" style="text-align:center;">
+  <button class="secondary" onclick="window.location.href='/admin/orders'">
+    Back to Orders
+  </button>
+</div>
+
+</div>
+
+</body>
+</html>
