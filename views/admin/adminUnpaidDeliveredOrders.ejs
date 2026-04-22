@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unpaid Delivered Orders</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f4f6f8;
+margin:0;
+}
+
+.header{
+background:#0b5d1e;
+color:#fff;
+padding:20px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+}
+
+.container{
+padding:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:#fff;
+border-radius:10px;
+overflow:hidden;
+}
+
+th, td{
+padding:12px;
+border-bottom:1px solid #eee;
+text-align:left;
+}
+
+th{
+background:#0b5d1e;
+color:white;
+}
+
+a{
+color:#0b5d1e;
+text-decoration:none;
+font-weight:bold;
+}
+
+.empty{
+text-align:center;
+padding:20px;
+color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">Delivered but Unpaid Orders (Admin)</div>
+
+<div class="container">
+
+<% if (orders && orders.length > 0) { %>
+
+<table>
+<thead>
+<tr>
+<th>Order ID</th>
+<th>Customer Name</th>
+<th>Phone</th>
+<th>Arrear Amount (KES)</th>
+</tr>
+</thead>
+
+<tbody>
+
+<% orders.forEach(order => { %>
+
+<tr>
+<td>
+<a href="/admin/orders/<%= order._id %>">
+<%= order._id %>
+</a>
+</td>
+
+<td><%= order.customerName || "N/A" %></td>
+
+<td><%= order.customerPhone || "N/A" %></td>
+
+<td><%= Number(order.arrearAmount || 0).toLocaleString() %></td>
+</tr>
+
+<% }) %>
+
+</tbody>
+</table>
+
+<% } else { %>
+
+<p class="empty">No unpaid delivered orders found</p>
+
+<% } %>
+
+</div>
+
+</body>
+</html>
