@@ -4,7 +4,7 @@ const service = require("../services/unpaidDeliveredOrdersService");
 exports.getAdminUnpaidDeliveredOrders = async (req, res) => {
     try {
 
-        // Optional: enforce admin auth if available
+        // Optional admin auth
         // if (!req.session.admin) {
         //     return res.redirect("/admin/login");
         // }
@@ -30,14 +30,19 @@ exports.getClientUnpaidDeliveredOrders = async (req, res) => {
             return res.redirect("/login");
         }
 
-        /* ================= GET DATA FROM SERVICE ================= */
-        const result = await service.getUnpaidDeliveredOrdersByUser(
+        /* ================= GET ORDERS ================= */
+        const orders = await service.getUnpaidDeliveredOrdersByUser(
             req.session.user._id
         );
 
-        /* ================= SAFE FALLBACK ================= */
-        const orders = result?.orders || [];
-        const totalArrears = Number(result?.totalArrears || 0);
+        /* ================= CALCULATE TOTAL ARREARS ================= */
+        let totalArrears = 0;
+
+        if (Array.isArray(orders)) {
+            orders.forEach(order => {
+                totalArrears += Number(order.arrearAmount || 0);
+            });
+        }
 
         return res.render("clientUnpaidDeliveredOrders", {
             orders,
