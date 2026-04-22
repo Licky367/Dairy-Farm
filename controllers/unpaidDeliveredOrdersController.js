@@ -32,8 +32,22 @@ exports.getClientUnpaidDeliveredOrders = async (req, res) => {
             req.session.user._id
         );
 
+        /* ================= 🔥 ADD TOTAL ARREARS ================= */
+        let totalArrears = 0;
+
+        const normalizedOrders = orders.map(order => {
+            const arrears = Number(order.arrearAmount || 0);
+            totalArrears += arrears;
+
+            return {
+                ...order,
+                arrearAmount: arrears
+            };
+        });
+
         return res.render("clientUnpaidDeliveredOrders", {
-            orders
+            orders: normalizedOrders,
+            totalArrears
         });
 
     } catch (err) {
