@@ -121,40 +121,53 @@ KES <%= (item.cost * item.quantity).toLocaleString() %>
 ⚠ Some items exceed available stock. Please adjust your cart.
 </p>
 
-<!-- 📍 DELIVERY INFO -->
+<!-- ================= DELIVERY INFO ================= -->
+
 <h3 style="margin-top:25px;">Delivery Information</h3>
 
 <p class="note">
-Enter exact location or paste Google Maps pinned link
+Enter details or allow GPS detection for accurate delivery
 </p>
 
 <label>Delivery Address</label>
-<textarea name="address" id="address" placeholder="e.g. Kilimani, Nairobi, House No..." required></textarea>
+<textarea id="address" placeholder="e.g. Kilimani, Nairobi, House No..." required></textarea>
 
-<label>Google Maps Location URL</label>
+<label>Google Maps Location URL (optional)</label>
 <input type="text" id="locationUrl" placeholder="Paste pinned Google Maps link">
 
-<label>Location Notes (optional)</label>
-<textarea id="locationText" placeholder="Landmarks, directions, gate color, etc."></textarea>
+<label>Location Notes</label>
+<textarea id="locationText" placeholder="Landmarks, gate color, directions..."></textarea>
+
+<!-- ================= NEW: DELIVERY DATE ================= -->
+
+<label>Expected Delivery Date</label>
+<input type="date" id="expectedDeliveryDate">
+
+<!-- ================= GPS BUTTON ================= -->
+
+<button type="button" onclick="getLocation()" style="margin-bottom:10px;">
+Use My Current Location
+</button>
+
+<input type="hidden" id="lat">
+<input type="hidden" id="lng">
 
 <form method="POST" action="/checkout" id="checkoutForm">
 
-<!-- cart -->
 <input type="hidden" name="cartData" value='<%= JSON.stringify(cart) %>'>
 
-<!-- delivery payload -->
 <input type="hidden" name="deliveryData" id="deliveryData">
 
 <h3 style="margin:15px 0;">Payment Method</h3>
 
 <label><input type="radio" name="paymentType" value="paid" required> Pay Full</label><br>
 <label><input type="radio" name="paymentType" value="depositPaid"> Pay Deposit</label><br>
-<label><input type="radio" name="paymentType" value="payAfter"> Pay Later</label><br>
+<label><input type="radio" name="paymentType" value="payAfter"> Pay Upon Delivery</label><br>
 
 <br>
 
 <button type="submit" id="checkoutBtn">
-Proceed to Payment
+Order Now
 </button>
 
 </form>
@@ -174,19 +187,46 @@ btn.disabled = true;
 warning.style.display = "block";
 }
 
-/**
- * Attach delivery data before submit
- */
-document.getElementById("checkoutForm").addEventListener("submit", function(e){
+/* ================= GPS LOCATION (WHATSAPP STYLE) ================= */
 
-const deliveryData = {
-    address: document.getElementById("address").value,
-    locationUrl: document.getElementById("locationUrl").value,
-    locationText: document.getElementById("locationText").value
-};
+function getLocation() {
 
-document.getElementById("deliveryData").value = JSON.stringify(deliveryData);
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported");
+        return;
+    }
 
+    navigator.geolocation.getCurrentPosition((position) => {
+
+        document.getElementById("lat").value = position.coords.latitude;
+        document.getElementById("lng").value = position.coords.longitude;
+
+        alert("Location captured successfully");
+
+    }, () => {
+        alert("Permission denied or unavailable");
+    });
+}
+
+/* ================= FORM SUBMIT ================= */
+
+document.getElementById("checkoutForm").addEventListener("submit", function () {
+
+    const deliveryData = {
+        address: document.getElementById("address").value,
+        locationUrl: document.getElementById("locationUrl").value,
+        locationText: document.getElementById("locationText").value,
+
+        // GPS (new)
+        locationLat: document.getElementById("lat").value || null,
+        locationLng: document.getElementById("lng").value || null,
+
+        // new feature
+        expectedDeliveryDate: document.getElementById("expectedDeliveryDate").value || null
+    };
+
+    document.getElementById("deliveryData").value =
+        JSON.stringify(deliveryData);
 });
 </script>
 
