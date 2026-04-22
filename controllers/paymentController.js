@@ -3,27 +3,13 @@ const Transaction = require("../models/Transaction");
 const mpesaService = require("../services/mpesaService");
 const { formatPhone } = require("../utils/phone");
 
-/*
-paymentType can be:
-
-paid
-depositPaid
-payAfter
-arrearAmount
-*/
 
 /* ================= INITIATE PAYMENT ================= */
-
 exports.initiatePayment = async (req, res) => {
 
     try {
 
         const { orderId, paymentType } = req.body;
-
-        const order = await Order.findById(orderId);
-
-        if (!order)
-            return res.send("Order not found");
 
         const phone = formatPhone(req.session.user.phone);
 
@@ -31,52 +17,70 @@ exports.initiatePayment = async (req, res) => {
             return res.send("Invalid phone");
 
         let amount = 0;
+        let order = null;
 
-        /* ================= PAYMENT RULES ================= */
+        /* ================= BULK PAYMENT (payArrears) ================= */
+        if (paymentType === "payArrears") {
 
-        // FULL PAYMENT OR PAY LATER
-        if (
-            paymentType === "paid" ||
-            paymentType === "payAfter"
-        ) {
-            amount = order.totalAmount;
-        }
-
-        // DEPOSIT PAYMENT
-        else if (paymentType === "depositPaid") {
-            amount = order.depositAmount;
-
-            await Order.findByIdAndUpdate(orderId, {
-                status: "payAfter"
+            const orders = await Order.find({
+                userId: req.session.user._id,
+                delivered: true,
+                arrearAmount: { $gt: 0 }
             });
-        }
 
-        // ARREARS PAYMENT
-        else if (paymentType === "arrearAmount") {
-            amount = order.arrearAmount;
+            amount = orders.reduce(
+                (sum, o) => sum + Number(o.arrearAmount || 0),
+                0
+            );
 
             if (!amount || amount <= 0) {
                 return res.send("No arrears balance.");
             }
         }
 
-        // INVALID TYPE
+        /* ================= SINGLE ORDER PAYMENTS ================= */
         else {
-            return res.send("Invalid payment type");
+
+            order = await Order.findById(orderId);
+
+            if (!order)
+                return res.send("Order not found");
+
+            if (paymentType === "paid") {
+                amount = order.totalAmount;
+            }
+
+            else if (paymentType === "depositPaid") {
+                amount = order.depositAmount;
+
+                await Order.findByIdAndUpdate(orderId, {
+                    status: "payAfter"
+                });
+            }
+
+            else if (paymentType === "arrearAmount") {
+                amount = order.arrearAmount;
+
+                if (!amount || amount <= 0) {
+                    return res.send("No arrears balance.");
+                }
+            }
+
+            else {
+                return res.send("Invalid payment type");
+            }
         }
 
         /* ================= STK PUSH ================= */
-
         const response = await mpesaService.stkPush(
             phone,
             amount,
-            order._id
+            orderId || "BULK_ARREARS"
         );
 
         /* ================= SAVE TRANSACTION ================= */
-
         await Transaction.create({
-            orderId: order._id,
+            orderId: orderId || null,
             phone,
             amount,
             paymentType,
@@ -94,7 +98,6 @@ exports.initiatePayment = async (req, res) => {
 
 
 /* ================= MPESA CALLBACK ================= */
-
 exports.mpesaCallback = async (req, res) => {
 
     try {
@@ -129,44 +132,70 @@ exports.mpesaCallback = async (req, res) => {
                 tx.mpesaReceiptNumber = receipt.Value;
             }
 
-            /* ================= 🔥 ORDER CONFIRMATION ADDITION (ONLY CHANGE) ================= */
+            /* ================= SINGLE ORDER PAYMENT ================= */
+            if (tx.paymentType !== "payArrears") {
 
-            const confirmedOrder = await Order.findById(tx.orderId);
+                const order = await Order.findById(tx.orderId);
 
-            if (!confirmedOrder) {
-                return res.json({
-                    ResultCode: 0,
-                    ResultDesc: "OK"
-                });
+                if (!order) {
+                    return res.json({
+                        ResultCode: 0,
+                        ResultDesc: "OK"
+                    });
+                }
+
+                if (
+                    tx.paymentType === "paid" ||
+                    tx.paymentType === "arrearAmount"
+                ) {
+                    await Order.findByIdAndUpdate(tx.orderId, {
+                        status: "paid"
+                    });
+                }
+
+                else if (tx.paymentType === "depositPaid") {
+
+                    const depositItem = items.find(
+                        i => i.Name === "Amount"
+                    );
+
+                    const paidDeposit = depositItem
+                        ? depositItem.Value
+                        : tx.amount;
+
+                    await Order.findByIdAndUpdate(tx.orderId, {
+                        status: "depositPaid",
+                        depositAmountPaid: paidDeposit
+                    });
+                }
             }
 
-            /* ================= ORDER STATUS + PAYMENT STORAGE ================= */
+            /* ================= BULK PAYMENT (payArrears) ================= */
+            else {
 
-            if (
-                tx.paymentType === "paid" ||
-                tx.paymentType === "payAfter" ||
-                tx.paymentType === "arrearAmount"
-            ) {
-
-                await Order.findByIdAndUpdate(tx.orderId, {
-                    status: "paid"
+                const orders = await Order.find({
+                    userId: tx.userId,
+                    delivered: true,
+                    arrearAmount: { $gt: 0 }
                 });
 
-            }
+                let remaining = tx.amount;
 
-            else if (tx.paymentType === "depositPaid") {
+                for (let o of orders) {
 
-                const depositItem = items.find(
-                    i => i.Name === "Amount"
-                );
+                    if (remaining <= 0) break;
 
-                const paidDeposit = depositItem ? depositItem.Value : tx.amount;
+                    const pay = Math.min(o.arrearAmount, remaining);
 
-                await Order.findByIdAndUpdate(tx.orderId, {
-                    status: "depositPaid",
-                    depositAmountPaid: paidDeposit
-                });
+                    await Order.findByIdAndUpdate(o._id, {
+                        $inc: {
+                            depositAmountPaid: pay
+                        },
+                        status: "paid"
+                    });
 
+                    remaining -= pay;
+                }
             }
 
         } else {
@@ -175,16 +204,15 @@ exports.mpesaCallback = async (req, res) => {
 
         await tx.save();
 
-        res.json({
+        return res.json({
             ResultCode: 0,
             ResultDesc: "OK"
         });
 
     } catch (err) {
-
         console.error(err);
 
-        res.json({
+        return res.json({
             ResultCode: 0,
             ResultDesc: "OK"
         });
