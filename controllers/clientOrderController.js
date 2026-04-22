@@ -27,7 +27,7 @@ exports.getUserOrders = async (req, res) => {
 
 /**
  * GET single order details
- * (PAYMENT LINK WILL BE USED IN THIS VIEW)
+ * (FULL PAYMENT + DELIVERY CONTEXT SUPPORTED)
  */
 exports.getOrderDetails = async (req, res) => {
     try {
@@ -45,11 +45,26 @@ exports.getOrderDetails = async (req, res) => {
             return res.status(404).send("Order not found");
         }
 
-        /* ================= PAYMENT LINK FOR DETAILS PAGE ================= */
+        /* ================= PAYMENT LINK ================= */
         const paymentUrl = `/payment?orderId=${order._id}`;
 
+        /* ================= NORMALIZATION (IMPORTANT FOR VIEW LOGIC) ================= */
+
+        const normalizedOrder = {
+            ...order.toObject(),
+
+            // ensure numeric safety for EJS calculations
+            totalAmount: Number(order.totalAmount || 0),
+            depositAmount: Number(order.depositAmount || 0),
+            arrearAmount: Number(order.arrearAmount || 0),
+            depositAmountPaid: Number(order.depositAmountPaid || 0),
+
+            // ensure delivery flag consistency
+            delivered: !!order.delivered
+        };
+
         return res.render("clientOrderDetails", {
-            order,
+            order: normalizedOrder,
             paymentUrl
         });
 
