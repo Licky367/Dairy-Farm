@@ -129,6 +129,17 @@ exports.mpesaCallback = async (req, res) => {
                 tx.mpesaReceiptNumber = receipt.Value;
             }
 
+            /* ================= 🔥 ORDER CONFIRMATION ADDITION (ONLY CHANGE) ================= */
+
+            const confirmedOrder = await Order.findById(tx.orderId);
+
+            if (!confirmedOrder) {
+                return res.json({
+                    ResultCode: 0,
+                    ResultDesc: "OK"
+                });
+            }
+
             /* ================= ORDER STATUS + PAYMENT STORAGE ================= */
 
             if (
@@ -153,7 +164,7 @@ exports.mpesaCallback = async (req, res) => {
 
                 await Order.findByIdAndUpdate(tx.orderId, {
                     status: "depositPaid",
-                    depositAmountPaid: paidDeposit   // ✅ ADDED HERE
+                    depositAmountPaid: paidDeposit
                 });
 
             }
