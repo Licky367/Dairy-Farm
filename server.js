@@ -24,6 +24,7 @@ const checkoutRoutes = require("./routes/checkout");
 const productRoutes = require("./routes/product");
 const cartRoutes = require("./routes/cart");
 const paymentRoutes = require("./routes/payment");
+const clientOrderRoutes = require("./routes/clientOrder");
 
 /* ===============================
    VIEW ENGINE
@@ -89,6 +90,7 @@ clientApp.use("/", checkoutRoutes);
 clientApp.use("/", productRoutes);
 clientApp.use("/", paymentRoutes);
 clientApp.use("/", cartRoutes);
+clientApp.use("/", clientOrderRoutes);
 
 /* Redirect root */
 clientApp.get("/", (req, res) => {
