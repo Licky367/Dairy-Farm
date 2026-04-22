@@ -101,9 +101,10 @@ async function deductStock(cart) {
     }
 }
 
-/**
- * MAIN CHECKOUT FLOW
- */
+/* =========================================================
+   MAIN CHECKOUT FLOW (UPDATED WITH DELIVERY DATE + GPS)
+========================================================= */
+
 exports.createOrderAndHandlePayment = async (
     cart,
     user,
@@ -115,7 +116,8 @@ exports.createOrderAndHandlePayment = async (
 
     const totals = exports.calculateTotals(cart);
 
-    // 📍 Validate Google Maps
+    /* ================= LOCATION HANDLING ================= */
+
     const locationCheck = normalizeGoogleMaps(deliveryData.locationUrl);
 
     if (deliveryData.locationUrl && !locationCheck.valid) {
@@ -123,7 +125,9 @@ exports.createOrderAndHandlePayment = async (
     }
 
     /**
-     * ✅ PAY AFTER → create order immediately
+     * ============================================
+     * PAY AFTER → immediate order creation
+     * ============================================
      */
     if (paymentType === "payAfter") {
 
@@ -141,13 +145,15 @@ exports.createOrderAndHandlePayment = async (
 
             status: paymentType,
 
+            /* ================= DELIVERY DATA ================= */
             deliveryAddress: deliveryData.address || null,
-
             locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
-            locationLat: locationCheck.lat || null,
-            locationLng: locationCheck.lng || null,
+            locationLat: deliveryData.locationLat || locationCheck.lat || null,
+            locationLng: deliveryData.locationLng || locationCheck.lng || null,
+            locationText: deliveryData.locationText || null,
 
-            locationText: deliveryData.locationText || null
+            /* ================= NEW: DELIVERY DATE ================= */
+            expectedDeliveryDate: deliveryData.expectedDeliveryDate || null
         });
 
         await deductStock(cart);
@@ -158,7 +164,9 @@ exports.createOrderAndHandlePayment = async (
     }
 
     /**
-     * ✅ PAID / DEPOSIT → delay order creation
+     * ============================================
+     * PAID / DEPOSIT / ARREAR → wait for payment
+     * ============================================
      */
     if (
         paymentType === "paid" ||
@@ -173,12 +181,17 @@ exports.createOrderAndHandlePayment = async (
                 user,
                 totals,
                 paymentType,
+
+                /* ================= DELIVERY DATA ================= */
                 deliveryData: {
                     address: deliveryData.address || null,
                     locationUrl: locationCheck.valid ? locationCheck.normalizedUrl : null,
-                    locationLat: locationCheck.lat || null,
-                    locationLng: locationCheck.lng || null,
-                    locationText: deliveryData.locationText || null
+                    locationLat: deliveryData.locationLat || locationCheck.lat || null,
+                    locationLng: deliveryData.locationLng || locationCheck.lng || null,
+                    locationText: deliveryData.locationText || null,
+
+                    /* ================= NEW FIELD ================= */
+                    expectedDeliveryDate: deliveryData.expectedDeliveryDate || null
                 }
             }
         };
@@ -187,16 +200,16 @@ exports.createOrderAndHandlePayment = async (
     throw new Error("Invalid payment type");
 };
 
-/**
- * ✅ CREATE ORDER AFTER PAYMENT SUCCESS
- */
+/* =========================================================
+   CREATE ORDER AFTER PAYMENT SUCCESS
+========================================================= */
+
 exports.createOrderAfterPayment = async (checkoutData) => {
 
     if (!checkoutData) {
         throw new Error("Missing checkout data");
     }
 
-    // Optional: revalidate stock (safer in real-world cases)
     await validateStock(checkoutData.cart);
 
     const order = await Order.create({
@@ -213,13 +226,15 @@ exports.createOrderAfterPayment = async (checkoutData) => {
 
         status: checkoutData.paymentType,
 
-        deliveryAddress: checkoutData.deliveryData.address,
+        /* ================= DELIVERY DATA ================= */
+        deliveryAddress: checkoutData.deliveryData.address || null,
+        locationUrl: checkoutData.deliveryData.locationUrl || null,
+        locationLat: checkoutData.deliveryData.locationLat || null,
+        locationLng: checkoutData.deliveryData.locationLng || null,
+        locationText: checkoutData.deliveryData.locationText || null,
 
-        locationUrl: checkoutData.deliveryData.locationUrl,
-        locationLat: checkoutData.deliveryData.locationLat,
-        locationLng: checkoutData.deliveryData.locationLng,
-
-        locationText: checkoutData.deliveryData.locationText
+        /* ================= NEW: DELIVERY DATE ================= */
+        expectedDeliveryDate: checkoutData.deliveryData.expectedDeliveryDate || null
     });
 
     await deductStock(checkoutData.cart);
