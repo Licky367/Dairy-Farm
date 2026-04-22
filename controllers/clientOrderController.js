@@ -14,7 +14,9 @@ exports.getUserOrders = async (req, res) => {
             req.session.user._id
         );
 
-        return res.render("clientOrders", { orders });
+        return res.render("clientOrders", {
+            orders
+        });
 
     } catch (err) {
         console.error(err);
@@ -22,8 +24,10 @@ exports.getUserOrders = async (req, res) => {
     }
 };
 
+
 /**
  * GET single order details
+ * (PAYMENT LINK WILL BE USED IN THIS VIEW)
  */
 exports.getOrderDetails = async (req, res) => {
     try {
@@ -41,13 +45,20 @@ exports.getOrderDetails = async (req, res) => {
             return res.status(404).send("Order not found");
         }
 
-        return res.render("clientOrderDetails", { order });
+        /* ================= PAYMENT LINK FOR DETAILS PAGE ================= */
+        const paymentUrl = `/payment?orderId=${order._id}`;
+
+        return res.render("clientOrderDetails", {
+            order,
+            paymentUrl
+        });
 
     } catch (err) {
         console.error(err);
         return res.status(500).send("Failed to load order");
     }
 };
+
 
 /**
  * UPDATE DELIVERY INFO (SAFE FIELDS ONLY)
