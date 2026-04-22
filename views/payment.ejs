@@ -260,7 +260,6 @@ font-size:13px;
 <a href="/client">Home</a>
 <a href="/cart">Cart</a>
 <a href="/profile">Profile</a>
-<a href="/admin/payments">Payments</a>
 <a href="/logout">Logout</a>
 </div>
 
@@ -274,7 +273,12 @@ font-size:13px;
 <p><b>Order ID:</b> <%= order._id %></p>
 <p><b>Total Amount:</b> KES <%= order.totalAmount %></p>
 <p><b>Paid Deposit:</b> KES <%= order.depositAmountPaid %></p>
-<p><b>Arrears:</b> KES <%= order.arrearAmount %></p>
+<p><b>Arrears (This Order):</b> KES <%= order.arrearAmount %></p>
+
+<% if (typeof totalArrears !== "undefined") { %>
+<p><b>Total Arrears (All Orders):</b> KES <%= totalArrears %></p>
+<% } %>
+
 </div>
 
 <div class="card">
@@ -295,14 +299,19 @@ font-size:13px;
 
 <option value="paid">Pay Full Now</option>
 
-<!-- ✅ CONDITIONAL DEPOSIT OPTION -->
 <% if (order.arrearAmount > 0 && order.depositAmountPaid < order.depositAmount) { %>
 <option value="depositPaid">Pay Deposit</option>
 <% } %>
 
 <option value="payAfter">Pay upon Delivery</option>
 
-<option value="arrearAmount">Pay Arrears</option>
+<% if (order.arrearAmount > 0) { %>
+<option value="arrearAmount">Pay Arrears (This Order)</option>
+<% } %>
+
+<% if (typeof totalArrears !== "undefined" && totalArrears > 0) { %>
+<option value="payArrears">Pay All Arrears</option>
+<% } %>
 
 </select>
 
@@ -359,6 +368,7 @@ let amount = 0;
 const total = <%= order.totalAmount %>;
 const deposit = <%= order.depositAmount %>;
 const arrear = <%= order.arrearAmount %>;
+const totalArrears = <%= totalArrears || 0 %>;
 
 if(type === "paid"){
 amount = total;
@@ -371,6 +381,9 @@ amount = total;
 }
 else if(type === "arrearAmount"){
 amount = arrear;
+}
+else if(type === "payArrears"){
+amount = totalArrears;
 }
 
 document.getElementById("amountDisplay").innerText = amount;
