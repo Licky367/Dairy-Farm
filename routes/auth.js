@@ -1,6 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
+const upload = require("../middleware/upload");
+
+router.post(
+    "/signup",
+    upload.single("profileImage"), // 🔥 MUST match schema field
+    authController.signup
+);
 
 router.get("/signup", authController.signupPage);
 router.post("/signup", authController.signup);
