@@ -1,25 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Order Details</title>
-
 <style>
-body{
-margin:0;
-font-family:Arial;
-background:#f4f6f8;
-}
-
-.header{
-background:#0b5d1e;
-color:white;
-padding:20px;
-text-align:center;
-font-size:20px;
-font-weight:bold;
-}
-
 .container{
 max-width:900px;
 margin:30px auto;
@@ -28,9 +7,7 @@ padding:20px;
 border-radius:12px;
 }
 
-.section{
-margin-bottom:20px;
-}
+.section{margin-bottom:20px;}
 
 label{
 display:block;
@@ -91,25 +68,21 @@ border:1px solid #b3d1ff;
 margin-bottom:20px;
 }
 </style>
-</head>
 
-<body>
-
-<div class="header">Order Details</div>
 
 <div class="container">
-
-<!-- ================= PAYMENT LOGIC ================= -->
 
 <%
 const arrears = Number(order.arrearAmount || 0);
 const delivered = order.delivered;
 %>
 
+<!-- ================= PAYMENT LOGIC ================= -->
+
 <% if (arrears === 0 && !delivered) { %>
 
 <div class="section notice">
-    <p><b>Your order has been fully paid for. Delivery to be done soon.</b></p>
+<p><b>Your order has been fully paid for. Delivery to be done soon.</b></p>
 </div>
 
 <% } else if (arrears > 0) { %>
@@ -122,9 +95,7 @@ const delivered = order.delivered;
 
 <p><b>Amount Due:</b> KES <%= arrears.toLocaleString() %></p>
 
-<p>
-You can complete or manage payment for this order below.
-</p>
+<p>You can complete or manage payment for this order below.</p>
 
 <a href="<%= paymentUrl %>" class="pay-btn">
 Proceed to Payment
@@ -137,12 +108,14 @@ Proceed to Payment
 <!-- ORDER SUMMARY -->
 <div class="section">
 <h3>Order Info</h3>
+
 <p>ID: <%= order._id %></p>
 <p>Status: <b><%= order.status %></b></p>
 <p>Delivered: <%= order.delivered ? "Yes" : "No" %></p>
 <p>Total: KES <%= order.totalAmount.toLocaleString() %></p>
 <p>Deposit: KES <%= order.depositAmount.toLocaleString() %></p>
 <p>Arrear: KES <%= order.arrearAmount.toLocaleString() %></p>
+
 </div>
 
 <!-- ITEMS -->
@@ -159,10 +132,11 @@ KES <%= item.cost %>
 
 </div>
 
-<!-- DELIVERY EDITABLE SECTION -->
+<!-- DELIVERY FORM -->
 <form method="POST" action="/client/orders/update/<%= order._id %>">
 
 <div class="section">
+
 <h3>Delivery Information (Editable)</h3>
 
 <label>Address</label>
@@ -185,6 +159,3 @@ value="<%= order.expectedDeliveryDate ? order.expectedDeliveryDate.toISOString()
 </form>
 
 </div>
-
-</body>
-</html>
