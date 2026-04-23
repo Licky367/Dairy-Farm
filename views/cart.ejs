@@ -1,150 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Cart</title>
-
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif;
-}
-
-body{
-background:#f4f6f8;
-min-height:100vh;
-}
-
-/* HEADER */
-.header{
-position:fixed;
-top:0;
-left:0;
-right:0;
-height:70px;
-background:#0b5d1e;
-color:#fff;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:22px;
-font-weight:bold;
-z-index:1000;
-}
-
-/* TOP MENU */
-.topmenu{
-position:fixed;
-top:70px;
-left:0;
-right:0;
-height:60px;
-background:#fff;
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding:0 20px;
-box-shadow:0 4px 12px rgba(0,0,0,.05);
-z-index:999;
-}
-
-.menu-btn{
-font-size:28px;
-cursor:pointer;
-color:#0b5d1e;
-font-weight:bold;
-}
-
-.icon-group{
-display:flex;
-align-items:center;
-gap:18px;
-}
-
-.icon-group a{
-text-decoration:none;
-font-size:22px;
-color:#0b5d1e;
-}
-
-/* PROFILE */
-.profile-box{
-position:relative;
-}
-
-.profile-btn{
-background:#0b5d1e;
-color:#fff;
-border:none;
-padding:10px 16px;
-border-radius:30px;
-cursor:pointer;
-font-size:14px;
-}
-
-.dropdown{
-position:absolute;
-right:0;
-top:48px;
-width:180px;
-background:#fff;
-border-radius:12px;
-box-shadow:0 10px 25px rgba(0,0,0,.08);
-display:none;
-overflow:hidden;
-}
-
-.profile-box.active .dropdown{
-display:block;
-}
-
-/* SIDEBAR */
-.sidebar{
-position:fixed;
-top:0;
-left:-280px;
-width:260px;
-height:100%;
-background:#0b5d1e;
-padding:140px 20px 20px;
-transition:.35s ease;
-z-index:1200;
-overflow-y:auto;
-}
-
-.sidebar.active{left:0;}
-
-.sidebar a{
-display:block;
-color:#fff;
-text-decoration:none;
-padding:14px;
-margin-bottom:10px;
-border-radius:10px;
-}
-
-/* OVERLAY */
-.overlay{
-position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:rgba(0,0,0,.35);
-display:none;
-z-index:1100;
-}
-
-.overlay.active{display:block;}
-
-/* MAIN */
-.main{
-padding:150px 25px 90px;
-}
-
 .page-box{
 background:#fff;
 padding:25px;
@@ -161,9 +15,7 @@ margin-top:12px;
 border:1px solid #e6e6e6;
 }
 
-.card h3{
-margin-bottom:8px;
-}
+.card h3{margin-bottom:8px;}
 
 .price-line{
 color:#666;
@@ -179,14 +31,10 @@ margin:10px 0;
 }
 
 .qty-controls button{
-width:36px;
-height:36px;
-border:none;
-border-radius:8px;
-background:#0b5d1e;
-color:#fff;
-cursor:pointer;
-font-size:18px;
+width:36px;height:36px;
+border:none;border-radius:8px;
+background:#0b5d1e;color:#fff;
+cursor:pointer;font-size:18px;
 }
 
 .qty-controls input{
@@ -242,63 +90,8 @@ margin-top:10px;
 font-size:14px;
 display:none;
 }
-
-/* FOOTER */
-.footer{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-height:50px;
-background:#0b5d1e;
-color:#fff;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:13px;
-z-index:1000;
-}
 </style>
-</head>
 
-<body>
-
-<div class="header">Corevester Investments Limited</div>
-
-<div class="topmenu">
-
-<div style="display:flex;align-items:center;gap:15px;">
-<div class="menu-btn" onclick="openSidebar()">☰</div>
-
-<div class="icon-group">
-<a href="/client">🏠</a>
-<a href="/cart">🛒</a>
-</div>
-</div>
-
-<div class="profile-box" id="profileBox">
-<button class="profile-btn" onclick="toggleProfile(event)">
-<%= user ? user.name : "Account" %>
-</button>
-
-<div class="dropdown">
-<a href="/profile">My Account</a>
-<a href="/logout">Logout</a>
-</div>
-</div>
-
-</div>
-
-<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-
-<div class="sidebar" id="sidebar">
-<a href="/client">Home</a>
-<a href="/cart">Cart</a>
-<a href="/profile">Profile</a>
-<a href="/logout">Logout</a>
-</div>
-
-<div class="main">
 
 <div class="page-box">
 
@@ -372,27 +165,9 @@ Proceed to Checkout
 
 </div>
 
-</div>
 
-<div class="footer">
-© <%= new Date().getFullYear() %> Corevester Investments Limited
-</div>
-
+<% script = `
 <script>
-function openSidebar(){
-document.getElementById("sidebar").classList.add("active");
-document.getElementById("overlay").classList.add("active");
-}
-
-function closeSidebar(){
-document.getElementById("sidebar").classList.remove("active");
-document.getElementById("overlay").classList.remove("active");
-}
-
-function toggleProfile(e){
-e.stopPropagation();
-document.getElementById("profileBox").classList.toggle("active");
-}
 
 /* QUANTITY UPDATE */
 function changeQty(btn, change){
@@ -428,7 +203,7 @@ let hasIssue = false;
 document.querySelectorAll(".card").forEach(card => {
 
 const priceText = card.querySelector(".price-line").innerText;
-const price = parseInt(priceText.replace(/[^\d]/g,''));
+const price = parseInt(priceText.replace(/[^\\d]/g,''));
 const qty = parseInt(card.querySelector("input").value);
 const stock = parseInt(card.dataset.stock);
 
@@ -454,7 +229,6 @@ btn.disabled = false;
 }
 
 updateCart();
-</script>
 
-</body>
-</html>
+</script>
+` %>
