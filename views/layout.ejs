@@ -114,6 +114,15 @@ display:none;z-index:1100;
 padding:150px 20px 80px;
 }
 
+/* AUTH PAGE MAIN */
+.main.auth{
+padding:40px 20px;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
 /* FOOTER */
 .footer{
 position:fixed;
@@ -126,6 +135,18 @@ font-size:13px;
 </head>
 
 <body>
+
+<%
+const authPages = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password"
+];
+const isAuthPage = authPages.includes(req.path);
+%>
+
+<% if (!isAuthPage) { %>
 
 <!-- HEADER -->
 <div class="header">
@@ -189,10 +210,14 @@ Corevester Investments Limited
 
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
+<% } %>
+
 <!-- MAIN CONTENT -->
-<div class="main">
+<div class="main <%= isAuthPage ? 'auth' : '' %>">
 <%- body %>
 </div>
+
+<% if (!isAuthPage) { %>
 
 <!-- FOOTER -->
 <div class="footer">
@@ -216,6 +241,8 @@ document.addEventListener("click",()=>{
 profileBox.classList.remove("active");
 });
 </script>
+
+<% } %>
 
 </body>
 </html>
