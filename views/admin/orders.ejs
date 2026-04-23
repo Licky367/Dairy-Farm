@@ -1,24 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>All Orders</title>
+<% layout('layout', { title: 'All Orders' }) %>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-
-body{background:#f4f6f8;min-height:100vh;}
-
-.header{
-position:fixed;top:0;left:0;right:0;height:70px;
-background:#0b5d1e;color:#fff;
-display:flex;align-items:center;justify-content:center;
-font-size:22px;font-weight:bold;z-index:1000;
-}
-
-.main{padding:110px 25px 80px;}
-
 .card{
 background:#fff;padding:18px;border-radius:14px;
 box-shadow:0 8px 18px rgba(0,0,0,.04);
@@ -57,13 +39,6 @@ border-radius:6px;
 border:1px solid #ccc;
 }
 </style>
-</head>
-
-<body>
-
-<div class="header">Corevester Investments Limited</div>
-
-<div class="main">
 
 <h2 style="margin-bottom:15px;">All Orders</h2>
 
@@ -119,12 +94,10 @@ border:1px solid #ccc;
         <% } %>
       </p>
 
-      <!-- DELIVERY DATE -->
       <p><b>Delivery Date:</b>
         <%= order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "Not set" %>
       </p>
 
-      <!-- GPS LOCATION -->
       <p><b>GPS Location:</b>
         <% if(order.locationUrl){ %>
           <a href="<%= order.locationUrl %>" target="_blank">Open Map</a>
@@ -152,8 +125,3 @@ border:1px solid #ccc;
   <p class="empty">No orders found</p>
 
 <% } %>
-
-</div>
-
-</body>
-</html>
