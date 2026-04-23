@@ -1,25 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checkout</title>
-
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-
-body{background:#f4f6f8;min-height:100vh;}
-
-.header{
-position:fixed;top:0;left:0;right:0;height:70px;
-background:#0b5d1e;color:#fff;
-display:flex;align-items:center;justify-content:center;
-font-size:22px;font-weight:bold;
-z-index:1000;
-}
-
-.main{padding:150px 25px 90px;}
-
 .checkout-box{
 max-width:900px;
 margin:auto;
@@ -74,13 +53,7 @@ color:#666;
 margin-bottom:10px;
 }
 </style>
-</head>
 
-<body>
-
-<div class="header">Corevester Investments Limited</div>
-
-<div class="main">
 
 <div class="checkout-box">
 
@@ -110,19 +83,16 @@ KES <%= (item.cost * item.quantity).toLocaleString() %>
 <% }) %>
 
 <div class="summary">
-
 <h3>Total: KES <%= totals.total.toLocaleString() %></h3>
 <p>Deposit: KES <%= totals.deposit.toLocaleString() %></p>
 <p>Arrear: KES <%= totals.arrear.toLocaleString() %></p>
-
 </div>
 
 <p class="warning" id="warning">
 ⚠ Some items exceed available stock. Please adjust your cart.
 </p>
 
-<!-- ================= DELIVERY INFO ================= -->
-
+<!-- DELIVERY INFO -->
 <h3 style="margin-top:25px;">Delivery Information</h3>
 
 <p class="note">
@@ -130,20 +100,16 @@ Enter details or allow GPS detection for accurate delivery
 </p>
 
 <label>Delivery Address</label>
-<textarea id="address" placeholder="e.g. Kilimani, Nairobi, House No..." required></textarea>
+<textarea id="address" required></textarea>
 
 <label>Google Maps Location URL (optional)</label>
-<input type="text" id="locationUrl" placeholder="Paste pinned Google Maps link">
+<input type="text" id="locationUrl">
 
 <label>Location Notes</label>
-<textarea id="locationText" placeholder="Landmarks, gate color, directions..."></textarea>
-
-<!-- ================= NEW: DELIVERY DATE ================= -->
+<textarea id="locationText"></textarea>
 
 <label>Expected Delivery Date</label>
 <input type="date" id="expectedDeliveryDate">
-
-<!-- ================= GPS BUTTON ================= -->
 
 <button type="button" onclick="getLocation()" style="margin-bottom:10px;">
 Use My Current Location
@@ -155,7 +121,6 @@ Use My Current Location
 <form method="POST" action="/checkout" id="checkoutForm">
 
 <input type="hidden" name="cartData" value='<%= JSON.stringify(cart) %>'>
-
 <input type="hidden" name="deliveryData" id="deliveryData">
 
 <h3 style="margin:15px 0;">Payment Method</h3>
@@ -174,10 +139,11 @@ Order Now
 
 </div>
 
-</div>
 
+<% script = `
 <script>
-const hasIssue = <%= hasStockIssue ? "true" : "false" %>;
+
+const hasIssue = ${hasStockIssue ? "true" : "false"};
 
 const btn = document.getElementById("checkoutBtn");
 const warning = document.getElementById("warning");
@@ -187,48 +153,37 @@ btn.disabled = true;
 warning.style.display = "block";
 }
 
-/* ================= GPS LOCATION (WHATSAPP STYLE) ================= */
-
+/* GPS */
 function getLocation() {
-
     if (!navigator.geolocation) {
         alert("Geolocation not supported");
         return;
     }
 
     navigator.geolocation.getCurrentPosition((position) => {
-
         document.getElementById("lat").value = position.coords.latitude;
         document.getElementById("lng").value = position.coords.longitude;
-
         alert("Location captured successfully");
-
     }, () => {
         alert("Permission denied or unavailable");
     });
 }
 
-/* ================= FORM SUBMIT ================= */
-
+/* FORM SUBMIT */
 document.getElementById("checkoutForm").addEventListener("submit", function () {
 
     const deliveryData = {
         address: document.getElementById("address").value,
         locationUrl: document.getElementById("locationUrl").value,
         locationText: document.getElementById("locationText").value,
-
-        // GPS (new)
         locationLat: document.getElementById("lat").value || null,
         locationLng: document.getElementById("lng").value || null,
-
-        // new feature
         expectedDeliveryDate: document.getElementById("expectedDeliveryDate").value || null
     };
 
     document.getElementById("deliveryData").value =
         JSON.stringify(deliveryData);
 });
-</script>
 
-</body>
-</html>
+</script>
+` %>
