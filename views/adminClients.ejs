@@ -1,0 +1,215 @@
+<div class="main">
+
+<div class="topbar">
+  <div>
+    <h2>Clients</h2>
+    <small>Users with role = client</small>
+  </div>
+
+  <div class="badge">
+    Total: <%= clients ? clients.length : 0 %>
+  </div>
+</div>
+
+<div class="list-box">
+
+<% if (clients && clients.length > 0) { %>
+
+<ol class="client-list">
+
+<% clients.forEach(client => { %>
+
+<li onclick='openClientModal(<%- JSON.stringify(client) %>)'>
+
+  <div class="client-item">
+
+    <div class="avatar">
+      <% if(client.profileImage){ %>
+        <img src="<%= client.profileImage %>" />
+      <% } else { %>
+        <%= client.name ? client.name.charAt(0).toUpperCase() : "U" %>
+      <% } %>
+    </div>
+
+    <div class="details">
+      <h4><%= client.name %></h4>
+      <p><%= client.email %></p>
+    </div>
+
+  </div>
+
+</li>
+
+<% }) %>
+
+</ol>
+
+<% } else { %>
+
+<p class="empty">No clients found</p>
+
+<% } %>
+
+</div>
+
+</div>
+
+
+<!-- MODAL -->
+<div class="modal" id="clientModal">
+  <div class="modal-content">
+
+    <span class="close" onclick="closeClientModal()">×</span>
+
+    <h3>Client Details</h3>
+
+    <div class="modal-avatar" id="mAvatar">U</div>
+
+    <div class="info-row"><b>Name:</b> <span id="mName"></span></div>
+    <div class="info-row"><b>Email:</b> <span id="mEmail"></span></div>
+    <div class="info-row"><b>Phone:</b> <span id="mPhone"></span></div>
+    <div class="info-row"><b>User ID:</b> <span id="mId"></span></div>
+    <div class="info-row"><b>Role:</b> <span id="mRole"></span></div>
+    <div class="info-row"><b>Joined:</b> <span id="mDate"></span></div>
+
+  </div>
+</div>
+
+
+<style>
+.badge{
+background:#e8f5e9;
+color:#0b5d1e;
+padding:8px 14px;
+border-radius:20px;
+font-size:13px;
+font-weight:bold;
+}
+
+.list-box{
+background:#fff;
+padding:20px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+}
+
+.client-list{
+list-style:none;
+}
+
+.client-list li{
+padding:12px;
+border-bottom:1px solid #eee;
+cursor:pointer;
+transition:.2s;
+}
+
+.client-list li:hover{
+background:#f6f6f6;
+}
+
+.client-item{
+display:flex;
+align-items:center;
+gap:12px;
+}
+
+.avatar{
+width:42px;
+height:42px;
+border-radius:50%;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+overflow:hidden;
+}
+
+.avatar img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.details h4{
+font-size:15px;
+margin-bottom:3px;
+}
+
+.details p{
+font-size:13px;
+color:#666;
+}
+
+.modal{
+position:fixed;
+top:0;left:0;right:0;bottom:0;
+background:rgba(0,0,0,.5);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:3000;
+}
+
+.modal-content{
+background:#fff;
+width:90%;
+max-width:450px;
+padding:20px;
+border-radius:14px;
+position:relative;
+}
+
+.close{
+position:absolute;
+top:10px;
+right:15px;
+font-size:20px;
+cursor:pointer;
+}
+
+.modal-avatar{
+width:70px;
+height:70px;
+border-radius:50%;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:26px;
+font-weight:bold;
+margin:10px auto;
+}
+
+.info-row{
+margin:8px 0;
+font-size:14px;
+}
+</style>
+
+
+<script>
+function openClientModal(client){
+
+document.getElementById("mName").innerText = client.name || "";
+document.getElementById("mEmail").innerText = client.email || "";
+document.getElementById("mPhone").innerText = client.phone || "";
+document.getElementById("mId").innerText = client.id || client._id || "";
+document.getElementById("mRole").innerText = client.role || "client";
+
+document.getElementById("mDate").innerText =
+client.createdAt ? new Date(client.createdAt).toLocaleString() : "N/A";
+
+document.getElementById("mAvatar").innerText =
+client.name ? client.name.charAt(0).toUpperCase() : "U";
+
+document.getElementById("clientModal").style.display = "flex";
+}
+
+function closeClientModal(){
+document.getElementById("clientModal").style.display = "none";
+}
+</script>
