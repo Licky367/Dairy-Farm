@@ -1,25 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Pending Payments</title>
-
 <style>
-body{
-font-family:Arial;
-background:#f4f6f8;
-margin:0;
-}
-
-.header{
-background:#0b5d1e;
-color:#fff;
-padding:20px;
-text-align:center;
-font-size:20px;
-font-weight:bold;
-}
-
 .container{
 padding:20px;
 }
@@ -77,20 +56,18 @@ padding:20px;
 color:#777;
 }
 </style>
-</head>
 
-<body>
-
-<div class="header">Delivered Orders Pending Payment</div>
 
 <div class="container">
 
-<!-- ================= TOTAL ARREARS ================= -->
+<!-- TOTAL ARREARS -->
 <% if (orders && orders.length > 0) { %>
 
 <div class="summary">
 
-<h3>Total Arrears: KES <%= Number(totalArrears || 0).toLocaleString() %></h3>
+<h3>
+Total Arrears: KES <%= Number(totalArrears || 0).toLocaleString() %>
+</h3>
 
 <a href="/payment-page?type=payArrears">
     <button>Pay All Arrears</button>
@@ -100,10 +77,11 @@ color:#777;
 
 <% } %>
 
-<!-- ================= TABLE ================= -->
+<!-- TABLE -->
 <% if (orders && orders.length > 0) { %>
 
 <table>
+
 <thead>
 <tr>
 <th>Order ID</th>
@@ -142,6 +120,7 @@ color:#777;
 <% }) %>
 
 </tbody>
+
 </table>
 
 <% } else { %>
@@ -151,6 +130,3 @@ color:#777;
 <% } %>
 
 </div>
-
-</body>
-</html>
