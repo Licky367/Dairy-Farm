@@ -5,8 +5,14 @@ exports.signupPage = (req, res) => {
 };
 
 exports.signup = async (req, res) => {
-    await authService.createUser(req.body);
-    res.redirect("/login");
+    try {
+        // ✅ pass req.file for profile image support
+        await authService.createUser(req.body, req.file);
+
+        res.redirect("/login");
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
 };
 
 exports.loginPage = (req, res) => {
@@ -14,17 +20,22 @@ exports.loginPage = (req, res) => {
 };
 
 exports.login = async (req, res) => {
-    const user = await authService.loginUser(req.body);
+    try {
+        const user = await authService.loginUser(req.body);
 
-    if (!user) return res.send("Invalid Credentials");
+        if (!user) return res.send("Invalid Credentials");
 
-    req.session.user = user;
+        req.session.user = user;
 
-    // Redirect based on role
-    if (user.role === "admin") {
-        return res.redirect("/admin/dashboard");
-    } else {
-        return res.redirect("/client");
+        // Redirect based on role
+        if (user.role === "client") {
+            return res.redirect("/client");
+        } else {
+            return res.redirect("/admin/dashboard");
+        }
+
+    } catch (err) {
+        res.status(500).send("Login failed");
     }
 };
 
@@ -33,11 +44,15 @@ exports.forgotPage = (req, res) => {
 };
 
 exports.forgotPassword = async (req, res) => {
-    const user = await authService.findEmail(req.body.email);
+    try {
+        const user = await authService.findEmail(req.body.email);
 
-    if (!user) return res.send("Email not found");
+        if (!user) return res.send("Email not found");
 
-    res.redirect(`/reset-password/${user._id}`);
+        res.redirect(`/reset-password/${user._id}`);
+    } catch (err) {
+        res.status(500).send("Something went wrong");
+    }
 };
 
 exports.resetPage = (req, res) => {
@@ -45,8 +60,12 @@ exports.resetPage = (req, res) => {
 };
 
 exports.resetPassword = async (req, res) => {
-    await authService.resetPassword(req.params.id, req.body.password);
-    res.redirect("/login");
+    try {
+        await authService.resetPassword(req.params.id, req.body.password);
+        res.redirect("/login");
+    } catch (err) {
+        res.status(500).send("Password reset failed");
+    }
 };
 
 exports.logout = (req, res) => {
