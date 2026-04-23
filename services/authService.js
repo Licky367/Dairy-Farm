@@ -3,29 +3,34 @@ const bcrypt = require("bcrypt");
 
 /**
  * Create new user (CLIENT ONLY)
- * @param {Object} data - form data (name, email, phone, password, profileImage optional)
+ * @param {Object} data - form data
  * @param {Object} file - multer file (optional)
  */
 exports.createUser = async (data, file = null) => {
-    // Optional: block role injection attempts
+    // 🔒 Prevent role injection
     if (data.role) {
         throw new Error("Role assignment not allowed");
     }
 
+    // 🔐 Hash password
     const hashed = await bcrypt.hash(data.password, 10);
+
+    // 📱 Normalize phone (frontend sends e.g. "712 345 678")
+    const rawPhone = data.phone.replace(/\s/g, ""); // remove spaces
+    const fullPhone = "+254" + rawPhone;
 
     return await User.create({
         name: data.name,
         email: data.email,
-        phone: data.phone,
+        phone: fullPhone,
         password: hashed,
 
-        // ✅ Profile Image (matches schema field name)
+        // 🖼️ Profile image handling
         profileImage: file
-            ? file.filename              // from multer upload
-            : (data.profileImage || ""),// from form (URL or empty)
+            ? file.filename
+            : (data.profileImage || ""),
 
-        // 🔒 FORCE ROLE
+        // 🔒 Force role
         role: "client"
     });
 };
