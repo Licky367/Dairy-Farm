@@ -1,16 +1,25 @@
 <% layout('layout', { title: 'Signup', authPage: true }) %>
 
-<div style="max-width:420px;margin:120px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.08);">
+<div class="card">
 
 <h2 style="margin-bottom:15px;color:#0b5d1e;">Signup</h2>
 
-<form method="POST" enctype="multipart/form-data">
+<!-- AVATAR -->
+<div class="avatar-wrapper">
+<img id="avatarPreview"
+class="avatar"
+src="https://ui-avatars.com/api/?name=User&background=0b5d1e&color=fff&size=200"
+alt="Avatar">
+</div>
+
+<form id="signupForm" method="POST" action="/signup" enctype="multipart/form-data">
+
+<input type="file" name="profileImage" id="fileInput" accept="image/*">
 
 <input
 name="name"
-placeholder="Name"
+placeholder="Enter your personal or Company Name"
 required
-style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;"
 >
 
 <input
@@ -18,43 +27,139 @@ name="email"
 type="email"
 placeholder="Email"
 required
-style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;"
 >
 
+<!-- PHONE -->
+<div class="phone-group">
+<div class="country-code">🇰🇪 +254</div>
 <input
 name="phone"
-placeholder="Phone"
+id="phone"
+placeholder="7xxxxxxxx or 1xxxxxxxx"
 required
-style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;"
 >
+</div>
 
-<!-- ✅ Profile Image Upload -->
-<input
-type="file"
-name="profileImage"
-accept="image/*"
-style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;background:#fff;"
->
-
+<!-- PASSWORD -->
+<div class="password-wrapper">
 <input
 type="password"
 name="password"
-placeholder="Password"
+id="password"
+placeholder="Password (min 6 characters)"
 required
-style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:15px;"
 >
+<span class="toggle-pass" id="togglePass">Show</span>
+</div>
 
-<button
-type="submit"
-style="width:100%;padding:12px;background:#0b5d1e;color:#fff;border:none;border-radius:8px;cursor:pointer;"
+<!-- CONFIRM PASSWORD -->
+<div class="password-wrapper">
+<input
+type="password"
+id="confirmPassword"
+placeholder="Confirm Password"
+required
 >
-Signup
-</button>
+<span class="toggle-pass" id="toggleConfirm">Show</span>
+</div>
+
+<div class="error" id="errorBox"></div>
+
+<button type="submit">Signup</button>
 
 </form>
 
-<div style="margin-top:15px;font-size:14px;">
+<div class="link">
 <a href="/login">Login</a>
 </div>
 
 </div>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const avatar = document.getElementById("avatarPreview");
+
+const form = document.getElementById("signupForm");
+const errorBox = document.getElementById("errorBox");
+
+const password = document.getElementById("password");
+const confirmPassword = document.getElementById("confirmPassword");
+const phone = document.getElementById("phone");
+
+const togglePass = document.getElementById("togglePass");
+const toggleConfirm = document.getElementById("toggleConfirm");
+
+/* AVATAR CLICK */
+avatar.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => avatar.src = e.target.result;
+    reader.readAsDataURL(file);
+});
+
+/* SHOW/HIDE PASSWORDS */
+togglePass.addEventListener("click", () => {
+    const hidden = password.type === "password";
+    password.type = hidden ? "text" : "password";
+    togglePass.textContent = hidden ? "Hide" : "Show";
+});
+
+toggleConfirm.addEventListener("click", () => {
+    const hidden = confirmPassword.type === "password";
+    confirmPassword.type = hidden ? "text" : "password";
+    toggleConfirm.textContent = hidden ? "Hide" : "Show";
+});
+
+/* AUTO FORMAT PHONE */
+phone.addEventListener("input", () => {
+    let value = phone.value.replace(/\D/g, "");
+
+    if (value.startsWith("254")) value = value.slice(3);
+    if (value.startsWith("0")) value = value.slice(1);
+
+    value = value.slice(0, 9);
+
+    let formatted = "";
+    if (value.length > 0) formatted += value.substring(0, 3);
+    if (value.length > 3) formatted += " " + value.substring(3, 6);
+    if (value.length > 6) formatted += " " + value.substring(6, 9);
+
+    phone.value = formatted;
+});
+
+/* VALIDATION */
+form.addEventListener("submit", (e) => {
+    errorBox.style.display = "none";
+
+    const rawPhone = phone.value.replace(/\s/g, "");
+
+    if (/^(0|254|\+254)/.test(rawPhone)) {
+        e.preventDefault();
+        return showError("Do not include 0 or country code. Start with 7 or 1.");
+    }
+
+    if (!/^[71]\d{8}$/.test(rawPhone)) {
+        e.preventDefault();
+        return showError("Enter a valid Kenyan number (7xxxxxxxx or 1xxxxxxxx).");
+    }
+
+    if (password.value.length < 6) {
+        e.preventDefault();
+        return showError("Password must be at least 6 characters.");
+    }
+
+    if (password.value !== confirmPassword.value) {
+        e.preventDefault();
+        return showError("Passwords do not match.");
+    }
+});
+
+function showError(msg){
+    errorBox.textContent = msg;
+    errorBox.style.display = "block";
+}
+</script>
