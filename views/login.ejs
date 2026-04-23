@@ -1,14 +1,39 @@
-<%- include("partials/authLayout") %>
+<% layout('layout', { title: 'Login', authPage: true }) %>
 
-<h2>Login</h2>
+<div style="max-width:420px;margin:120px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.08);">
+
+<h2 style="margin-bottom:15px;color:#0b5d1e;">Login</h2>
 
 <form method="POST">
-<input name="email" placeholder="Email">
-<input type="password" name="password" placeholder="Password">
-<button>Login</button>
+
+<input
+name="email"
+type="email"
+placeholder="Email"
+required
+style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;"
+>
+
+<input
+type="password"
+name="password"
+placeholder="Password"
+required
+style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:15px;"
+>
+
+<button
+type="submit"
+style="width:100%;padding:12px;background:#0b5d1e;color:#fff;border:none;border-radius:8px;cursor:pointer;"
+>
+Login
+</button>
+
 </form>
 
+<div style="margin-top:15px;font-size:14px;">
 <a href="/signup">Signup</a><br>
 <a href="/forgot-password">Forgot Password?</a>
+</div>
 
-</div></body></html>
+</div>
