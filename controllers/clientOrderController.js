@@ -46,7 +46,7 @@ exports.getOrderDetails = async (req, res) => {
         }
 
         /* ================= PAYMENT LINK ================= */
-        const paymentUrl = `/payment?orderId=${order._id}`;
+        const paymentUrl = `/payment-page?orderId=${order._id}`;
 
         /* ================= NORMALIZATION (IMPORTANT FOR VIEW LOGIC) ================= */
 
