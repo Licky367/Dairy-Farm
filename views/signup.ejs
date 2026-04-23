@@ -4,7 +4,7 @@
 
 <h2 style="margin-bottom:15px;color:#0b5d1e;">Signup</h2>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 
 <input
 name="name"
@@ -26,6 +26,14 @@ name="phone"
 placeholder="Phone"
 required
 style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;"
+>
+
+<!-- ✅ Profile Image Upload -->
+<input
+type="file"
+name="profileImage"
+accept="image/*"
+style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;background:#fff;"
 >
 
 <input
