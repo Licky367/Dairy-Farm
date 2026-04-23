@@ -1,7 +1,14 @@
-<%- include("partials/authLayout") %>
+<% layout('layout', { title: 'Logout', authPage: true }) %>
 
-<h2>You have logged out</h2>
+<div style="max-width:420px;margin:120px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.08);text-align:center;">
 
-<a href="/login">Login Again</a>
+<h2 style="margin-bottom:15px;color:#0b5d1e;">You have logged out</h2>
 
-</div></body></html>
+<a
+href="/login"
+style="display:inline-block;margin-top:10px;padding:12px 18px;background:#0b5d1e;color:#fff;border-radius:8px;text-decoration:none;"
+>
+Login Again
+</a>
+
+</div>
