@@ -1,0 +1,62 @@
+<style>
+.container{
+max-width:500px;
+margin:40px auto;
+padding:20px;
+}
+
+.card{
+background:#fff;
+border-radius:14px;
+padding:20px;
+box-shadow:0 6px 18px rgba(0,0,0,0.06);
+border:1px solid #eee;
+}
+
+h2{
+margin-bottom:20px;
+color:#0b5d1e;
+text-align:center;
+}
+
+input{
+width:100%;
+padding:12px;
+margin-bottom:15px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:12px;
+background:#0b5d1e;
+color:#fff;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+}
+</style>
+
+<div class="container">
+
+<div class="card">
+
+<h2>Create New Category</h2>
+
+<form method="POST" action="/category/create">
+
+<input type="text" name="category" placeholder="Name of Category" required>
+
+<input type="number" name="packageUnits" placeholder="Quantity of Units" required>
+
+<input type="number" name="BP" placeholder="Price of the Package" required>
+
+<button type="submit">Create Category</button>
+
+</form>
+
+</div>
+
+</div>
