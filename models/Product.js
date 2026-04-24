@@ -53,6 +53,28 @@ min: 0,
 default: 0
 },
 
+/* ================= NEW FIELDS ================= */
+
+productUnits: {
+type: Number,
+default: 0,
+min: 0
+},
+
+packageUnits: {
+type: Number,
+default: 0,
+min: 0
+},
+
+BP: {
+type: Number,
+default: 0,
+min: 0
+},
+
+/* ============================================ */
+
 description: {
 type: String,
 required: true,
@@ -95,6 +117,7 @@ productSchema.pre("findOneAndUpdate", function(next){
 
 const update = this.getUpdate();
 
+/* deposit recalculation */
 if(update.cost !== undefined ||
 update.depositPercentage !== undefined){
 
@@ -108,6 +131,7 @@ update.depositAmount =
 (cost * percentage) / 100;
 }
 
+/* stock status update */
 if(update.itemsAvailable !== undefined){
 
 const qty =
