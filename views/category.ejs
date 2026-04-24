@@ -104,11 +104,11 @@ color:#fff;
 <div class="info">Available Units: <strong><%= cat.currentUnits %></strong></div>
 <div class="info">Marketed Units: <strong><%= cat.stockedUnits %></strong></div>
 
-<% if(cat.currentUnits <= (0.3 * cat.stockedUnits)) { %>
+<% if(cat.stockedUnits <= (0.2 * cat.totalUnits)) { %>
 
 <div class="warning">
-Marketed Products for this category are almost sold out completely.
-<span onclick="toggleRestock('<%= cat.category %>')">RESTOCK NOW</span>
+Products under this category are almost sold out completely.
+<span onclick="toggleRestock('<%= cat.category %>')">RESTOCK NOW</span> then go to the Product Creation Page or update existing products.
 </div>
 
 <form class="restock-form" id="form-<%= cat.category %>" method="POST" action="/category/restock">
@@ -117,7 +117,7 @@ Marketed Products for this category are almost sold out completely.
 
 <input type="number" name="packageUnits" placeholder="Enter units bought" required>
 
-<input type="number" name="BP" placeholder="Enter the package price" required>
+<input type="number" name="BP" placeholder="Enter the package buying" required>
 
 <button type="submit" class="btn">Update</button>
 
