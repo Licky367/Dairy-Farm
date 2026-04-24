@@ -19,12 +19,28 @@ color:#0b5d1e;
 text-align:center;
 }
 
+.field{
+margin-bottom:15px;
+}
+
+label{
+display:block;
+font-size:14px;
+font-weight:bold;
+margin-bottom:5px;
+color:#444;
+}
+
 input{
 width:100%;
 padding:12px;
-margin-bottom:15px;
 border-radius:8px;
 border:1px solid #ccc;
+}
+
+small{
+font-size:12px;
+color:#777;
 }
 
 button{
@@ -47,11 +63,39 @@ cursor:pointer;
 
 <form method="POST" action="/category/create">
 
-<input type="text" name="category" placeholder="Name of Category" required>
+<div class="field">
+<label>Category Name</label>
+<input 
+type="text" 
+name="category" 
+placeholder="Enter category name" 
+required
+>
+</div>
 
-<input type="number" name="packageUnits" placeholder="Quantity of Units" required>
+<div class="field">
+<label>Initial Package Units</label>
+<input 
+type="number" 
+name="packageUnits" 
+placeholder="Enter number of units in this batch" 
+min="1"
+required
+>
+<small>This represents the first stock batch for this category.</small>
+</div>
 
-<input type="number" name="BP" placeholder="Price of the Package" required>
+<div class="field">
+<label>Package Buying Price (BP)</label>
+<input 
+type="number" 
+name="BP" 
+placeholder="Enter total cost of this package" 
+min="1"
+required
+>
+<small>This is the total price for the entire batch, not per unit.</small>
+</div>
 
 <button type="submit">Create Category</button>
 
