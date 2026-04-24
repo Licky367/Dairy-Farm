@@ -2,7 +2,7 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const User = require("../models/User");
 
-/* ================= PRODUCT LOGIC (UNCHANGED) ================= */
+/* ================= PRODUCT LOGIC ================= */
 
 exports.getProducts = async () => {
     return await Product.find().sort({ createdAt: -1 });
@@ -12,195 +12,80 @@ exports.getProduct = async (id) => {
     return await Product.findOne({ id });
 };
 
+/**
+ * CREATE PRODUCT (FIFO ALLOCATION)
+ */
 exports.createProduct = async (data, file) => {
+
     const cost = Number(data.cost) || 0;
-    const depositPercentage =
-        Number(data.depositPercentage) || 0;
-    const itemsAvailable =
-        Number(data.itemsAvailable) || 0;
+    const depositPercentage = Number(data.depositPercentage) || 0;
+    const itemsAvailable = Number(data.itemsAvailable) || 0;
+    const productUnits = Number(data.productUnits) || 0;
 
-    const purchasePrice =
-        Number(data.purchasePrice) || 0;
+    /* 🔥 FETCH CATEGORY PRODUCTS (SOURCE OF PACKAGES) */
+    const products = await Product.find({ category: data.category });
 
-    await Product.create({
-        id: data.id,
-        name: data.name,
-        category: data.category,
-        image: file ? "/uploads/" + file.filename : "",
-        cost: cost,
-        purchasePrice: purchasePrice,
-        depositPercentage: depositPercentage,
-        depositAmount:
-            (cost * depositPercentage) / 100,
-        itemsAvailable: itemsAvailable,
-        description: data.description
-    });
-};
-
-exports.updateProduct = async (id, data, file) => {
-    const cost = Number(data.cost) || 0;
-    const depositPercentage =
-        Number(data.depositPercentage) || 0;
-    const itemsAvailable =
-        Number(data.itemsAvailable) || 0;
-
-    const purchasePrice =
-        Number(data.purchasePrice) || 0;
-
-    const updateData = {
-        name: data.name,
-        category: data.category,
-        cost: cost,
-        purchasePrice: purchasePrice,
-        depositPercentage: depositPercentage,
-        depositAmount:
-            (cost * depositPercentage) / 100,
-        itemsAvailable: itemsAvailable,
-        description: data.description
-    };
-
-    if (file) {
-        updateData.image =
-            "/uploads/" + file.filename;
+    if (!products.length) {
+        throw new Error("Category does not exist");
     }
 
-    await Product.findOneAndUpdate(
-        { id },
-        updateData,
-        { new: true }
-    );
-};
-
-exports.deleteProduct = async (id) => {
-    await Product.findOneAndDelete({ id });
-};
-
-/* ================= DASHBOARD LOGIC (ADDED ONLY) ================= */
-
-exports.getDashboardData = async ({ month, year }) => {
-
-    const now = new Date();
-
-    const selectedYear = Number(year) || now.getFullYear();
-    const selectedMonth = Number(month) || (now.getMonth() + 1);
-
-    const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
-    const monthEnd = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
-
-    const yearStart = new Date(selectedYear, 0, 1);
-    const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
-
-    /* ===== ORDERS ===== */
-
-    const totalOrders = await Order.countDocuments({
-        orderedAt: { $gte: monthStart, $lte: monthEnd }
-    });
-
-    const yearOrders = await Order.countDocuments({
-        orderedAt: { $gte: yearStart, $lte: yearEnd }
-    });
-
-    /* ===== REVENUE (DELIVERED ONLY) ===== */
-
-    const monthlyOrders = await Order.find({
-        delivered: true,
-        orderedAt: { $gte: monthStart, $lte: monthEnd }
-    });
-
-    const yearlyOrders = await Order.find({
-        delivered: true,
-        orderedAt: { $gte: yearStart, $lte: yearEnd }
-    });
-
-    const computeRevenue = (orders) => {
-        let total = 0;
-
-        orders.forEach(order => {
-
-            const shipping = Number(order.shippingCost) || 0;
-
-            order.items.forEach(item => {
-
-                const cost = Number(item.cost) || 0;
-                const purchasePrice = Number(item.purchasePrice) || 0;
-                const qty = Number(item.quantity) || 0;
-
-                total += (cost - purchasePrice) * qty;
-            });
-
-            total -= shipping;
-        });
-
-        return total;
-    };
-
-    const revenue = computeRevenue(monthlyOrders);
-    const yearRevenue = computeRevenue(yearlyOrders);
-
-    /* ===== CLIENTS ===== */
-
-    const totalClients = await User.countDocuments({
-        role: "client"
-    });
-
-    /* ===== PRODUCTS ===== */
-
-    const totalProducts = await Product.countDocuments();
-
-    const products = await Product.find();
-
-    let totalItemsAvailable = 0;
-    let lowStockCount = 0;
+    /* 🔥 COLLECT ALL PACKAGES */
+    let packages = [];
 
     products.forEach(p => {
-        totalItemsAvailable += Number(p.itemsAvailable) || 0;
-
-        if ((p.itemsAvailable || 0) > 0 && p.itemsAvailable <= 5) {
-            lowStockCount++;
+        if (p.packages && p.packages.length) {
+            p.packages.forEach(pkg => {
+                packages.push({
+                    ...pkg.toObject(),
+                    parentId: p._id
+                });
+            });
         }
     });
 
-    /* ===== RECENT ORDERS ===== */
+    /* 🔥 SORT FIFO (oldest first) */
+    packages.sort(
+        (a, b) => new Date(a._id.getTimestamp()) - new Date(b._id.getTimestamp())
+    );
 
-    const recentOrders = await Order.find()
-        .sort({ createdAt: -1 })
-        .limit(10);
+    let remainingNeeded = productUnits;
+    let totalCost = 0;
 
-    return {
-        totalProducts,
-        totalOrders,
-        yearOrders,
-        revenue,
-        yearRevenue,
-        totalClients,
-        totalItemsAvailable,
-        lowStockCount,
-        recentOrders
-    };
-};const Product = require("../models/Product");
-const Order = require("../models/Order");
-const User = require("../models/User");
+    /* 🔥 FIFO ALLOCATION */
+    for (let pkg of packages) {
 
-/* ================= PRODUCT LOGIC (UNCHANGED) ================= */
+        if (remainingNeeded <= 0) break;
+        if (pkg.remainingUnits <= 0) continue;
 
-exports.getProducts = async () => {
-    return await Product.find().sort({ createdAt: -1 });
-};
+        const takeUnits = Math.min(pkg.remainingUnits, remainingNeeded);
 
-exports.getProduct = async (id) => {
-    return await Product.findOne({ id });
-};
+        const unitCost = pkg.BP / pkg.units;
 
-exports.createProduct = async (data, file) => {
-    const cost = Number(data.cost) || 0;
-    const depositPercentage =
-        Number(data.depositPercentage) || 0;
-    const itemsAvailable =
-        Number(data.itemsAvailable) || 0;
+        totalCost += takeUnits * unitCost;
 
-    const purchasePrice =
-        Number(data.purchasePrice) || 0;
+        /* 🔥 DEDUCT FROM DB */
+        await Product.updateOne(
+            {
+                _id: pkg.parentId,
+                "packages._id": pkg._id
+            },
+            {
+                $inc: {
+                    "packages.$.remainingUnits": -takeUnits
+                }
+            }
+        );
 
+        remainingNeeded -= takeUnits;
+    }
+
+    if (remainingNeeded > 0) {
+        throw new Error("Not enough stock in category packages");
+    }
+
+    const purchasePrice = totalCost;
+
+    /* ✅ CREATE PRODUCT */
     await Product.create({
         id: data.id,
         name: data.name,
@@ -209,38 +94,34 @@ exports.createProduct = async (data, file) => {
         cost: cost,
         purchasePrice: purchasePrice,
         depositPercentage: depositPercentage,
-        depositAmount:
-            (cost * depositPercentage) / 100,
+        depositAmount: (cost * depositPercentage) / 100,
         itemsAvailable: itemsAvailable,
+        productUnits: productUnits,
         description: data.description
     });
 };
 
+/**
+ * UPDATE PRODUCT (UNCHANGED — but ignores purchasePrice changes)
+ */
 exports.updateProduct = async (id, data, file) => {
-    const cost = Number(data.cost) || 0;
-    const depositPercentage =
-        Number(data.depositPercentage) || 0;
-    const itemsAvailable =
-        Number(data.itemsAvailable) || 0;
 
-    const purchasePrice =
-        Number(data.purchasePrice) || 0;
+    const cost = Number(data.cost) || 0;
+    const depositPercentage = Number(data.depositPercentage) || 0;
+    const itemsAvailable = Number(data.itemsAvailable) || 0;
 
     const updateData = {
         name: data.name,
         category: data.category,
         cost: cost,
-        purchasePrice: purchasePrice,
         depositPercentage: depositPercentage,
-        depositAmount:
-            (cost * depositPercentage) / 100,
+        depositAmount: (cost * depositPercentage) / 100,
         itemsAvailable: itemsAvailable,
         description: data.description
     };
 
     if (file) {
-        updateData.image =
-            "/uploads/" + file.filename;
+        updateData.image = "/uploads/" + file.filename;
     }
 
     await Product.findOneAndUpdate(
@@ -254,40 +135,49 @@ exports.deleteProduct = async (id) => {
     await Product.findOneAndDelete({ id });
 };
 
-/* ================= CATEGORY LOGIC (NEW - SAFE ADDITION) ================= */
+/* ================= CATEGORY LOGIC ================= */
 
 exports.getCategories = async () => {
 
-    const categories = await Product.aggregate([
+    const data = await Product.aggregate([
         {
             $group: {
                 _id: "$category",
 
+                /* marketed units */
                 stockedUnits: {
                     $sum: {
-                        $multiply: [
-                            "$productUnits",
-                            "$itemsAvailable"
-                        ]
+                        $multiply: ["$productUnits", "$itemsAvailable"]
                     }
                 },
 
-                BP: { $last: "$BP" },
-                packageUnits: { $last: "$packageUnits" }
-            }
-        },
-        {
-            $project: {
-                _id: 0,
-                category: "$_id",
-                stockedUnits: 1,
-                BP: 1,
-                packageUnits: 1
+                /* collect all packages */
+                packages: { $push: "$packages" }
             }
         }
     ]);
 
-    return categories;
+    return data.map(cat => {
+
+        const stockedUnits = cat.stockedUnits || 0;
+
+        const allPackages = (cat.packages || []).flat();
+
+        const totalUnits = allPackages.reduce(
+            (sum, p) => sum + (p.units || 0), 0
+        );
+
+        const remainingUnits = allPackages.reduce(
+            (sum, p) => sum + (p.remainingUnits || 0), 0
+        );
+
+        return {
+            category: cat._id,
+            stockedUnits,
+            currentUnits: remainingUnits,
+            totalUnits
+        };
+    });
 };
 
 /* ================= DASHBOARD LOGIC (UNCHANGED) ================= */
@@ -305,8 +195,6 @@ exports.getDashboardData = async ({ month, year }) => {
     const yearStart = new Date(selectedYear, 0, 1);
     const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
 
-    /* ===== ORDERS ===== */
-
     const totalOrders = await Order.countDocuments({
         orderedAt: { $gte: monthStart, $lte: monthEnd }
     });
@@ -314,8 +202,6 @@ exports.getDashboardData = async ({ month, year }) => {
     const yearOrders = await Order.countDocuments({
         orderedAt: { $gte: yearStart, $lte: yearEnd }
     });
-
-    /* ===== REVENUE (DELIVERED ONLY) ===== */
 
     const monthlyOrders = await Order.find({
         delivered: true,
@@ -335,7 +221,6 @@ exports.getDashboardData = async ({ month, year }) => {
             const shipping = Number(order.shippingCost) || 0;
 
             order.items.forEach(item => {
-
                 const cost = Number(item.cost) || 0;
                 const purchasePrice = Number(item.purchasePrice) || 0;
                 const qty = Number(item.quantity) || 0;
@@ -352,14 +237,7 @@ exports.getDashboardData = async ({ month, year }) => {
     const revenue = computeRevenue(monthlyOrders);
     const yearRevenue = computeRevenue(yearlyOrders);
 
-    /* ===== CLIENTS ===== */
-
-    const totalClients = await User.countDocuments({
-        role: "client"
-    });
-
-    /* ===== PRODUCTS ===== */
-
+    const totalClients = await User.countDocuments({ role: "client" });
     const totalProducts = await Product.countDocuments();
 
     const products = await Product.find();
@@ -374,8 +252,6 @@ exports.getDashboardData = async ({ month, year }) => {
             lowStockCount++;
         }
     });
-
-    /* ===== RECENT ORDERS ===== */
 
     const recentOrders = await Order.find()
         .sort({ createdAt: -1 })
