@@ -15,21 +15,31 @@ $multiply: ["$productUnits", "$itemsAvailable"]
 }
 },
 
-/* take latest packageUnits */
-packageUnits: { $sum: "$packageUnits" }
+/* collect all packages */
+packages: { $push: "$packages" }
 }
 }
 ]);
 
-/* compute currentUnits manually */
 return data.map(cat => {
 
 const stockedUnits = cat.stockedUnits || 0;
-const packageUnits = cat.packageUnits || 0;
+
+/* flatten all packages */
+const allPackages = (cat.packages || []).flat();
+
+/* total units from all packages */
+const totalUnits = allPackages.reduce((sum, pkg) => {
+return sum + (pkg.units || 0);
+}, 0);
+
+/* remaining units */
+const remainingUnits = allPackages.reduce((sum, pkg) => {
+return sum + (pkg.remainingUnits || 0);
+}, 0);
 
 /* your logic */
-const totalUnits = packageUnits; 
-const currentUnits = totalUnits - stockedUnits;
+const currentUnits = remainingUnits;
 
 return {
 category: cat._id,
@@ -39,14 +49,8 @@ currentUnits
 });
 };
 
-/* CREATE CATEGORY (NO PRODUCT CREATION AS YOU INSISTED) */
+/* CREATE CATEGORY */
 exports.createCategory = async ({ category, packageUnits, BP }) => {
-
-/*
-Since we are NOT creating a product,
-we store category info by inserting ONE minimal product record.
-This is the only way using Product model.
-*/
 
 await Product.create({
 id: `CAT-${Date.now()}`,
@@ -59,20 +63,31 @@ description: "Category base record",
 productUnits: 0,
 itemsAvailable: 0,
 
-packageUnits: Number(packageUnits),
-BP: Number(BP)
+/* NEW STRUCTURE */
+packages: [
+{
+units: Number(packageUnits),
+BP: Number(BP),
+remainingUnits: Number(packageUnits)
+}
+]
 });
 };
 
-/* RESTOCK CATEGORY */
+/* RESTOCK CATEGORY (FIFO SAFE) */
 exports.restockCategory = async ({ category, packageUnits, BP }) => {
 
-/* ADD to existing packageUnits */
+/* push new batch instead of incrementing */
 await Product.updateMany(
 { category },
 {
-$inc: { packageUnits: Number(packageUnits) },
-$set: { BP: Number(BP) }
+$push: {
+packages: {
+units: Number(packageUnits),
+BP: Number(BP),
+remainingUnits: Number(packageUnits)
+}
+}
 }
 );
 
