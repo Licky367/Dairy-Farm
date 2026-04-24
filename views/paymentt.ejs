@@ -1,0 +1,225 @@
+<style>
+.container{
+max-width:900px;
+margin:30px auto;
+padding:20px;
+}
+
+.card{
+background:#fff;
+border-radius:14px;
+padding:18px;
+margin-bottom:15px;
+box-shadow:0 6px 18px rgba(0,0,0,0.06);
+border:1px solid #eee;
+}
+
+.card h3{
+color:#0b5d1e;
+margin-bottom:10px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr;
+gap:15px;
+}
+
+label{
+font-weight:bold;
+font-size:14px;
+margin-bottom:5px;
+display:block;
+}
+
+select{
+width:100%;
+padding:12px;
+border-radius:10px;
+border:1px solid #ddd;
+font-size:15px;
+}
+
+.amount-box{
+margin-top:15px;
+padding:14px;
+background:#f3f8f4;
+border-left:5px solid #0b5d1e;
+font-weight:bold;
+color:#0b5d1e;
+border-radius:10px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin-top:15px;
+border:none;
+border-radius:10px;
+background:#0b5d1e;
+color:#fff;
+font-size:15px;
+cursor:pointer;
+}
+
+button:hover{opacity:0.9;}
+
+.summary{
+background:linear-gradient(135deg,#0b5d1e,#148a32);
+color:#fff;
+padding:18px;
+border-radius:14px;
+margin-bottom:20px;
+}
+</style>
+
+
+<div class="container">
+
+<!-- ================= SINGLE ORDER ================= -->
+<% if (order) { %>
+
+<div class="card">
+
+<h3>Order Summary</h3>
+
+<p><b>Order ID:</b> <%= order._id %></p>
+<p><b>Total:</b> KES <%= order.totalAmount %></p>
+<p><b>Deposit Paid:</b> KES <%= order.depositAmountPaid %></p>
+<p><b>Arrears:</b> KES <%= order.arrearAmount %></p>
+
+</div>
+
+<div class="card">
+
+<h3>Select Payment Type</h3>
+
+<form action="/payment/initiate" method="POST">
+
+<input type="hidden" name="orderId" value="<%= order._id %>">
+
+<div class="grid">
+
+<!-- ================= PAYMENT TYPE (UNCHANGED) ================= -->
+<div>
+
+<label>Payment Type</label>
+
+<select name="paymentType" id="paymentType" onchange="updateAmount()" required>
+
+<option value="">-- Select --</option>
+
+<% if (!order.depositAmountPaid || order.depositAmountPaid <= 0) { %>
+<option value="paid">Pay Full Amount</option>
+<% } %>
+
+<% if (order.depositAmountPaid < order.depositAmount) { %>
+<option value="depositPaid">Pay Deposit</option>
+<% } %>
+
+<option value="arrearAmount">Pay Arrears</option>
+
+</select>
+
+</div>
+
+<!-- ================= NEW: PAYMENT METHOD ================= -->
+<div>
+
+<label>Payment Method</label>
+
+<select name="paymentMethod" required>
+
+<option value="">-- Select Payment Method --</option>
+
+<option value="M-PESA">M-Pesa (Instant STK)</option>
+<option value="BANK">Bank Transfer</option>
+<option value="CARD">Card Payment</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="amount-box">
+Amount to Pay: KES <span id="amount">0</span>
+</div>
+
+<!-- CHANGED TEXT ONLY (no logic change) -->
+<button type="submit">Proceed to Payment</button>
+
+</form>
+
+</div>
+
+<% } %>
+
+
+<!-- ================= BULK ARREARS ================= -->
+<% if (!order && totalArrears !== undefined) { %>
+
+<div class="summary">
+
+<h2>Total Arrears</h2>
+
+<p>KES <%= totalArrears.toLocaleString() %></p>
+
+<p>All delivered orders pending payment</p>
+
+</div>
+
+<div class="card">
+
+<h3>Bulk Payment</h3>
+
+<form action="/payment/initiate" method="POST">
+
+<!-- PAYMENT TYPE (UNCHANGED) -->
+<input type="hidden" name="paymentType" value="payArrears">
+
+<!-- ================= NEW: PAYMENT METHOD ================= -->
+<label>Payment Method</label>
+
+<select name="paymentMethod" required>
+
+<option value="M-PESA">M-Pesa</option>
+<option value="BANK">Bank Transfer</option>
+<option value="CARD">Card Payment</option>
+
+</select>
+
+<button type="submit">Pay All Arrears</button>
+
+</form>
+
+</div>
+
+<% } %>
+
+</div>
+
+
+<% script = `
+<script>
+
+function updateAmount(){
+
+const type = document.getElementById("paymentType").value;
+
+const total = ${order ? order.totalAmount : 0};
+const deposit = ${order ? order.depositAmount : 0};
+const arrear = ${order ? order.arrearAmount : 0};
+
+let amount = 0;
+
+if(type === "paid") amount = total;
+else if(type === "depositPaid") amount = deposit;
+else if(type === "arrearAmount") amount = arrear;
+
+document.getElementById("amount").innerText = amount;
+
+}
+
+</script>
+` %>
