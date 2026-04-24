@@ -15,8 +15,12 @@ $multiply: ["$productUnits", "$itemsAvailable"]
 }
 },
 
-/* collect all packages */
-packages: { $push: "$packages" }
+/* collect all packages safely */
+packages: {
+$push: {
+$ifNull: ["$packages", []]
+}
+}
 }
 }
 ]);
@@ -25,26 +29,24 @@ return data.map(cat => {
 
 const stockedUnits = cat.stockedUnits || 0;
 
-/* flatten all packages */
-const allPackages = (cat.packages || []).flat();
+/* flatten all packages safely */
+const allPackages = [].concat(...cat.packages);
 
-/* total units from all packages */
+/* total units ever stocked */
 const totalUnits = allPackages.reduce((sum, pkg) => {
-return sum + (pkg.units || 0);
+return sum + (Number(pkg.units) || 0);
 }, 0);
 
-/* remaining units */
-const remainingUnits = allPackages.reduce((sum, pkg) => {
-return sum + (pkg.remainingUnits || 0);
+/* ✅ REAL STOCK (SOURCE OF TRUTH) */
+const currentUnits = allPackages.reduce((sum, pkg) => {
+return sum + (Number(pkg.remainingUnits) || 0);
 }, 0);
-
-/* your logic */
-const currentUnits = remainingUnits;
 
 return {
 category: cat._id,
 stockedUnits,
-currentUnits
+currentUnits,
+totalUnits   // ✅ IMPORTANT: now returned
 };
 });
 };
@@ -63,7 +65,7 @@ description: "Category base record",
 productUnits: 0,
 itemsAvailable: 0,
 
-/* NEW STRUCTURE */
+/* FIFO PACKAGES */
 packages: [
 {
 units: Number(packageUnits),
@@ -77,7 +79,6 @@ remainingUnits: Number(packageUnits)
 /* RESTOCK CATEGORY (FIFO SAFE) */
 exports.restockCategory = async ({ category, packageUnits, BP }) => {
 
-/* push new batch instead of incrementing */
 await Product.updateMany(
 { category },
 {
