@@ -95,29 +95,50 @@ color:#fff;
 
 <div class="grid">
 
-<% categories.forEach(cat => { %>
+<% categories.forEach(cat => { 
+   const safeId = cat.category.replace(/\s+/g, '-');
+%>
 
 <div class="card">
 
 <h2><%= cat.category %></h2>
 
-<div class="info">Available Units: <strong><%= cat.currentUnits %></strong></div>
-<div class="info">Marketed Units: <strong><%= cat.stockedUnits %></strong></div>
-
-<% if(cat.stockedUnits <= (0.2 * cat.totalUnits)) { %>
-
-<div class="warning">
-Products under this category are almost sold out completely.
-<span onclick="toggleRestock('<%= cat.category %>')">RESTOCK NOW</span> then go to the Product Creation Page or update existing products.
+<div class="info">
+Available Units: <strong><%= cat.currentUnits %></strong>
 </div>
 
-<form class="restock-form" id="form-<%= cat.category %>" method="POST" action="/category/restock">
+<div class="info">
+Marketed Units: <strong><%= cat.stockedUnits %></strong>
+</div>
+
+<div class="info">
+Total Units: <strong><%= cat.totalUnits %></strong>
+</div>
+
+<% if(cat.currentUnits <= (0.3 * cat.totalUnits)) { %>
+
+<div class="warning">
+Marketed Products for this category are almost sold out completely.
+<span onclick="toggleRestock('<%= safeId %>')">RESTOCK NOW</span>
+</div>
+
+<form class="restock-form" id="form-<%= safeId %>" method="POST" action="/category/restock">
 
 <input type="hidden" name="category" value="<%= cat.category %>">
 
-<input type="number" name="packageUnits" placeholder="Enter units bought" required>
+<input 
+type="number" 
+name="packageUnits" 
+placeholder="Enter units bought" 
+required
+>
 
-<input type="number" name="BP" placeholder="Enter the package buying" required>
+<input 
+type="number" 
+name="BP" 
+placeholder="Enter package buying price" 
+required
+>
 
 <button type="submit" class="btn">Update</button>
 
@@ -134,8 +155,8 @@ Products under this category are almost sold out completely.
 </div>
 
 <script>
-function toggleRestock(category){
-const form = document.getElementById(`form-${category}`);
+function toggleRestock(id){
+const form = document.getElementById(`form-${id}`);
 if(form.style.display === "block"){
 form.style.display = "none";
 }else{
