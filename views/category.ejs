@@ -1,0 +1,145 @@
+<style>
+.container{
+max-width:1100px;
+margin:auto;
+padding:20px;
+}
+
+.top-bar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.btn{
+padding:10px 16px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:600;
+}
+
+.btn-primary{
+background:#0b5d1e;
+color:#fff;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+gap:20px;
+}
+
+.card{
+background:#fff;
+border-radius:14px;
+padding:18px;
+box-shadow:0 6px 18px rgba(0,0,0,0.06);
+border:1px solid #eee;
+}
+
+.card h2{
+margin-bottom:10px;
+color:#0b5d1e;
+}
+
+.info{
+margin:6px 0;
+}
+
+.warning{
+margin-top:10px;
+padding:10px;
+background:#ffe5e5;
+color:#b30000;
+border-radius:8px;
+font-size:14px;
+}
+
+.warning span{
+color:#0b5d1e;
+font-weight:bold;
+cursor:pointer;
+margin-left:5px;
+}
+
+.restock-form{
+margin-top:15px;
+display:none;
+}
+
+.restock-form input{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+.restock-form button{
+width:100%;
+background:#0b5d1e;
+color:#fff;
+}
+</style>
+
+<div class="container">
+
+<div class="top-bar">
+<h1>Product Categories</h1>
+<a href="/category/create">
+<button class="btn btn-primary">Create New Category</button>
+</a>
+</div>
+
+<div class="grid">
+
+<% categories.forEach(cat => { %>
+
+<div class="card">
+
+<h2><%= cat.category %></h2>
+
+<div class="info">Available Units: <strong><%= cat.currentUnits %></strong></div>
+<div class="info">Marketed Units: <strong><%= cat.stockedUnits %></strong></div>
+
+<% if(cat.currentUnits <= (0.3 * cat.stockedUnits)) { %>
+
+<div class="warning">
+Marketed Products for this category are almost sold out completely.
+<span onclick="toggleRestock('<%= cat.category %>')">RESTOCK NOW</span>
+</div>
+
+<form class="restock-form" id="form-<%= cat.category %>" method="POST" action="/category/restock">
+
+<input type="hidden" name="category" value="<%= cat.category %>">
+
+<input type="number" name="packageUnits" placeholder="Enter units bought" required>
+
+<input type="number" name="BP" placeholder="Enter the package price" required>
+
+<button type="submit" class="btn">Update</button>
+
+</form>
+
+<% } %>
+
+</div>
+
+<% }) %>
+
+</div>
+
+</div>
+
+<script>
+function toggleRestock(category){
+const form = document.getElementById(`form-${category}`);
+if(form.style.display === "block"){
+form.style.display = "none";
+}else{
+form.style.display = "block";
+}
+}
+</script>
