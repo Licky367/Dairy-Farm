@@ -1,5 +1,25 @@
 const mongoose = require("mongoose");
 
+/* ================= PACKAGE SUB-SCHEMA ================= */
+const packageSchema = new mongoose.Schema({
+units: {
+type: Number,
+required: true,
+min: 1
+},
+BP: {
+type: Number,
+required: true,
+min: 0
+},
+remainingUnits: {
+type: Number,
+required: true,
+min: 0
+}
+}, { timestamps: true });
+
+/* ================= PRODUCT SCHEMA ================= */
 const productSchema = new mongoose.Schema(
 {
 id: {
@@ -53,7 +73,7 @@ min: 0,
 default: 0
 },
 
-/* ================= NEW FIELDS ================= */
+/* ================= FIFO FIELDS ================= */
 
 productUnits: {
 type: Number,
@@ -61,17 +81,7 @@ default: 0,
 min: 0
 },
 
-packageUnits: {
-type: Number,
-default: 0,
-min: 0
-},
-
-BP: {
-type: Number,
-default: 0,
-min: 0
-},
+packages: [packageSchema],   // ✅ CORE INVENTORY SYSTEM
 
 /* ============================================ */
 
@@ -92,7 +102,7 @@ timestamps: true
 }
 );
 
-/* AUTO CALCULATIONS BEFORE SAVE */
+/* ================= PRE-SAVE ================= */
 productSchema.pre("save", function(next){
 
 this.depositAmount =
@@ -112,7 +122,7 @@ this.status = "In Stock";
 next();
 });
 
-/* AUTO CALCULATIONS BEFORE UPDATE */
+/* ================= PRE-UPDATE ================= */
 productSchema.pre("findOneAndUpdate", function(next){
 
 const update = this.getUpdate();
@@ -121,11 +131,8 @@ const update = this.getUpdate();
 if(update.cost !== undefined ||
 update.depositPercentage !== undefined){
 
-const cost =
-Number(update.cost ?? 0);
-
-const percentage =
-Number(update.depositPercentage ?? 0);
+const cost = Number(update.cost ?? 0);
+const percentage = Number(update.depositPercentage ?? 0);
 
 update.depositAmount =
 (cost * percentage) / 100;
@@ -134,8 +141,7 @@ update.depositAmount =
 /* stock status update */
 if(update.itemsAvailable !== undefined){
 
-const qty =
-Number(update.itemsAvailable);
+const qty = Number(update.itemsAvailable);
 
 if(qty <= 0){
 update.status = "Out of Stock";
