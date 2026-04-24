@@ -91,6 +91,7 @@ clientApp.use("/", productRoutes);
 clientApp.use("/", paymentRoutes);
 clientApp.use("/", cartRoutes);
 clientApp.use("/", clientOrderRoutes);
+clientApp.use("/", unpaidRoutes);
 
 /* Redirect root */
 clientApp.get("/", (req, res) => {
