@@ -26,6 +26,7 @@ const cartRoutes = require("./routes/cart");
 const paymentRoutes = require("./routes/payment");
 const clientOrderRoutes = require("./routes/clientOrder");
 const unpaidRoutes = require("./routes/unpaidDeliveredOrders");
+const categoryRoutes = require("./routes/category");
 
 /* ===============================
    VIEW ENGINE
@@ -109,6 +110,7 @@ adminApp.use("/", authRoutes);
 adminApp.use("/", profileRoutes);
 adminApp.use("/", adminRoutes);
 adminApp.use("/", unpaidRoutes);
+adminApp.use("/", categoryRoutes);
 
 /* Redirect root */
 adminApp.get("/", (req, res) => {
