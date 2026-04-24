@@ -110,7 +110,7 @@ adminApp.use("/", authRoutes);
 adminApp.use("/", profileRoutes);
 adminApp.use("/", adminRoutes);
 adminApp.use("/", unpaidRoutes);
-adminApp.use("/", categoryRoutes);
+adminApp.use("/category", categoryRoutes);
 
 /* Redirect root */
 adminApp.get("/", (req, res) => {
