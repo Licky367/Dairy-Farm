@@ -150,14 +150,32 @@ Back to Products
 <input type="text" name="name" value="<%= product.name %>" required>
 </div>
 
+<!-- ✅ CATEGORY (READ-ONLY) -->
 <div class="field">
 <label>Category</label>
-<input type="text" name="category" value="<%= product.category %>" required>
+<input type="text" name="category" value="<%= product.category %>" readonly>
+</div>
+
+<!-- ✅ PRODUCT UNITS -->
+<div class="field">
+<label>Product Unit</label>
+<input type="number" name="productUnits"
+value="<%= product.productUnits || 0 %>"
+placeholder="Enter the units for this product"
+required>
 </div>
 
 <div class="field">
 <label>Selling Price (KES)</label>
 <input type="number" name="cost" id="cost" value="<%= product.cost %>" required oninput="calculateDeposit()">
+</div>
+
+<!-- ✅ PURCHASE PRICE (READONLY) -->
+<div class="field">
+<label>Purchase Price (KES)</label>
+<input type="number" name="purchasePrice"
+value="<%= product.purchasePrice || 0 %>"
+readonly>
 </div>
 
 <div class="field">
