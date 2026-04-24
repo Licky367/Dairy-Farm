@@ -41,11 +41,22 @@ exports.products = async (req, res) => {
 
 /**
  * GET /admin/products/create
+ * ✅ UPDATED: now includes categories for dropdown
  */
-exports.createProductPage = (req, res) => {
-    res.render("admin/product/create", {
-        user: req.user
-    });
+exports.createProductPage = async (req, res) => {
+    try {
+
+        const categories = await adminService.getCategories();
+
+        res.render("admin/product/create", {
+            user: req.user,
+            categories
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error loading create product page");
+    }
 };
 
 /**
@@ -66,14 +77,19 @@ exports.createProduct = async (req, res) => {
 
 /**
  * GET /admin/products/edit/:id
+ * ✅ UPDATED: now includes categories for consistency
  */
 exports.editProductPage = async (req, res) => {
     try {
 
-        const product = await adminService.getProduct(req.params.id);
+        const [product, categories] = await Promise.all([
+            adminService.getProduct(req.params.id),
+            adminService.getCategories()
+        ]);
 
         res.render("admin/product/edit", {
             product,
+            categories,
             user: req.user
         });
 
