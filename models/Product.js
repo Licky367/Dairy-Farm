@@ -19,7 +19,7 @@ const packageSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-/* ================= 🔥 ALLOCATION SUB-SCHEMA (NEW) ================= */
+/* ================= 🔥 ALLOCATION SUB-SCHEMA ================= */
 const allocationSchema = new mongoose.Schema({
     packageId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -50,6 +50,14 @@ const productSchema = new mongoose.Schema(
         type: String,
         required: true,
         trim: true
+    },
+
+    /* ================= 🔥 NEW HIERARCHY FIELD ================= */
+    majorCategory: {
+        type: String,
+        required: true,
+        trim: true,
+        default: "Uncategorized"
     },
 
     category: {
@@ -98,15 +106,13 @@ const productSchema = new mongoose.Schema(
         min: 0
     },
 
-    packages: [packageSchema],   // ✅ CORE INVENTORY SYSTEM
+    packages: [packageSchema],
 
-    /* 🔥 NEW: TRACK EXACT STOCK USAGE */
+    /* ================= STOCK ALLOCATION TRACKING ================= */
     allocations: {
         type: [allocationSchema],
         default: []
     },
-
-    /* ============================================ */
 
     description: {
         type: String,
@@ -129,9 +135,8 @@ const productSchema = new mongoose.Schema(
 productSchema.pre("save", function(next){
 
     this.depositAmount =
-    (this.cost * this.depositPercentage) / 100;
+        (this.cost * this.depositPercentage) / 100;
 
-    /* AUTO STOCK STATUS */
     if(this.itemsAvailable <= 0){
         this.status = "Out of Stock";
     }
@@ -150,7 +155,6 @@ productSchema.pre("findOneAndUpdate", function(next){
 
     const update = this.getUpdate();
 
-    /* deposit recalculation */
     if(update.cost !== undefined ||
        update.depositPercentage !== undefined){
 
@@ -158,10 +162,9 @@ productSchema.pre("findOneAndUpdate", function(next){
         const percentage = Number(update.depositPercentage ?? 0);
 
         update.depositAmount =
-        (cost * percentage) / 100;
+            (cost * percentage) / 100;
     }
 
-    /* stock status update */
     if(update.itemsAvailable !== undefined){
 
         const qty = Number(update.itemsAvailable);
@@ -180,5 +183,4 @@ productSchema.pre("findOneAndUpdate", function(next){
     next();
 });
 
-module.exports =
-mongoose.model("Product", productSchema);
+module.exports = mongoose.model("Product", productSchema);
