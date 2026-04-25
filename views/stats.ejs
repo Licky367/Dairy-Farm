@@ -1,0 +1,165 @@
+<%- include("../partials/layout", { title: "Financial Analytics" }) %>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+
+<style>
+.container {
+    padding: 20px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.card h2 {
+    margin-top: 8px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.box {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+</style>
+
+<div class="container">
+
+    <!-- FILTER -->
+    <form method="GET" action="/admin/stats">
+        <input type="number" name="month" placeholder="Month" />
+        <input type="number" name="year" placeholder="Year" />
+        <button type="submit">Filter</button>
+    </form>
+
+    <!-- CARDS -->
+    <div class="cards">
+        <div class="card">
+            <h3>Revenue</h3>
+            <h2>KES <%= financial.revenue %></h2>
+        </div>
+
+        <div class="card">
+            <h3>Profit</h3>
+            <h2>KES <%= financial.profit %></h2>
+        </div>
+
+        <div class="card">
+            <h3>Net Profit</h3>
+            <h2>KES <%= financial.netProfit %></h2>
+        </div>
+
+        <div class="card">
+            <h3>Orders</h3>
+            <h2><%= financial.orders %></h2>
+        </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="grid">
+
+        <div class="box">
+            <h3>Major Category Performance</h3>
+            <canvas id="majorChart"></canvas>
+        </div>
+
+        <div class="box">
+            <h3>Category Performance</h3>
+            <canvas id="categoryChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- PRODUCT TABLE -->
+    <div class="box" style="margin-top:20px;">
+        <h3>Top Products</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Revenue</th>
+                    <th>Profit</th>
+                    <th>Units</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <% productStats.slice(0, 10).forEach(p => { %>
+                    <tr>
+                        <td><%= p.name %></td>
+                        <td><%= p.revenue %></td>
+                        <td><%= p.profit %></td>
+                        <td><%= p.unitsSold %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+const majorData = <%- JSON.stringify(majorCategoryStats) %>;
+const categoryData = <%- JSON.stringify(categoryStats) %>;
+
+// =========================
+// MAJOR CATEGORY CHART
+// =========================
+new Chart(document.getElementById("majorChart"), {
+    type: "pie",
+    data: {
+        labels: majorData.map(m => m.majorCategory),
+        datasets: [{
+            data: majorData.map(m => m.revenue)
+        }]
+    }
+});
+
+// =========================
+// CATEGORY CHART
+// =========================
+new Chart(document.getElementById("categoryChart"), {
+    type: "bar",
+    data: {
+        labels: categoryData.map(c => c.category),
+        datasets: [{
+            label: "Revenue",
+            data: categoryData.map(c => c.revenue)
+        }]
+    }
+});
+</script>
