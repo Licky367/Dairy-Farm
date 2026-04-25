@@ -41,7 +41,6 @@ exports.products = async (req, res) => {
 
 /**
  * GET /admin/products/create
- * ✅ UPDATED: now includes categories for dropdown
  */
 exports.createProductPage = async (req, res) => {
     try {
@@ -65,6 +64,22 @@ exports.createProductPage = async (req, res) => {
 exports.createProduct = async (req, res) => {
     try {
 
+        const { itemsAvailable, productUnits, currentUnits } = req.body;
+
+        const totalUnits = Number(itemsAvailable) * Number(productUnits);
+
+        // ❌ VALIDATION
+        if (totalUnits > Number(currentUnits)) {
+
+            const categories = await adminService.getCategories();
+
+            return res.status(400).render("admin/product/create", {
+                user: req.user,
+                categories,
+                error: "Total units (itemsAvailable × productUnits) cannot exceed current units"
+            });
+        }
+
         await adminService.createProduct(req.body, req.file);
 
         res.redirect("/admin/products");
@@ -77,7 +92,6 @@ exports.createProduct = async (req, res) => {
 
 /**
  * GET /admin/products/edit/:id
- * ✅ UPDATED: now includes categories for consistency
  */
 exports.editProductPage = async (req, res) => {
     try {
@@ -104,6 +118,26 @@ exports.editProductPage = async (req, res) => {
  */
 exports.updateProduct = async (req, res) => {
     try {
+
+        const { itemsAvailable, productUnits, currentUnits } = req.body;
+
+        const totalUnits = Number(itemsAvailable) * Number(productUnits);
+
+        // ❌ VALIDATION
+        if (totalUnits > Number(currentUnits)) {
+
+            const [product, categories] = await Promise.all([
+                adminService.getProduct(req.params.id),
+                adminService.getCategories()
+            ]);
+
+            return res.status(400).render("admin/product/edit", {
+                product,
+                categories,
+                user: req.user,
+                error: "Total units (itemsAvailable × productUnits) cannot exceed current units"
+            });
+        }
 
         await adminService.updateProduct(
             req.params.id,
