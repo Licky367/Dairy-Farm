@@ -1,0 +1,287 @@
+<% layout('layout', { title: product.name }) %>
+
+<style>
+
+/* ================= WRAPPER ================= */
+.product-container{
+max-width:1100px;
+margin:auto;
+}
+
+/* ================= CARD ================= */
+.card{
+background:#fff;
+padding:25px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,.05);
+}
+
+/* ================= GRID ================= */
+.product-wrapper{
+display:flex;
+gap:30px;
+flex-wrap:wrap;
+align-items:flex-start;
+}
+
+/* ================= IMAGE ================= */
+.product-image{
+width:380px;
+max-width:100%;
+border-radius:14px;
+object-fit:cover;
+background:#eee;
+}
+
+/* ================= INFO ================= */
+.product-info{
+flex:1;
+min-width:280px;
+}
+
+.product-info h2{
+font-size:28px;
+margin-bottom:10px;
+}
+
+/* ================= META ================= */
+.description{
+color:#666;
+line-height:1.7;
+margin-bottom:15px;
+}
+
+.price{
+font-size:26px;
+font-weight:bold;
+color:#0b5d1e;
+margin-bottom:12px;
+}
+
+.meta{
+font-size:15px;
+margin-bottom:8px;
+line-height:1.6;
+}
+
+/* ================= STOCK ================= */
+.stock{
+display:inline-block;
+padding:8px 14px;
+border-radius:30px;
+font-size:13px;
+font-weight:bold;
+margin:10px 0;
+}
+
+.instock{background:#e8f5e9;color:#0b5d1e;}
+.lowstock{background:#fff3cd;color:#8a6d00;}
+.outstock{background:#fdecea;color:#b42318;}
+
+/* ================= QTY ================= */
+.qty-box{
+margin-top:15px;
+}
+
+.qty-box label{
+display:block;
+margin-bottom:6px;
+font-size:14px;
+font-weight:bold;
+}
+
+.qty-controls{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.qty-controls button{
+width:40px;
+height:40px;
+border:none;
+border-radius:10px;
+background:#0b5d1e;
+color:#fff;
+font-size:20px;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.qty-controls input{
+width:70px;
+text-align:center;
+padding:10px;
+border:1px solid #ddd;
+border-radius:10px;
+font-size:16px;
+}
+
+small{
+color:#777;
+}
+
+/* ================= BUTTON ================= */
+.add-btn{
+background:#0b5d1e;
+color:#fff;
+padding:14px 20px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+margin-top:18px;
+font-size:15px;
+min-width:240px;
+}
+
+.add-btn:disabled{
+background:#999;
+cursor:not-allowed;
+}
+
+/* ================= BACK ================= */
+.back-link{
+display:inline-block;
+margin-bottom:15px;
+text-decoration:none;
+color:#0b5d1e;
+font-weight:bold;
+}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:768px){
+.product-info h2{font-size:24px;}
+.price{font-size:22px;}
+.add-btn{width:100%;min-width:auto;}
+}
+
+</style>
+
+<div class="product-container">
+
+<a href="/client" class="back-link">← Back to Products</a>
+
+<div class="card">
+
+<div class="product-wrapper">
+
+<!-- IMAGE -->
+<img 
+src="<%= product.image || 'https://via.placeholder.com/400' %>" 
+class="product-image"
+alt="<%= product.name %>"
+>
+
+<!-- INFO -->
+<div class="product-info">
+
+<h2><%= product.name %></h2>
+
+<p class="description">
+<%= product.description || "No description available." %>
+</p>
+
+<div class="price">
+KES <%= Number(product.cost).toLocaleString() %>
+</div>
+
+<div class="meta">
+Deposit: <b><%= product.depositPercentage %>%</b>
+(KES <%= Number(product.depositAmount).toLocaleString() %>)
+</div>
+
+<div class="meta">
+<b>Category:</b> <%= product.category %>
+</div>
+
+<div class="meta">
+<b>Items Available:</b> <%= product.itemsAvailable || 0 %>
+</div>
+
+<% const stock = product.itemsAvailable || 0; %>
+
+<!-- STOCK BADGE -->
+<% if(stock === 0){ %>
+<div class="stock outstock">Out of Stock</div>
+<% } else if(stock <= 5){ %>
+<div class="stock lowstock">Low Stock</div>
+<% } else { %>
+<div class="stock instock">In Stock</div>
+<% } %>
+
+<!-- FORM -->
+<form action="/cart/add/<%= product.id %>" method="POST">
+
+<% if(stock > 0){ %>
+
+<div class="qty-box">
+
+<label>Quantity</label>
+
+<div class="qty-controls">
+
+<button type="button" onclick="decreaseQty()">−</button>
+
+<input
+type="number"
+name="quantity"
+id="quantity"
+value="1"
+min="1"
+max="<%= stock %>"
+readonly
+>
+
+<button type="button" onclick="increaseQty()">+</button>
+
+</div>
+
+<small>Max available: <%= stock %></small>
+
+</div>
+
+<button type="submit" class="add-btn">
+Add to Cart
+</button>
+
+<% } else { %>
+
+<button type="button" class="add-btn" disabled>
+Unavailable
+</button>
+
+<% } %>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const maxQty = <%= product.itemsAvailable || 0 %>;
+
+function increaseQty(){
+let qty = document.getElementById("quantity");
+let val = parseInt(qty.value);
+if(val < maxQty){
+qty.value = val + 1;
+}
+}
+
+function decreaseQty(){
+let qty = document.getElementById("quantity");
+let val = parseInt(qty.value);
+if(val > 1){
+qty.value = val - 1;
+}
+}
+
+</script>
