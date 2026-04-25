@@ -1,7 +1,6 @@
 <% layout('layout', { title: 'Edit Product' }) %>
 
 <style>
-/* (same styles as yours, unchanged) */
 .topbar{
 background:#fff;
 padding:20px;
@@ -43,7 +42,8 @@ color:#444;
 }
 
 input,
-textarea{
+textarea,
+select{
 width:100%;
 padding:14px;
 border:1px solid #ddd;
@@ -54,7 +54,8 @@ background:#fff;
 }
 
 input:focus,
-textarea:focus{
+textarea:focus,
+select:focus{
 border-color:#0b5d1e;
 }
 
@@ -63,39 +64,6 @@ resize:vertical;
 min-height:130px;
 }
 
-.preview{
-width:180px;
-height:180px;
-object-fit:cover;
-border-radius:12px;
-border:1px solid #eee;
-margin-top:8px;
-background:#f3f3f3;
-}
-
-.preview-box{
-margin-top:10px;
-padding:14px;
-background:#f8f8f8;
-border-radius:12px;
-font-size:14px;
-color:#444;
-line-height:1.7;
-}
-
-.stock-box{
-margin-top:10px;
-padding:12px;
-border-radius:12px;
-font-size:14px;
-font-weight:bold;
-display:inline-block;
-}
-
-.instock{ background:#e8f5e9; color:#0b5d1e; }
-.lowstock{ background:#fff3cd; color:#8a6d00; }
-.outstock{ background:#fdecea; color:#b42318; }
-
 .actions{
 margin-top:20px;
 display:flex;
@@ -103,7 +71,8 @@ gap:10px;
 flex-wrap:wrap;
 }
 
-button,.btn{
+button,
+.btn{
 background:#0b5d1e;
 color:#fff;
 padding:13px 18px;
@@ -115,7 +84,9 @@ text-decoration:none;
 display:inline-block;
 }
 
-.btn-secondary{ background:#1565c0; }
+.btn-secondary{
+background:#1565c0;
+}
 
 .error-box{
 background:#ffe5e5;
@@ -127,111 +98,169 @@ margin-bottom:15px;
 </style>
 
 <div class="topbar">
-
-<a href="/admin/products" class="btn btn-secondary">
-Back to Products
-</a>
+    <a href="/admin/products" class="btn btn-secondary">
+        Back to Products
+    </a>
 </div>
 
 <div class="form-box">
 
-<!-- ✅ ERROR DISPLAY -->
+<!-- ERROR -->
 <% if (error) { %>
-<div class="error-box"><%= error %></div>
+    <div class="error-box">
+        <%= error %>
+    </div>
 <% } %>
 
-<form action="/admin/products/edit/<%= product.id %>" method="POST" enctype="multipart/form-data" onsubmit="return validateStock()">
+<form 
+action="/admin/products/edit/<%= product.id %>" 
+method="POST" 
+enctype="multipart/form-data"
+onsubmit="return validateStock()"
+>
 
 <div class="grid">
 
 <h2>Edit Product</h2>
 
+<!-- PRODUCT ID -->
 <div class="field">
-<label>Edit Product Name</label>
-<input type="text" name="name" value="<%= product.name %>" required>
+<label>Product ID</label>
+<input name="id" value="<%= product.id %>" required readonly>
 </div>
 
+<!-- PRODUCT NAME -->
 <div class="field">
-<label>Product Category</label>
-<input type="text" id="category" value="<%= product.category %>" readonly>
+<label>Product Name</label>
+<input name="name" value="<%= product.name %>" required>
 </div>
 
-<!-- hidden for JS -->
-<input type="hidden" id="currentUnits" value="<%= categories.find(c => c.category === product.category)?.currentUnits || 0 %>">
-
+<!-- MAJOR CATEGORY (READ ONLY) -->
 <div class="field">
-<label>Product Units</label>
-<input type="number" name="productUnits" id="productUnits"
-value="<%= product.productUnits || 0 %>"
-required oninput="updatePreview()">
+<label>Major Category</label>
+<input 
+type="text"
+value="<%= product.majorCategory %>"
+readonly
+style="background:#f1f1f1; cursor:not-allowed;"
+>
+
+<input 
+type="hidden"
+name="majorCategory"
+value="<%= product.majorCategory %>"
+>
 </div>
 
+<!-- CATEGORY -->
 <div class="field">
-<label>Number of Available Products</label>
-<input type="number" name="itemsAvailable" id="itemsAvailable"
-value="<%= product.itemsAvailable || 0 %>"
-min="0" required oninput="updatePreview()">
+<label>Category</label>
+<select name="category" id="categorySelect" required>
+<option value="<%= product.category %>">
+<%= product.category %>
+</option>
+
+<% categories.forEach(cat => { %>
+<option 
+value="<%= cat.category %>" 
+data-currentunits="<%= cat.currentUnits %>"
+>
+<%= cat.category %> (Available: <%= cat.currentUnits %>)
+</option>
+<% }) %>
+
+</select>
 </div>
 
+<!-- PRODUCT UNITS -->
+<div class="field">
+<label>Product Units (per item)</label>
+<input 
+type="number" 
+name="productUnits" 
+id="productUnits" 
+value="<%= product.productUnits %>"
+min="1" 
+required 
+oninput="updatePreview()"
+>
+</div>
+
+<!-- ITEMS AVAILABLE -->
+<div class="field">
+<label>No. of Products to Create</label>
+<input 
+type="number" 
+name="itemsAvailable" 
+id="itemsAvailable" 
+value="<%= product.itemsAvailable %>"
+min="0" 
+required 
+oninput="updatePreview()"
+>
+</div>
+
+<!-- COST -->
 <div class="field">
 <label>Selling Price (KES)</label>
-<input type="number" name="cost" id="cost"
-value="<%= product.cost %>"
-required oninput="calculateDeposit()">
+<input 
+type="number" 
+name="cost" 
+id="cost"
+value="<%= product.cost %>" 
+required 
+oninput="calculateDeposit()"
+>
 </div>
 
+<!-- DEPOSIT % -->
+<div class="field">
+<label>Product Deposit Percentage</label>
+<input 
+type="number" 
+name="depositPercentage" 
+id="depositPercentage"
+value="<%= product.depositPercentage %>"
+min="0" 
+max="100" 
+required 
+oninput="calculateDeposit()"
+>
+</div>
+
+<!-- PURCHASE PRICE -->
 <div class="field">
 <label>Estimated Buying Price (KES)</label>
-<input type="number" value="<%= product.purchasePrice || 0 %>" readonly>
+<input 
+type="number" 
+id="purchasePrice" 
+value="<%= product.purchasePrice %>"
+readonly
+>
 </div>
 
+<!-- IMAGE -->
 <div class="field">
-<label>Deposit Percentage</label>
-<input type="number" name="depositPercentage" id="depositPercentage"
-value="<%= product.depositPercentage %>"
-required oninput="calculateDeposit()">
-</div>
-
-<div class="field">
-<label>Upload New Image</label>
+<label>Product Image</label>
 <input type="file" name="image">
 </div>
 
 </div>
 
+<!-- DESCRIPTION -->
 <div class="field" style="margin-top:15px;">
 <label>Description</label>
 <textarea name="description" required><%= product.description %></textarea>
 </div>
 
-<div class="field" style="margin-top:15px;">
-<label>Current Image</label>
-
-<% if(product.image){ %>
-<img src="<%= product.image %>" class="preview">
-<% } else { %>
-<p>No image available</p>
-<% } %>
-
-</div>
-
-<!-- ✅ STOCK PREVIEW -->
+<!-- PREVIEW -->
 <div class="preview-box">
-<b>Stock Needed:</b> <span id="stockNeeded">0</span><br>
-<b>Available Stock:</b> <span id="availableStock"><%= categories.find(c => c.category === product.category)?.currentUnits || 0 %></span><br><br>
+<b>Units Needed:</b> <span id="stockNeeded">0</span><br>
+<b>Available Units:</b> <span id="availableStock">0</span><br><br>
 
-Estimated Deposit Amount:
-<b>KES <span id="depositAmount"><%= product.depositAmount || 0 %></span></b>
+Deposit: <b><span id="depositPreview"><%= product.depositPercentage %></span>%</b><br>
+Estimated Deposit Amount: <b>KES <span id="depositAmount"><%= product.depositAmount %></span></b>
 </div>
-
-<!-- ✅ STOCK STATUS -->
-<% if((product.itemsAvailable || 0) === 0){ %>
-<div class="stock-box outstock">Out of Stock</div>
-<% } else if((product.itemsAvailable || 0) <= 5){ %>
-<div class="stock-box lowstock">Low Stock</div>
-<% } else { %>
-<div class="stock-box instock">In Stock</div>
-<% } %>
 
 <div class="actions">
 <button type="submit">Update Product</button>
@@ -247,42 +276,51 @@ Cancel
 
 <script>
 
-/* 🔥 PREVIEW */
 function updatePreview(){
+    const select = document.getElementById("categorySelect");
+    const option = select.options[select.selectedIndex];
+
+    const currentUnits = Number(option?.getAttribute("data-currentunits")) || 0;
     const items = Number(document.getElementById("itemsAvailable").value) || 0;
     const units = Number(document.getElementById("productUnits").value) || 0;
-    const currentUnits = Number(document.getElementById("currentUnits").value) || 0;
 
     const needed = items * units;
 
     document.getElementById("stockNeeded").innerText = needed;
     document.getElementById("availableStock").innerText = currentUnits;
+
+    document.getElementById("purchasePrice").value = needed;
 }
 
-/* 🔥 VALIDATION */
 function validateStock(){
+    const select = document.getElementById("categorySelect");
+    const option = select.options[select.selectedIndex];
+
+    const currentUnits = Number(option?.getAttribute("data-currentunits")) || 0;
     const items = Number(document.getElementById("itemsAvailable").value) || 0;
     const units = Number(document.getElementById("productUnits").value) || 0;
-    const currentUnits = Number(document.getElementById("currentUnits").value) || 0;
 
     const needed = items * units;
 
     if(needed > currentUnits){
-        alert("Not enough stock in this category");
+        alert("Not enough stock in selected category");
         return false;
     }
 
     return true;
 }
 
-/* 🔥 DEPOSIT */
 function calculateDeposit(){
     let cost = Number(document.getElementById("cost").value) || 0;
     let percent = Number(document.getElementById("depositPercentage").value) || 0;
+
     let total = (cost * percent) / 100;
 
     document.getElementById("depositAmount").innerText =
     total.toLocaleString();
+
+    document.getElementById("depositPreview").innerText =
+    percent;
 }
 
 </script>
