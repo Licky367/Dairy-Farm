@@ -1,6 +1,7 @@
 <% layout('layout', { title: 'Edit Product' }) %>
 
 <style>
+/* (same styles as yours, unchanged) */
 .topbar{
 background:#fff;
 padding:20px;
@@ -91,20 +92,9 @@ font-weight:bold;
 display:inline-block;
 }
 
-.instock{
-background:#e8f5e9;
-color:#0b5d1e;
-}
-
-.lowstock{
-background:#fff3cd;
-color:#8a6d00;
-}
-
-.outstock{
-background:#fdecea;
-color:#b42318;
-}
+.instock{ background:#e8f5e9; color:#0b5d1e; }
+.lowstock{ background:#fff3cd; color:#8a6d00; }
+.outstock{ background:#fdecea; color:#b42318; }
 
 .actions{
 margin-top:20px;
@@ -113,8 +103,7 @@ gap:10px;
 flex-wrap:wrap;
 }
 
-button,
-.btn{
+button,.btn{
 background:#0b5d1e;
 color:#fff;
 padding:13px 18px;
@@ -126,8 +115,14 @@ text-decoration:none;
 display:inline-block;
 }
 
-.btn-secondary{
-background:#1565c0;
+.btn-secondary{ background:#1565c0; }
+
+.error-box{
+background:#ffe5e5;
+color:#b30000;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
 }
 </style>
 
@@ -141,7 +136,12 @@ Back to Products
 
 <div class="form-box">
 
-<form action="/admin/products/update/<%= product.id %>" method="POST" enctype="multipart/form-data">
+<!-- ✅ ERROR DISPLAY -->
+<% if (error) { %>
+<div class="error-box"><%= error %></div>
+<% } %>
+
+<form action="/admin/products/edit/<%= product.id %>" method="POST" enctype="multipart/form-data" onsubmit="return validateStock()">
 
 <div class="grid">
 
@@ -150,42 +150,45 @@ Back to Products
 <input type="text" name="name" value="<%= product.name %>" required>
 </div>
 
-<!-- ✅ CATEGORY (READ-ONLY) -->
 <div class="field">
 <label>Category</label>
-<input type="text" name="category" value="<%= product.category %>" readonly>
+<input type="text" id="category" value="<%= product.category %>" readonly>
 </div>
 
-<!-- ✅ PRODUCT UNITS -->
+<!-- hidden for JS -->
+<input type="hidden" id="currentUnits" value="<%= categories.find(c => c.category === product.category)?.currentUnits || 0 %>">
+
 <div class="field">
-<label>Product Unit</label>
-<input type="number" name="productUnits"
+<label>Product Units</label>
+<input type="number" name="productUnits" id="productUnits"
 value="<%= product.productUnits || 0 %>"
-placeholder="Enter the units for this product"
-required>
-</div>
-
-<div class="field">
-<label>Selling Price (KES)</label>
-<input type="number" name="cost" id="cost" value="<%= product.cost %>" required oninput="calculateDeposit()">
-</div>
-
-<!-- ✅ PURCHASE PRICE (READONLY) -->
-<div class="field">
-<label>Purchase Price (KES)</label>
-<input type="number" name="purchasePrice"
-value="<%= product.purchasePrice || 0 %>"
-readonly>
-</div>
-
-<div class="field">
-<label>Deposit Percentage</label>
-<input type="number" name="depositPercentage" id="depositPercentage" value="<%= product.depositPercentage %>" required oninput="calculateDeposit()">
+required oninput="updatePreview()">
 </div>
 
 <div class="field">
 <label>Items Available</label>
-<input type="number" name="itemsAvailable" value="<%= product.itemsAvailable || 0 %>" min="0" required>
+<input type="number" name="itemsAvailable" id="itemsAvailable"
+value="<%= product.itemsAvailable || 0 %>"
+min="0" required oninput="updatePreview()">
+</div>
+
+<div class="field">
+<label>Selling Price (KES)</label>
+<input type="number" name="cost" id="cost"
+value="<%= product.cost %>"
+required oninput="calculateDeposit()">
+</div>
+
+<div class="field">
+<label>Purchase Price (KES)</label>
+<input type="number" value="<%= product.purchasePrice || 0 %>" readonly>
+</div>
+
+<div class="field">
+<label>Deposit Percentage</label>
+<input type="number" name="depositPercentage" id="depositPercentage"
+value="<%= product.depositPercentage %>"
+required oninput="calculateDeposit()">
 </div>
 
 <div class="field">
@@ -211,17 +214,20 @@ readonly>
 
 </div>
 
+<!-- ✅ STOCK PREVIEW -->
 <div class="preview-box">
+<b>Stock Needed:</b> <span id="stockNeeded">0</span><br>
+<b>Available Stock:</b> <span id="availableStock"><%= categories.find(c => c.category === product.category)?.currentUnits || 0 %></span><br><br>
+
 Estimated Deposit Amount:
 <b>KES <span id="depositAmount"><%= product.depositAmount || 0 %></span></b>
 </div>
 
+<!-- ✅ STOCK STATUS -->
 <% if((product.itemsAvailable || 0) === 0){ %>
 <div class="stock-box outstock">Out of Stock</div>
-
 <% } else if((product.itemsAvailable || 0) <= 5){ %>
 <div class="stock-box lowstock">Low Stock</div>
-
 <% } else { %>
 <div class="stock-box instock">In Stock</div>
 <% } %>
@@ -239,12 +245,43 @@ Cancel
 </div>
 
 <script>
-function calculateDeposit(){
-let cost = Number(document.getElementById("cost").value) || 0;
-let percent = Number(document.getElementById("depositPercentage").value) || 0;
-let total = (cost * percent) / 100;
 
-document.getElementById("depositAmount").innerText =
-total.toLocaleString();
+/* 🔥 PREVIEW */
+function updatePreview(){
+    const items = Number(document.getElementById("itemsAvailable").value) || 0;
+    const units = Number(document.getElementById("productUnits").value) || 0;
+    const currentUnits = Number(document.getElementById("currentUnits").value) || 0;
+
+    const needed = items * units;
+
+    document.getElementById("stockNeeded").innerText = needed;
+    document.getElementById("availableStock").innerText = currentUnits;
 }
+
+/* 🔥 VALIDATION */
+function validateStock(){
+    const items = Number(document.getElementById("itemsAvailable").value) || 0;
+    const units = Number(document.getElementById("productUnits").value) || 0;
+    const currentUnits = Number(document.getElementById("currentUnits").value) || 0;
+
+    const needed = items * units;
+
+    if(needed > currentUnits){
+        alert("Not enough stock in this category");
+        return false;
+    }
+
+    return true;
+}
+
+/* 🔥 DEPOSIT */
+function calculateDeposit(){
+    let cost = Number(document.getElementById("cost").value) || 0;
+    let percent = Number(document.getElementById("depositPercentage").value) || 0;
+    let total = (cost * percent) / 100;
+
+    document.getElementById("depositAmount").innerText =
+    total.toLocaleString();
+}
+
 </script>
