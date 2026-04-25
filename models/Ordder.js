@@ -17,7 +17,7 @@ const orderSchema = new mongoose.Schema(
         {
             id: String,
             name: String,
-            cost: Number,
+            cost: Number, // selling price
             quantity: Number,
             image: String,
 
@@ -26,22 +26,18 @@ const orderSchema = new mongoose.Schema(
                 default: 0
             },
 
-            shippingCost: {
-                type: Number,
-                default: 0
-            },
-
             depositAmount: {
-                type: Number,
-                default: 0
-            },
-
-            revenue: {
                 type: Number,
                 default: 0
             }
         }
     ],
+
+    // 🚚 ORDER LEVEL SHIPPING (IMPORTANT FIX)
+    shippingCost: {
+        type: Number,
+        default: 0
+    },
 
     // 💰 FINANCIALS
     totalAmount: {
@@ -64,15 +60,17 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
-    // =========================
-    // NEW ADDITIONS
-    // =========================
-    totalArrears: {
+    totalRevenue: {
         type: Number,
         default: 0
     },
 
-    totalRevenue: {
+    totalCost: {
+        type: Number,
+        default: 0
+    },
+
+    totalProfit: {
         type: Number,
         default: 0
     },
@@ -84,7 +82,7 @@ const orderSchema = new mongoose.Schema(
     },
 
     // =========================
-    // PAYMENT STATUS (UNCHANGED)
+    // PAYMENT STATUS
     // =========================
     status: {
         type: String,
@@ -92,9 +90,6 @@ const orderSchema = new mongoose.Schema(
         default: "payAfter"
     },
 
-    // =========================
-    // PAYMENT TYPE (UNCHANGED)
-    // =========================
     paymentType: {
         type: String,
         enum: ["paid", "depositPaid", "payAfter", "arrearAmount", "payArrears"],
@@ -102,7 +97,7 @@ const orderSchema = new mongoose.Schema(
     },
 
     // =========================
-    // NEW: PAYMENT METHOD (INTASEND INPUT)
+    // PAYMENT METHOD
     // =========================
     paymentMethod: {
         type: String,
@@ -132,9 +127,7 @@ const orderSchema = new mongoose.Schema(
         adminName: String
     },
 
-    deliveredAt: {
-        type: Date
-    },
+    deliveredAt: Date,
 
     // 📍 DELIVERY INFO
     deliveryAddress: String,
@@ -156,37 +149,41 @@ const orderSchema = new mongoose.Schema(
 );
 
 /* =========================
-   CALCULATIONS
+   FINANCIAL CALCULATIONS
 ========================= */
-
 function calculateFinancials(doc) {
 
     const total = Number(doc.totalAmount || 0);
     const paidDeposit = Number(doc.depositAmountPaid || 0);
 
+    // arrears
     doc.arrearAmount = Math.max(0, total - paidDeposit);
 
-    if (!doc.delivered) {
+    const isRevenueOrder = ["paid", "paid(cash)"].includes(doc.status);
+
+    if (!isRevenueOrder) {
         doc.totalRevenue = 0;
+        doc.totalCost = 0;
+        doc.totalProfit = 0;
         return;
     }
 
-    let totalRevenue = 0;
+    let revenue = 0;
+    let cost = 0;
 
     doc.items.forEach(item => {
-        const cost = Number(item.cost || 0);
-        const purchasePrice = Number(item.purchasePrice || 0);
-        const shippingCost = Number(item.shippingCost || 0);
-        const qty = Number(item.quantity || 1);
 
-        const itemRevenue =
-            (cost - (purchasePrice + shippingCost)) * qty;
+        const sellPrice = Number(item.cost || 0);
+        const buyPrice = Number(item.purchasePrice || 0);
+        const qty = Number(item.quantity || 0);
 
-        item.revenue = itemRevenue;
-        totalRevenue += itemRevenue;
+        revenue += sellPrice * qty;
+        cost += buyPrice * qty;
     });
 
-    doc.totalRevenue = totalRevenue;
+    doc.totalRevenue = revenue;
+    doc.totalCost = cost;
+    doc.totalProfit = revenue - cost - (Number(doc.shippingCost || 0));
 }
 
 /* BEFORE SAVE */
