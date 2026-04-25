@@ -5,18 +5,43 @@ exports.clientPage = async (req, res) => {
     try {
         const products = await clientService.getAllProducts();
 
-        const groupedProducts = {};
+        /* ================= GROUP BY majorCategory → category ================= */
+        const grouped = {};
 
         for (let product of products) {
-            if (!groupedProducts[product.category]) {
-                groupedProducts[product.category] = [];
+
+            const majorCategory = product.majorCategory || "Uncategorized";
+            const category = product.category || "General";
+
+            /* create majorCategory group */
+            if (!grouped[majorCategory]) {
+                grouped[majorCategory] = {
+                    majorCategory,
+                    categories: {}
+                };
             }
-            groupedProducts[product.category].push(product);
+
+            /* create category group inside majorCategory */
+            if (!grouped[majorCategory].categories[category]) {
+                grouped[majorCategory].categories[category] = {
+                    category,
+                    products: []
+                };
+            }
+
+            /* push product into correct bucket */
+            grouped[majorCategory].categories[category].products.push(product);
         }
 
+        /* convert object → array (EJS friendly) */
+        const groupedProducts = Object.values(grouped).map(group => ({
+            majorCategory: group.majorCategory,
+            categories: Object.values(group.categories)
+        }));
+
         res.render("client", {
-            products,           // optional (keep if you may need it later)
-            groupedProducts,    // ✅ primary data for the view
+            products,            // optional fallback
+            groupedProducts,     // main structured data
             user: req.session.user || null
         });
 
