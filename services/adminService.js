@@ -59,14 +59,10 @@ exports.getProduct = async (id) => {
 
 /* =======================================
         STOCK FETCH (SAFE)
-        used in create/update
 ======================================= */
 const getStockPackages = async (category, majorCategory) => {
 
-    const products = await Product.find({
-        category,
-        majorCategory
-    });
+    const products = await Product.find({ category, majorCategory });
 
     let packages = [];
 
@@ -138,15 +134,9 @@ exports.createProduct = async (data, file) => {
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
-    const packages = await getStockPackages(
-        data.category,
-        data.majorCategory
-    );
+    const packages = await getStockPackages(data.category, data.majorCategory);
 
-    const { totalCost, allocations } = await allocateStock(
-        packages,
-        productUnits
-    );
+    const { totalCost, allocations } = await allocateStock(packages, productUnits);
 
     await Product.create({
         id: data.id,
@@ -197,16 +187,9 @@ exports.updateProduct = async (id, data, file) => {
         }
     }
 
-    /* re-fetch stock */
-    const packages = await getStockPackages(
-        data.category,
-        data.majorCategory
-    );
+    const packages = await getStockPackages(data.category, data.majorCategory);
 
-    const { totalCost, allocations } = await allocateStock(
-        packages,
-        productUnits
-    );
+    const { totalCost, allocations } = await allocateStock(packages, productUnits);
 
     const updateData = {
         name: data.name,
@@ -329,34 +312,28 @@ exports.getDashboardData = async ({ month, year }) => {
     });
 
     const monthlyOrders = await Order.find({
-        delivered: true,
+        status: { $in: ["paid", "paid(cash)"] },
         orderedAt: { $gte: monthStart, $lte: monthEnd }
     });
 
     const yearlyOrders = await Order.find({
-        delivered: true,
+        status: { $in: ["paid", "paid(cash)"] },
         orderedAt: { $gte: yearStart, $lte: yearEnd }
     });
 
     const computeRevenue = (orders) => {
-        let total = 0;
+
+        let revenue = 0;
 
         orders.forEach(order => {
-
-            const shipping = Number(order.shippingCost) || 0;
-
             order.items.forEach(item => {
                 const cost = Number(item.cost) || 0;
-                const purchasePrice = Number(item.purchasePrice) || 0;
                 const qty = Number(item.quantity) || 0;
-
-                total += (cost - purchasePrice) * qty;
+                revenue += cost * qty;
             });
-
-            total -= shipping;
         });
 
-        return total;
+        return revenue;
     };
 
     const revenue = computeRevenue(monthlyOrders);
