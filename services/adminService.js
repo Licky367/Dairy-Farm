@@ -22,6 +22,25 @@ exports.createProduct = async (data, file) => {
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
+    /* 🔥 VALIDATION (ADDED) */
+    const productsForCategory = await Product.find({ category: data.category });
+
+    let currentUnits = 0;
+
+    productsForCategory.forEach(p => {
+        if (p.packages && p.packages.length) {
+            p.packages.forEach(pkg => {
+                currentUnits += pkg.remainingUnits || 0;
+            });
+        }
+    });
+
+    const totalUnits = itemsAvailable * productUnits;
+
+    if (totalUnits > currentUnits) {
+        throw new Error("Total units (itemsAvailable × productUnits) cannot exceed current units");
+    }
+
     /* 🔥 FETCH CATEGORY PRODUCTS (SOURCE OF PACKAGES) */
     const products = await Product.find({ category: data.category });
 
@@ -109,6 +128,26 @@ exports.updateProduct = async (id, data, file) => {
     const cost = Number(data.cost) || 0;
     const depositPercentage = Number(data.depositPercentage) || 0;
     const itemsAvailable = Number(data.itemsAvailable) || 0;
+    const productUnits = Number(data.productUnits) || 0;
+
+    /* 🔥 VALIDATION (ADDED) */
+    const productsForCategory = await Product.find({ category: data.category });
+
+    let currentUnits = 0;
+
+    productsForCategory.forEach(p => {
+        if (p.packages && p.packages.length) {
+            p.packages.forEach(pkg => {
+                currentUnits += pkg.remainingUnits || 0;
+            });
+        }
+    });
+
+    const totalUnits = itemsAvailable * productUnits;
+
+    if (totalUnits > currentUnits) {
+        throw new Error("Total units (itemsAvailable × productUnits) cannot exceed current units");
+    }
 
     const updateData = {
         name: data.name,
@@ -117,6 +156,7 @@ exports.updateProduct = async (id, data, file) => {
         depositPercentage: depositPercentage,
         depositAmount: (cost * depositPercentage) / 100,
         itemsAvailable: itemsAvailable,
+        productUnits: productUnits,
         description: data.description
     };
 
