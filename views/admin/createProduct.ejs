@@ -108,7 +108,6 @@ margin-bottom:15px;
 </style>
 
 <div class="topbar">
-<h2>Create Product</h2>
 
 <a href="/admin/products" class="btn btn-secondary">
 Back to Products
@@ -127,6 +126,8 @@ Back to Products
 <form action="/admin/products/create" method="POST" enctype="multipart/form-data" onsubmit="return validateStock()">
 
 <div class="grid">
+
+<h2>Create Product</h2>
 
 <div class="field">
 <label>Product ID</label>
@@ -161,7 +162,7 @@ data-currentunits="<%= cat.currentUnits %>">
 </div>
 
 <div class="field">
-<label>Items Available</label>
+<label>No. of Products to Create</label>
 <input type="number" name="itemsAvailable" id="itemsAvailable" min="0" required oninput="updatePreview()">
 </div>
 
@@ -171,12 +172,12 @@ data-currentunits="<%= cat.currentUnits %>">
 </div>
 
 <div class="field">
-<label>Deposit Percentage</label>
+<label>Product Deposit Percentage</label>
 <input type="number" name="depositPercentage" id="depositPercentage" min="0" max="100" required oninput="calculateDeposit()">
 </div>
 
 <div class="field">
-<label>Estimated Purchase Price (KES)</label>
+<label>Estimated Buying Price (KES)</label>
 <input type="number" id="purchasePrice" readonly placeholder="Auto estimated">
 </div>
 
@@ -193,8 +194,8 @@ data-currentunits="<%= cat.currentUnits %>">
 </div>
 
 <div class="preview-box">
-<b>Stock Needed:</b> <span id="stockNeeded">0</span><br>
-<b>Available Stock:</b> <span id="availableStock">0</span><br><br>
+<b>Units Needed:</b> <span id="stockNeeded">0</span><br>
+<b>Available Units:</b> <span id="availableStock">0</span><br><br>
 
 Deposit: <b><span id="depositPreview">0</span>%</b><br>
 Estimated Deposit Amount: <b>KES <span id="depositAmount">0</span></b>
