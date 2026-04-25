@@ -1,9 +1,11 @@
 const Product = require("../models/Product");
 
-/* GET ALL CATEGORIES WITH CALCULATIONS */
+/* ================= GET ALL CATEGORIES WITH CALCULATIONS ================= */
 exports.getAllCategories = async () => {
 
 const data = await Product.aggregate([
+
+/* group by majorCategory + category */
 {
 $group: {
 _id: {
@@ -18,22 +20,21 @@ $multiply: ["$productUnits", "$itemsAvailable"]
 }
 },
 
-/* collect all packages safely */
+/* flatten packages properly */
 packages: {
-$push: {
-$ifNull: ["$packages", []]
+$push: "$packages"
 }
 }
 }
-}
+
 ]);
 
 return data.map(cat => {
 
 const stockedUnits = cat.stockedUnits || 0;
 
-/* flatten all packages safely */
-const allPackages = [].concat(...cat.packages);
+/* safely flatten packages */
+const allPackages = (cat.packages || []).flat().filter(Boolean);
 
 /* total units ever stocked */
 const totalUnits = allPackages.reduce((sum, pkg) => {
