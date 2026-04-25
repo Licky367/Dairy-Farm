@@ -166,7 +166,7 @@ required oninput="updatePreview()">
 </div>
 
 <div class="field">
-<label>Items Available</label>
+<label>No of products to create</label>
 <input type="number" name="itemsAvailable" id="itemsAvailable"
 value="<%= product.itemsAvailable || 0 %>"
 min="0" required oninput="updatePreview()">
@@ -180,7 +180,7 @@ required oninput="calculateDeposit()">
 </div>
 
 <div class="field">
-<label>Purchase Price (KES)</label>
+<label>Estimated Buying Price (KES)</label>
 <input type="number" value="<%= product.purchasePrice || 0 %>" readonly>
 </div>
 
