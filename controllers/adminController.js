@@ -28,10 +28,10 @@ exports.products = async (req, res) => {
 
         const groupedProducts = await adminService.getProductsGrouped();
 
-res.render("admin/products", {
-    groupedProducts,
-    user: req.user
-});
+        res.render("admin/products", {
+            groupedProducts,
+            user: req.user
+        });
 
     } catch (err) {
         console.error(err);
@@ -45,11 +45,15 @@ res.render("admin/products", {
 exports.createProductPage = async (req, res) => {
     try {
 
-        const categories = await adminService.getCategories();
+        const [categories, majorCategories] = await Promise.all([
+            adminService.getCategories(),
+            adminService.getMajorCategories() // 🔥 NEW REQUIRED SERVICE METHOD
+        ]);
 
         res.render("admin/product/create", {
             user: req.user,
-            categories
+            categories,
+            majorCategories // ✅ ADDED
         });
 
     } catch (err) {
@@ -68,14 +72,17 @@ exports.createProduct = async (req, res) => {
 
         const totalUnits = Number(itemsAvailable) * Number(productUnits);
 
-        // ❌ VALIDATION
         if (totalUnits > Number(currentUnits)) {
 
-            const categories = await adminService.getCategories();
+            const [categories, majorCategories] = await Promise.all([
+                adminService.getCategories(),
+                adminService.getMajorCategories()
+            ]);
 
             return res.status(400).render("admin/product/create", {
                 user: req.user,
                 categories,
+                majorCategories, // ✅ ADDED
                 error: "Total units (itemsAvailable × productUnits) cannot exceed current units"
             });
         }
@@ -96,14 +103,16 @@ exports.createProduct = async (req, res) => {
 exports.editProductPage = async (req, res) => {
     try {
 
-        const [product, categories] = await Promise.all([
+        const [product, categories, majorCategories] = await Promise.all([
             adminService.getProduct(req.params.id),
-            adminService.getCategories()
+            adminService.getCategories(),
+            adminService.getMajorCategories() // 🔥 NEW
         ]);
 
         res.render("admin/product/edit", {
             product,
             categories,
+            majorCategories, // ✅ ADDED
             user: req.user
         });
 
@@ -123,17 +132,18 @@ exports.updateProduct = async (req, res) => {
 
         const totalUnits = Number(itemsAvailable) * Number(productUnits);
 
-        // ❌ VALIDATION
         if (totalUnits > Number(currentUnits)) {
 
-            const [product, categories] = await Promise.all([
+            const [product, categories, majorCategories] = await Promise.all([
                 adminService.getProduct(req.params.id),
-                adminService.getCategories()
+                adminService.getCategories(),
+                adminService.getMajorCategories()
             ]);
 
             return res.status(400).render("admin/product/edit", {
                 product,
                 categories,
+                majorCategories, // ✅ ADDED
                 user: req.user,
                 error: "Total units (itemsAvailable × productUnits) cannot exceed current units"
             });
