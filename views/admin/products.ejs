@@ -46,20 +46,38 @@ display:inline-block;
 .btn-danger{background:#b71c1c;}
 .btn-secondary{background:#1565c0;}
 
+/* ================= MAJOR CATEGORY ================= */
+.major-section{
+margin-bottom:50px;
+}
+
+.major-title{
+font-size:22px;
+font-weight:bold;
+color:#0b5d1e;
+margin:20px 0 15px;
+padding:10px;
+background:#f7f7f7;
+border-radius:10px;
+position:sticky;
+top:0;
+z-index:5;
+}
+
 /* ================= CATEGORY SECTION ================= */
 .category-section{
 margin-bottom:45px;
 }
 
 .category-title{
-font-size:20px;
+font-size:18px;
 margin:10px 0 15px;
-color:#0b5d1e;
+color:#333;
+padding-left:5px;
 position:sticky;
-top:0;
-background:#f7f7f7;
-padding:10px 0;
-z-index:5;
+top:60px;
+background:#fff;
+z-index:4;
 }
 
 /* ================= SLIDER ================= */
@@ -131,20 +149,9 @@ font-size:12px;
 font-weight:bold;
 }
 
-.instock{
-background:#e8f5e9;
-color:#0b5d1e;
-}
-
-.lowstock{
-background:#fff3cd;
-color:#8a6d00;
-}
-
-.outstock{
-background:#fdecea;
-color:#b42318;
-}
+.instock{background:#e8f5e9;color:#0b5d1e;}
+.lowstock{background:#fff3cd;color:#8a6d00;}
+.outstock{background:#fdecea;color:#b42318;}
 
 /* ================= ACTIONS ================= */
 .actions{
@@ -204,7 +211,9 @@ color:#777;
 <span class="badge">
 Total: 
 <%= groupedProducts 
-    ? Object.values(groupedProducts).reduce((sum, arr) => sum + arr.length, 0) 
+    ? groupedProducts.reduce((sum, g) => {
+        return sum + g.categories.reduce((s, c) => s + c.products.length, 0);
+      }, 0)
     : 0 
 %>
 </span>
@@ -219,13 +228,23 @@ Add Product
 
 <!-- ================= PRODUCTS ================= -->
 
-<% if(groupedProducts && Object.keys(groupedProducts).length > 0){ %>
+<% if(groupedProducts && groupedProducts.length > 0){ %>
 
-<% Object.keys(groupedProducts).forEach(category => { %>
+<% groupedProducts.forEach(major => { %>
+
+<div class="major-section">
+
+<div class="major-title">
+<%= major.majorCategory %>
+</div>
+
+<% major.categories.forEach(cat => { %>
 
 <div class="category-section">
 
-<h2 class="category-title"><%= category %></h2>
+<div class="category-title">
+<%= cat.category %>
+</div>
 
 <div class="slider-wrapper">
 
@@ -234,7 +253,7 @@ Add Product
 
 <div class="products-row">
 
-<% groupedProducts[category].forEach(product => { %>
+<% cat.products.forEach(product => { %>
 
 <div class="card">
 
@@ -283,6 +302,10 @@ Delete
 
 <% }) %>
 
+</div>
+
+<% }) %>
+
 <% } else { %>
 
 <div class="empty-box">
@@ -291,7 +314,6 @@ Delete
 
 <% } %>
 
-<!-- ================= SCRIPT ================= -->
 <script>
 function scrollRow(btn, distance){
 const row = btn.parentElement.querySelector(".products-row");
