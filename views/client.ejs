@@ -23,20 +23,34 @@ color:#666;
 margin-bottom:20px;
 }
 
+/* ================= MAJOR CATEGORY ================= */
+.major-section{
+margin-bottom:50px;
+}
+
+.major-title{
+font-size:24px;
+font-weight:bold;
+color:#0b5d1e;
+margin:20px 0 10px;
+padding:10px;
+background:#f7f7f7;
+border-radius:10px;
+position:sticky;
+top:0;
+z-index:5;
+}
+
 /* ================= CATEGORY ================= */
 .category-section{
-margin-bottom:40px;
+margin-bottom:30px;
 }
 
 .category-title{
-font-size:20px;
-margin:10px 0 15px;
-color:#0b5d1e;
-position:sticky;
-top:0;
-background:#f7f7f7;
-padding:10px 0;
-z-index:5;
+font-size:18px;
+margin:10px 0 10px;
+color:#333;
+padding-left:5px;
 }
 
 /* ================= ROW ================= */
@@ -67,7 +81,6 @@ transition:.2s ease;
 transform:translateY(-4px);
 }
 
-/* IMAGE */
 .image{
 height:120px;
 border-radius:10px;
@@ -82,7 +95,6 @@ height:100%;
 object-fit:cover;
 }
 
-/* TEXT */
 .card h3{
 font-size:15px;
 margin-bottom:6px;
@@ -98,7 +110,6 @@ color:#0b5d1e;
 margin-bottom:10px;
 }
 
-/* BUTTON */
 .view-btn{
 display:block;
 text-align:center;
@@ -110,12 +121,7 @@ text-decoration:none;
 font-size:13px;
 }
 
-.view-btn:hover{
-opacity:.9;
-}
-
-/* NAV */
-.slider-wrapper{position:relative;}
+.view-btn:hover{opacity:.9;}
 
 .nav-btn{
 position:absolute;
@@ -137,6 +143,8 @@ justify-content:center;
 .nav-left{left:-8px;}
 .nav-right{right:-8px;}
 
+.slider-wrapper{position:relative;}
+
 </style>
 
 <!-- ================= HERO ================= -->
@@ -152,13 +160,23 @@ Shop Now
 <!-- ================= PRODUCTS ================= -->
 <section id="products">
 
-<% if(groupedProducts && Object.keys(groupedProducts).length > 0){ %>
+<% if(groupedProducts && groupedProducts.length > 0){ %>
 
-<% Object.keys(groupedProducts).forEach(category => { %>
+<% groupedProducts.forEach(major => { %>
+
+<div class="major-section">
+
+<div class="major-title">
+<%= major.majorCategory %>
+</div>
+
+<% major.categories.forEach(cat => { %>
 
 <div class="category-section">
 
-<h2 class="category-title"><%= category %></h2>
+<div class="category-title">
+<%= cat.category %>
+</div>
 
 <div class="slider-wrapper">
 
@@ -167,7 +185,7 @@ Shop Now
 
 <div class="products-row">
 
-<% groupedProducts[category].forEach(product => { %>
+<% cat.products.forEach(product => { %>
 
 <div class="card">
 
@@ -192,7 +210,13 @@ View Product
 <% }) %>
 
 </div>
+
 </div>
+
+</div>
+
+<% }) %>
+
 </div>
 
 <% }) %>
@@ -205,7 +229,6 @@ View Product
 
 </section>
 
-<!-- ================= SCRIPT ================= -->
 <script>
 function scrollRow(btn, distance){
 const row = btn.parentElement.querySelector(".products-row");
