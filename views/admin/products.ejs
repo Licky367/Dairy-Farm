@@ -51,7 +51,6 @@ display:inline-block;
 margin-bottom:45px;
 }
 
-/* sticky header like Netflix */
 .category-title{
 font-size:20px;
 margin:10px 0 15px;
@@ -203,7 +202,11 @@ color:#777;
 <div class="summary">
 
 <span class="badge">
-Total: <%= products ? products.length : 0 %>
+Total: 
+<%= groupedProducts 
+    ? Object.values(groupedProducts).reduce((sum, arr) => sum + arr.length, 0) 
+    : 0 
+%>
 </span>
 
 <a href="/admin/products/create" class="btn">
@@ -215,20 +218,10 @@ Add Product
 </div>
 
 <!-- ================= PRODUCTS ================= -->
-<%
-const grouped = {};
 
-products.forEach(p => {
-    if(!grouped[p.category]){
-        grouped[p.category] = [];
-    }
-    grouped[p.category].push(p);
-});
-%>
+<% if(groupedProducts && Object.keys(groupedProducts).length > 0){ %>
 
-<% if(products && products.length > 0){ %>
-
-<% Object.keys(grouped).forEach(category => { %>
+<% Object.keys(groupedProducts).forEach(category => { %>
 
 <div class="category-section">
 
@@ -241,7 +234,7 @@ products.forEach(p => {
 
 <div class="products-row">
 
-<% grouped[category].forEach(product => { %>
+<% groupedProducts[category].forEach(product => { %>
 
 <div class="card">
 
