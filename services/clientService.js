@@ -1,14 +1,11 @@
 const Product = require("../models/Product");
 
-/**
- * Get all products for client view
- * Includes stock-aware safe mapping
- */
+/* ================= GET ALL PRODUCTS ================= */
 exports.getAllProducts = async () => {
     const products = await Product.find({}).lean();
 
     return products.map(p => ({
-        id: p.id,
+        id: p.id || p._id.toString(),
         name: p.name,
         category: p.category,
         image: p.image,
@@ -16,22 +13,24 @@ exports.getAllProducts = async () => {
         depositPercentage: p.depositPercentage,
         depositAmount: p.depositAmount,
         description: p.description,
-
-        // 🔥 IMPORTANT: stock field used in UI upgrades
         itemsAvailable: p.itemsAvailable || 0
     }));
 };
 
-/**
- * Get single product for product page
- */
+
+/* ================= GET SINGLE PRODUCT ================= */
 exports.getProductById = async (id) => {
-    const product = await Product.findOne({ id }).lean();
+    const product = await Product.findOne({
+        $or: [
+            { id },
+            { _id: id }
+        ]
+    }).lean();
 
     if (!product) return null;
 
     return {
-        id: product.id,
+        id: product.id || product._id.toString(),
         name: product.name,
         category: product.category,
         image: product.image,
@@ -43,13 +42,16 @@ exports.getProductById = async (id) => {
     };
 };
 
-/**
- * Reduce stock after purchase (USED IN CHECKOUT)
- * This is critical for "auto stock update"
- */
+
+/* ================= REDUCE STOCK ================= */
 exports.reduceStock = async (items = []) => {
     for (const item of items) {
-        const product = await Product.findOne({ id: item.id });
+        const product = await Product.findOne({
+            $or: [
+                { id: item.id },
+                { _id: item.id }
+            ]
+        });
 
         if (!product) continue;
 
