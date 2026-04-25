@@ -1,7 +1,6 @@
 <% layout('layout', { title: 'Create Product' }) %>
 
 <style>
-/* (unchanged styles) */
 .topbar{
 background:#fff;
 padding:20px;
@@ -98,6 +97,14 @@ display:inline-block;
 .btn-secondary{
 background:#1565c0;
 }
+
+.error-box{
+background:#ffe5e5;
+color:#b30000;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+}
 </style>
 
 <div class="topbar">
@@ -110,63 +117,67 @@ Back to Products
 
 <div class="form-box">
 
-<form action="/admin/products/create" method="POST" enctype="multipart/form-data">
+<!-- ✅ ERROR DISPLAY -->
+<% if (error) { %>
+  <div class="error-box">
+    <%= error %>
+  </div>
+<% } %>
+
+<form action="/admin/products/create" method="POST" enctype="multipart/form-data" onsubmit="return validateStock()">
 
 <div class="grid">
 
 <div class="field">
 <label>Product ID</label>
-<input name="id" placeholder="Product ID" required>
+<input name="id" required>
 </div>
 
 <div class="field">
 <label>Product Name</label>
-<input name="name" placeholder="Product Name" required>
+<input name="name" required>
 </div>
 
-<!-- ✅ CATEGORY DROPDOWN -->
+<!-- ✅ CATEGORY -->
 <div class="field">
 <label>Category</label>
-<select name="category" id="categorySelect" required onchange="setCategoryData()">
+<select name="category" id="categorySelect" required>
 <option value="">Select Category</option>
 
 <% categories.forEach(cat => { %>
 <option 
 value="<%= cat.category %>" 
-data-packageunits="<%= cat.packageUnits %>" 
-data-bp="<%= cat.BP %>">
-<%= cat.category %>
+data-currentunits="<%= cat.currentUnits %>">
+<%= cat.category %> (Available: <%= cat.currentUnits %>)
 </option>
 <% }) %>
 
 </select>
 </div>
 
-<!-- ✅ PRODUCT UNITS -->
 <div class="field">
-<label>Product Unit</label>
-<input type="number" name="productUnits" id="productUnits" placeholder="Enter the units for this product" required oninput="calculatePurchasePrice()">
-</div>
-
-<div class="field">
-<label>Selling Price (KES)</label>
-<input type="number" name="cost" id="cost" placeholder="Cost" required oninput="calculateDeposit()">
-</div>
-
-<!-- ✅ AUTO COMPUTED PURCHASE PRICE -->
-<div class="field">
-<label>Purchase Price (KES)</label>
-<input type="number" name="purchasePrice" id="purchasePrice" placeholder="Auto calculated" readonly>
-</div>
-
-<div class="field">
-<label>Deposit Percentage</label>
-<input type="number" name="depositPercentage" id="depositPercentage" placeholder="Deposit %" required oninput="calculateDeposit()">
+<label>Product Units (per item)</label>
+<input type="number" name="productUnits" id="productUnits" min="1" required oninput="updatePreview()">
 </div>
 
 <div class="field">
 <label>Items Available</label>
-<input type="number" name="itemsAvailable" placeholder="Stock Quantity" min="0" required>
+<input type="number" name="itemsAvailable" id="itemsAvailable" min="0" required oninput="updatePreview()">
+</div>
+
+<div class="field">
+<label>Selling Price (KES)</label>
+<input type="number" name="cost" id="cost" required oninput="calculateDeposit()">
+</div>
+
+<div class="field">
+<label>Deposit Percentage</label>
+<input type="number" name="depositPercentage" id="depositPercentage" min="0" max="100" required oninput="calculateDeposit()">
+</div>
+
+<div class="field">
+<label>Estimated Purchase Price (KES)</label>
+<input type="number" id="purchasePrice" readonly placeholder="Auto estimated">
 </div>
 
 <div class="field">
@@ -178,15 +189,14 @@ data-bp="<%= cat.BP %>">
 
 <div class="field" style="margin-top:15px;">
 <label>Description</label>
-<textarea name="description" placeholder="Description" required></textarea>
+<textarea name="description" required></textarea>
 </div>
 
-<!-- hidden fields -->
-<input type="hidden" id="packageUnits">
-<input type="hidden" id="BP">
-
 <div class="preview-box">
-Deposit Amount: <b><span id="depositPreview">0</span>%</b><br>
+<b>Stock Needed:</b> <span id="stockNeeded">0</span><br>
+<b>Available Stock:</b> <span id="availableStock">0</span><br><br>
+
+Deposit: <b><span id="depositPreview">0</span>%</b><br>
 Estimated Deposit Amount: <b>KES <span id="depositAmount">0</span></b>
 </div>
 
@@ -204,48 +214,55 @@ Cancel
 
 <script>
 
-/* EXISTING */
+/* 🔥 UPDATE STOCK PREVIEW */
+function updatePreview(){
+    const select = document.getElementById("categorySelect");
+    const option = select.options[select.selectedIndex];
+
+    const currentUnits = Number(option?.getAttribute("data-currentunits")) || 0;
+    const items = Number(document.getElementById("itemsAvailable").value) || 0;
+    const units = Number(document.getElementById("productUnits").value) || 0;
+
+    const needed = items * units;
+
+    document.getElementById("stockNeeded").innerText = needed;
+    document.getElementById("availableStock").innerText = currentUnits;
+
+    // rough estimate (not exact FIFO)
+    document.getElementById("purchasePrice").value = needed;
+}
+
+/* 🔥 VALIDATION BEFORE SUBMIT */
+function validateStock(){
+    const select = document.getElementById("categorySelect");
+    const option = select.options[select.selectedIndex];
+
+    const currentUnits = Number(option?.getAttribute("data-currentunits")) || 0;
+    const items = Number(document.getElementById("itemsAvailable").value) || 0;
+    const units = Number(document.getElementById("productUnits").value) || 0;
+
+    const needed = items * units;
+
+    if(needed > currentUnits){
+        alert("Not enough stock in selected category");
+        return false;
+    }
+
+    return true;
+}
+
+/* 🔥 DEPOSIT CALCULATION */
 function calculateDeposit(){
-let cost = Number(document.getElementById("cost").value) || 0;
-let percent = Number(document.getElementById("depositPercentage").value) || 0;
+    let cost = Number(document.getElementById("cost").value) || 0;
+    let percent = Number(document.getElementById("depositPercentage").value) || 0;
 
-let total = (cost * percent) / 100;
+    let total = (cost * percent) / 100;
 
-document.getElementById("depositAmount").innerText =
-total.toLocaleString();
+    document.getElementById("depositAmount").innerText =
+    total.toLocaleString();
 
-document.getElementById("depositPreview").innerText =
-percent;
-}
-
-/* ✅ SET CATEGORY DATA */
-function setCategoryData(){
-const select = document.getElementById("categorySelect");
-const option = select.options[select.selectedIndex];
-
-const packageUnits = Number(option.getAttribute("data-packageunits")) || 0;
-const BP = Number(option.getAttribute("data-bp")) || 0;
-
-document.getElementById("packageUnits").value = packageUnits;
-document.getElementById("BP").value = BP;
-
-calculatePurchasePrice();
-}
-
-/* ✅ CALCULATE PURCHASE PRICE */
-function calculatePurchasePrice(){
-const productUnits = Number(document.getElementById("productUnits").value) || 0;
-const packageUnits = Number(document.getElementById("packageUnits").value) || 0;
-const BP = Number(document.getElementById("BP").value) || 0;
-
-let price = 0;
-
-if(packageUnits > 0){
-price = (productUnits / packageUnits) * BP;
-}
-
-document.getElementById("purchasePrice").value =
-Math.round(price);
+    document.getElementById("depositPreview").innerText =
+    percent;
 }
 
 </script>
