@@ -25,13 +25,43 @@ background:#0b5d1e;
 color:#fff;
 }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-gap:20px;
+/* MAJOR CATEGORY SECTION */
+.major-section{
+margin-bottom:40px;
 }
 
+.major-title{
+font-size:20px;
+font-weight:bold;
+color:#0b5d1e;
+margin-bottom:12px;
+padding-left:4px;
+}
+
+/* HORIZONTAL SCROLL ROW */
+.scroll-row{
+display:flex;
+gap:15px;
+overflow-x:auto;
+padding-bottom:10px;
+scroll-snap-type:x mandatory;
+}
+
+.scroll-row::-webkit-scrollbar{
+height:6px;
+}
+
+.scroll-row::-webkit-scrollbar-thumb{
+background:#ccc;
+border-radius:10px;
+}
+
+/* CARD */
 .card{
+min-width:280px;
+flex:0 0 auto;
+scroll-snap-align:start;
+
 background:#fff;
 border-radius:14px;
 padding:18px;
@@ -42,10 +72,12 @@ border:1px solid #eee;
 .card h2{
 margin-bottom:10px;
 color:#0b5d1e;
+font-size:18px;
 }
 
 .info{
 margin:6px 0;
+font-size:14px;
 }
 
 .warning{
@@ -54,7 +86,7 @@ padding:10px;
 background:#ffe5e5;
 color:#b30000;
 border-radius:8px;
-font-size:14px;
+font-size:13px;
 }
 
 .warning span{
@@ -81,6 +113,9 @@ border:1px solid #ccc;
 width:100%;
 background:#0b5d1e;
 color:#fff;
+border:none;
+padding:10px;
+border-radius:8px;
 }
 </style>
 
@@ -93,9 +128,17 @@ color:#fff;
 </a>
 </div>
 
-<div class="grid">
+<% groupedCategories.forEach(group => { %>
 
-<% categories.forEach(cat => { 
+<div class="major-section">
+
+<div class="major-title">
+<%= group.majorCategory %>
+</div>
+
+<div class="scroll-row">
+
+<% group.categories.forEach(cat => { 
    const safeId = cat.category.replace(/\s+/g, '-');
 %>
 
@@ -126,21 +169,11 @@ Marketed Products for this category are almost sold out completely.
 
 <input type="hidden" name="category" value="<%= cat.category %>">
 
-<input 
-type="number" 
-name="packageUnits" 
-placeholder="Enter units bought" 
-required
->
+<input type="number" name="packageUnits" placeholder="Enter units bought" required>
 
-<input 
-type="number" 
-name="BP" 
-placeholder="Enter package buying price" 
-required
->
+<input type="number" name="BP" placeholder="Enter package buying price" required>
 
-<button type="submit" class="btn">Update</button>
+<button type="submit">Update</button>
 
 </form>
 
@@ -154,13 +187,13 @@ required
 
 </div>
 
+<% }) %>
+
+</div>
+
 <script>
 function toggleRestock(id){
 const form = document.getElementById(`form-${id}`);
-if(form.style.display === "block"){
-form.style.display = "none";
-}else{
-form.style.display = "block";
-}
+form.style.display = form.style.display === "block" ? "none" : "block";
 }
 </script>
