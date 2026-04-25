@@ -6,7 +6,10 @@ exports.getAllCategories = async () => {
 const data = await Product.aggregate([
 {
 $group: {
-_id: "$category",
+_id: {
+category: "$category",
+majorCategory: "$majorCategory"
+},
 
 /* total marketed units */
 stockedUnits: {
@@ -37,59 +40,17 @@ const totalUnits = allPackages.reduce((sum, pkg) => {
 return sum + (Number(pkg.units) || 0);
 }, 0);
 
-/* ✅ REAL STOCK (SOURCE OF TRUTH) */
+/* real stock */
 const currentUnits = allPackages.reduce((sum, pkg) => {
 return sum + (Number(pkg.remainingUnits) || 0);
 }, 0);
 
 return {
-category: cat._id,
+category: cat._id.category,
+majorCategory: cat._id.majorCategory || "Uncategorized",
 stockedUnits,
 currentUnits,
-totalUnits   // ✅ IMPORTANT: now returned
+totalUnits
 };
 });
-};
-
-/* CREATE CATEGORY */
-exports.createCategory = async ({ category, packageUnits, BP }) => {
-
-await Product.create({
-id: `CAT-${Date.now()}`,
-name: `${category}-base`,
-category,
-cost: 0,
-depositPercentage: 0,
-description: "Category base record",
-
-productUnits: 0,
-itemsAvailable: 0,
-
-/* FIFO PACKAGES */
-packages: [
-{
-units: Number(packageUnits),
-BP: Number(BP),
-remainingUnits: Number(packageUnits)
-}
-]
-});
-};
-
-/* RESTOCK CATEGORY (FIFO SAFE) */
-exports.restockCategory = async ({ category, packageUnits, BP }) => {
-
-await Product.updateMany(
-{ category },
-{
-$push: {
-packages: {
-units: Number(packageUnits),
-BP: Number(BP),
-remainingUnits: Number(packageUnits)
-}
-}
-}
-);
-
 };
