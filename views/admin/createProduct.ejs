@@ -1,6 +1,8 @@
 <% layout('layout', { title: 'Create Product' }) %>
 
 <style>
+/* (UNCHANGED STYLES - KEPT AS IS) */
+
 .topbar{
 background:#fff;
 padding:20px;
@@ -108,7 +110,6 @@ margin-bottom:15px;
 </style>
 
 <div class="topbar">
-
 <a href="/admin/products" class="btn btn-secondary">
 Back to Products
 </a>
@@ -116,7 +117,6 @@ Back to Products
 
 <div class="form-box">
 
-<!-- ✅ ERROR DISPLAY -->
 <% if (error) { %>
   <div class="error-box">
     <%= error %>
@@ -139,7 +139,22 @@ Back to Products
 <input name="name" required>
 </div>
 
-<!-- ✅ CATEGORY -->
+<!-- ================= 🔥 NEW: MAJOR CATEGORY ================= -->
+<div class="field">
+<label>Major Category</label>
+<select name="majorCategory" id="majorCategorySelect" required>
+<option value="">Select Major Category</option>
+
+<% majorCategories.forEach(mc => { %>
+<option value="<%= mc %>">
+<%= mc %>
+</option>
+<% }) %>
+
+</select>
+</div>
+
+<!-- ================= CATEGORY ================= -->
 <div class="field">
 <label>Category</label>
 <select name="category" id="categorySelect" required>
@@ -215,7 +230,7 @@ Cancel
 
 <script>
 
-/* 🔥 UPDATE STOCK PREVIEW */
+/* ================= STOCK PREVIEW ================= */
 function updatePreview(){
     const select = document.getElementById("categorySelect");
     const option = select.options[select.selectedIndex];
@@ -229,11 +244,10 @@ function updatePreview(){
     document.getElementById("stockNeeded").innerText = needed;
     document.getElementById("availableStock").innerText = currentUnits;
 
-    // rough estimate (not exact FIFO)
     document.getElementById("purchasePrice").value = needed;
 }
 
-/* 🔥 VALIDATION BEFORE SUBMIT */
+/* ================= VALIDATION ================= */
 function validateStock(){
     const select = document.getElementById("categorySelect");
     const option = select.options[select.selectedIndex];
@@ -252,7 +266,7 @@ function validateStock(){
     return true;
 }
 
-/* 🔥 DEPOSIT CALCULATION */
+/* ================= DEPOSIT ================= */
 function calculateDeposit(){
     let cost = Number(document.getElementById("cost").value) || 0;
     let percent = Number(document.getElementById("depositPercentage").value) || 0;
