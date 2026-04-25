@@ -26,12 +26,12 @@ exports.dashboard = async (req, res) => {
 exports.products = async (req, res) => {
     try {
 
-        const products = await adminService.getProducts();
+        const groupedProducts = await adminService.getProductsGrouped();
 
-        res.render("admin/products", {
-            products,
-            user: req.user
-        });
+res.render("admin/products", {
+    groupedProducts,
+    user: req.user
+});
 
     } catch (err) {
         console.error(err);
