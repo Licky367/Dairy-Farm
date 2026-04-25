@@ -5,7 +5,26 @@ exports.getCategories = async (req, res) => {
 try {
 const categories = await categoryService.getAllCategories();
 
-res.render("category", { categories });
+/* GROUP BY majorCategory (VIEW TRANSFORMATION ONLY) */
+const groupedMap = {};
+
+categories.forEach(cat => {
+const key = cat.majorCategory || "Uncategorized";
+
+if (!groupedMap[key]) {
+groupedMap[key] = {
+majorCategory: key,
+categories: []
+};
+}
+
+groupedMap[key].categories.push(cat);
+});
+
+const groupedCategories = Object.values(groupedMap);
+
+res.render("category", { groupedCategories });
+
 } catch (error) {
 console.error(error);
 res.status(500).send("Server Error");
@@ -20,12 +39,13 @@ res.render("categoryCreate");
 /* CREATE CATEGORY */
 exports.createCategory = async (req, res) => {
 try {
-const { category, packageUnits, BP } = req.body;
+const { category, packageUnits, BP, majorCategory } = req.body;
 
 await categoryService.createCategory({
 category,
 packageUnits,
-BP
+BP,
+majorCategory
 });
 
 res.redirect("/category");
