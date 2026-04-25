@@ -2,6 +2,25 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const User = require("../models/User");
 
+/*=======================================
+          GROUPED DATA
+=======================================*/
+exports.getProductsGrouped = async () => {
+
+    const products = await Product.find().sort({ createdAt: -1 });
+
+    const grouped = {};
+
+    products.forEach(p => {
+        if (!grouped[p.category]) {
+            grouped[p.category] = [];
+        }
+        grouped[p.category].push(p);
+    });
+
+    return grouped;
+};
+
 /* ================= PRODUCT LOGIC ================= */
 
 exports.getProducts = async () => {
