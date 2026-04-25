@@ -2,9 +2,10 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const User = require("../models/User");
 
-/*=======================================
-          GROUPED PRODUCTS (ADMIN VIEW)
-=======================================*/
+/* =======================================
+        GROUPED PRODUCTS (ADMIN)
+   majorCategory → category → products
+======================================= */
 exports.getProductsGrouped = async () => {
 
     const products = await Product.find().sort({ createdAt: -1 });
@@ -13,24 +14,24 @@ exports.getProductsGrouped = async () => {
 
     products.forEach(p => {
 
-        const majorCategory = p.majorCategory || "Uncategorized";
-        const category = p.category || "General";
+        const major = p.majorCategory || "Uncategorized";
+        const cat = p.category || "General";
 
-        if (!grouped[majorCategory]) {
-            grouped[majorCategory] = {
-                majorCategory,
+        if (!grouped[major]) {
+            grouped[major] = {
+                majorCategory: major,
                 categories: {}
             };
         }
 
-        if (!grouped[majorCategory].categories[category]) {
-            grouped[majorCategory].categories[category] = {
-                category,
+        if (!grouped[major].categories[cat]) {
+            grouped[major].categories[cat] = {
+                category: cat,
                 products: []
             };
         }
 
-        grouped[majorCategory].categories[category].products.push(p);
+        grouped[major].categories[cat].products.push(p);
     });
 
     return Object.values(grouped).map(group => ({
@@ -39,29 +40,33 @@ exports.getProductsGrouped = async () => {
     }));
 };
 
-/* ================= PRODUCT LIST ================= */
+
+/* =======================================
+        GET PRODUCTS (RAW)
+======================================= */
 exports.getProducts = async () => {
     return await Product.find().sort({ createdAt: -1 });
 };
 
-/* ================= SINGLE PRODUCT ================= */
+
+/* =======================================
+        GET SINGLE PRODUCT
+======================================= */
 exports.getProduct = async (id) => {
     return await Product.findOne({ id });
 };
 
-/* ================= CREATE PRODUCT ================= */
-exports.createProduct = async (data, file) => {
 
-    const cost = Number(data.cost) || 0;
-    const depositPercentage = Number(data.depositPercentage) || 0;
-    const itemsAvailable = Number(data.itemsAvailable) || 0;
-    const productUnits = Number(data.productUnits) || 0;
+/* =======================================
+        STOCK FETCH (SAFE)
+        used in create/update
+======================================= */
+const getStockPackages = async (category, majorCategory) => {
 
-    const products = await Product.find({ category: data.category });
-
-    if (!products.length) {
-        throw new Error("Category does not exist");
-    }
+    const products = await Product.find({
+        category,
+        majorCategory
+    });
 
     let packages = [];
 
@@ -76,41 +81,72 @@ exports.createProduct = async (data, file) => {
         }
     });
 
-    packages.sort(
+    return packages.sort(
         (a, b) => new Date(a._id.getTimestamp()) - new Date(b._id.getTimestamp())
     );
+};
 
-    let remainingNeeded = productUnits;
+
+/* =======================================
+        FIFO ALLOCATION ENGINE
+======================================= */
+const allocateStock = async (packages, productUnits) => {
+
+    let remaining = productUnits;
     let totalCost = 0;
     let allocations = [];
 
     for (let pkg of packages) {
 
-        if (remainingNeeded <= 0) break;
+        if (remaining <= 0) break;
         if (pkg.remainingUnits <= 0) continue;
 
-        const takeUnits = Math.min(pkg.remainingUnits, remainingNeeded);
+        const take = Math.min(pkg.remainingUnits, remaining);
         const unitCost = pkg.BP / pkg.units;
 
-        totalCost += takeUnits * unitCost;
+        totalCost += take * unitCost;
 
         allocations.push({
             packageId: pkg._id,
             parentId: pkg.parentId,
-            unitsTaken: takeUnits
+            unitsTaken: take
         });
 
         await Product.updateOne(
             { _id: pkg.parentId, "packages._id": pkg._id },
-            { $inc: { "packages.$.remainingUnits": -takeUnits } }
+            { $inc: { "packages.$.remainingUnits": -take } }
         );
 
-        remainingNeeded -= takeUnits;
+        remaining -= take;
     }
 
-    if (remainingNeeded > 0) {
+    if (remaining > 0) {
         throw new Error("Not enough stock in category packages");
     }
+
+    return { totalCost, allocations };
+};
+
+
+/* =======================================
+        CREATE PRODUCT
+======================================= */
+exports.createProduct = async (data, file) => {
+
+    const cost = Number(data.cost) || 0;
+    const depositPercentage = Number(data.depositPercentage) || 0;
+    const itemsAvailable = Number(data.itemsAvailable) || 0;
+    const productUnits = Number(data.productUnits) || 0;
+
+    const packages = await getStockPackages(
+        data.category,
+        data.majorCategory
+    );
+
+    const { totalCost, allocations } = await allocateStock(
+        packages,
+        productUnits
+    );
 
     await Product.create({
         id: data.id,
@@ -129,23 +165,24 @@ exports.createProduct = async (data, file) => {
     });
 };
 
-/* ================= UPDATE PRODUCT ================= */
+
+/* =======================================
+        UPDATE PRODUCT
+======================================= */
 exports.updateProduct = async (id, data, file) => {
 
-    const existingProduct = await Product.findOne({ id });
+    const existing = await Product.findOne({ id });
 
-    if (!existingProduct) {
-        throw new Error("Product not found");
-    }
+    if (!existing) throw new Error("Product not found");
 
     const cost = Number(data.cost) || 0;
     const depositPercentage = Number(data.depositPercentage) || 0;
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
-    /* RESTORE OLD STOCK */
-    if (existingProduct.allocations?.length) {
-        for (let alloc of existingProduct.allocations) {
+    /* restore old stock */
+    if (existing.allocations?.length) {
+        for (let alloc of existing.allocations) {
             await Product.updateOne(
                 {
                     _id: alloc.parentId,
@@ -160,57 +197,16 @@ exports.updateProduct = async (id, data, file) => {
         }
     }
 
-    /* RE-ALLOCATE */
-    const products = await Product.find({ category: data.category });
-
-    let packages = [];
-
-    products.forEach(p => {
-        if (p.packages?.length) {
-            p.packages.forEach(pkg => {
-                packages.push({
-                    ...pkg.toObject(),
-                    parentId: p._id
-                });
-            });
-        }
-    });
-
-    packages.sort(
-        (a, b) => new Date(a._id.getTimestamp()) - new Date(b._id.getTimestamp())
+    /* re-fetch stock */
+    const packages = await getStockPackages(
+        data.category,
+        data.majorCategory
     );
 
-    let remainingNeeded = productUnits;
-    let totalCost = 0;
-    let newAllocations = [];
-
-    for (let pkg of packages) {
-
-        if (remainingNeeded <= 0) break;
-        if (pkg.remainingUnits <= 0) continue;
-
-        const takeUnits = Math.min(pkg.remainingUnits, remainingNeeded);
-        const unitCost = pkg.BP / pkg.units;
-
-        totalCost += takeUnits * unitCost;
-
-        newAllocations.push({
-            packageId: pkg._id,
-            parentId: pkg.parentId,
-            unitsTaken: takeUnits
-        });
-
-        await Product.updateOne(
-            { _id: pkg.parentId, "packages._id": pkg._id },
-            { $inc: { "packages.$.remainingUnits": -takeUnits } }
-        );
-
-        remainingNeeded -= takeUnits;
-    }
-
-    if (remainingNeeded > 0) {
-        throw new Error("Not enough stock in category packages");
-    }
+    const { totalCost, allocations } = await allocateStock(
+        packages,
+        productUnits
+    );
 
     const updateData = {
         name: data.name,
@@ -222,7 +218,7 @@ exports.updateProduct = async (id, data, file) => {
         depositAmount: (cost * depositPercentage) / 100,
         itemsAvailable,
         productUnits,
-        allocations: newAllocations,
+        allocations,
         description: data.description
     };
 
@@ -233,12 +229,15 @@ exports.updateProduct = async (id, data, file) => {
     await Product.findOneAndUpdate({ id }, updateData, { new: true });
 };
 
-/* ================= DELETE PRODUCT ================= */
+
+/* =======================================
+        DELETE PRODUCT
+======================================= */
 exports.deleteProduct = async (id) => {
 
     const product = await Product.findOne({ id });
 
-    if (product?.allocations) {
+    if (product?.allocations?.length) {
         for (let alloc of product.allocations) {
             await Product.updateOne(
                 {
@@ -257,9 +256,10 @@ exports.deleteProduct = async (id) => {
     await Product.findOneAndDelete({ id });
 };
 
-/*=======================================
-          CATEGORY GROUPING (ADMIN)
-=======================================*/
+
+/* =======================================
+        CATEGORY GROUPING (ADMIN)
+======================================= */
 exports.getCategories = async () => {
 
     const data = await Product.aggregate([
@@ -303,9 +303,10 @@ exports.getCategories = async () => {
     });
 };
 
-/*=======================================
-          DASHBOARD DATA
-=======================================*/
+
+/* =======================================
+        DASHBOARD
+======================================= */
 exports.getDashboardData = async ({ month, year }) => {
 
     const now = new Date();
