@@ -5,6 +5,9 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const upload = require("../middleware/upload");
 const { isAdmin } = require("../middleware/auth");
+const adminStatsPageController = require("../controllers/adminStatsPageController");
+
+router.get("/stats", adminStatsPageController.statsPage);
 
 // Dashboard
 router.get("/admin/dashboard", isAdmin, adminController.dashboard);
