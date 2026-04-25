@@ -13,7 +13,7 @@ exports.getProduct = async (id) => {
 };
 
 /**
- * CREATE PRODUCT (FIFO ALLOCATION)
+ * CREATE PRODUCT (FIFO + TRACK ALLOCATION)
  */
 exports.createProduct = async (data, file) => {
 
@@ -22,33 +22,14 @@ exports.createProduct = async (data, file) => {
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
-    /* 🔥 VALIDATION (ADDED) */
-    const productsForCategory = await Product.find({ category: data.category });
-
-    let currentUnits = 0;
-
-    productsForCategory.forEach(p => {
-        if (p.packages && p.packages.length) {
-            p.packages.forEach(pkg => {
-                currentUnits += pkg.remainingUnits || 0;
-            });
-        }
-    });
-
-    const totalUnits = itemsAvailable * productUnits;
-
-    if (totalUnits > currentUnits) {
-        throw new Error("Total units (itemsAvailable × productUnits) cannot exceed current units");
-    }
-
-    /* 🔥 FETCH CATEGORY PRODUCTS (SOURCE OF PACKAGES) */
+    /* 🔥 FETCH CATEGORY PRODUCTS */
     const products = await Product.find({ category: data.category });
 
     if (!products.length) {
         throw new Error("Category does not exist");
     }
 
-    /* 🔥 COLLECT ALL PACKAGES */
+    /* 🔥 COLLECT PACKAGES */
     let packages = [];
 
     products.forEach(p => {
@@ -62,13 +43,14 @@ exports.createProduct = async (data, file) => {
         }
     });
 
-    /* 🔥 SORT FIFO (oldest first) */
+    /* 🔥 SORT FIFO */
     packages.sort(
         (a, b) => new Date(a._id.getTimestamp()) - new Date(b._id.getTimestamp())
     );
 
     let remainingNeeded = productUnits;
     let totalCost = 0;
+    let allocations = [];
 
     /* 🔥 FIFO ALLOCATION */
     for (let pkg of packages) {
@@ -77,22 +59,21 @@ exports.createProduct = async (data, file) => {
         if (pkg.remainingUnits <= 0) continue;
 
         const takeUnits = Math.min(pkg.remainingUnits, remainingNeeded);
-
         const unitCost = pkg.BP / pkg.units;
 
         totalCost += takeUnits * unitCost;
 
-        /* 🔥 DEDUCT FROM DB */
+        /* 🔥 TRACK ALLOCATION */
+        allocations.push({
+            packageId: pkg._id,
+            parentId: pkg.parentId,
+            unitsTaken: takeUnits
+        });
+
+        /* 🔥 DEDUCT */
         await Product.updateOne(
-            {
-                _id: pkg.parentId,
-                "packages._id": pkg._id
-            },
-            {
-                $inc: {
-                    "packages.$.remainingUnits": -takeUnits
-                }
-            }
+            { _id: pkg.parentId, "packages._id": pkg._id },
+            { $inc: { "packages.$.remainingUnits": -takeUnits } }
         );
 
         remainingNeeded -= takeUnits;
@@ -102,61 +83,121 @@ exports.createProduct = async (data, file) => {
         throw new Error("Not enough stock in category packages");
     }
 
-    const purchasePrice = totalCost;
-
     /* ✅ CREATE PRODUCT */
     await Product.create({
         id: data.id,
         name: data.name,
         category: data.category,
         image: file ? "/uploads/" + file.filename : "",
-        cost: cost,
-        purchasePrice: purchasePrice,
-        depositPercentage: depositPercentage,
+        cost,
+        purchasePrice: totalCost,
+        depositPercentage,
         depositAmount: (cost * depositPercentage) / 100,
-        itemsAvailable: itemsAvailable,
-        productUnits: productUnits,
+        itemsAvailable,
+        productUnits,
+        allocations, // 🔥 NEW
         description: data.description
     });
 };
 
 /**
- * UPDATE PRODUCT (UNCHANGED — but ignores purchasePrice changes)
+ * UPDATE PRODUCT (FULL STOCK REVERSAL + REALLOCATION)
  */
 exports.updateProduct = async (id, data, file) => {
+
+    const existingProduct = await Product.findOne({ id });
+
+    if (!existingProduct) {
+        throw new Error("Product not found");
+    }
 
     const cost = Number(data.cost) || 0;
     const depositPercentage = Number(data.depositPercentage) || 0;
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
-    /* 🔥 VALIDATION (ADDED) */
-    const productsForCategory = await Product.find({ category: data.category });
+    /* ================= 1. RESTORE OLD STOCK ================= */
+    if (existingProduct.allocations && existingProduct.allocations.length) {
 
-    let currentUnits = 0;
+        for (let alloc of existingProduct.allocations) {
 
-    productsForCategory.forEach(p => {
+            await Product.updateOne(
+                {
+                    _id: alloc.parentId,
+                    "packages._id": alloc.packageId
+                },
+                {
+                    $inc: {
+                        "packages.$.remainingUnits": alloc.unitsTaken
+                    }
+                }
+            );
+        }
+    }
+
+    /* ================= 2. RE-ALLOCATE ================= */
+    const products = await Product.find({ category: data.category });
+
+    let packages = [];
+
+    products.forEach(p => {
         if (p.packages && p.packages.length) {
             p.packages.forEach(pkg => {
-                currentUnits += pkg.remainingUnits || 0;
+                packages.push({
+                    ...pkg.toObject(),
+                    parentId: p._id
+                });
             });
         }
     });
 
-    const totalUnits = itemsAvailable * productUnits;
+    packages.sort(
+        (a, b) => new Date(a._id.getTimestamp()) - new Date(b._id.getTimestamp())
+    );
 
-    if (totalUnits > currentUnits) {
-        throw new Error("Total units (itemsAvailable × productUnits) cannot exceed current units");
+    let remainingNeeded = productUnits;
+    let totalCost = 0;
+    let newAllocations = [];
+
+    for (let pkg of packages) {
+
+        if (remainingNeeded <= 0) break;
+        if (pkg.remainingUnits <= 0) continue;
+
+        const takeUnits = Math.min(pkg.remainingUnits, remainingNeeded);
+        const unitCost = pkg.BP / pkg.units;
+
+        totalCost += takeUnits * unitCost;
+
+        newAllocations.push({
+            packageId: pkg._id,
+            parentId: pkg.parentId,
+            unitsTaken: takeUnits
+        });
+
+        await Product.updateOne(
+            { _id: pkg.parentId, "packages._id": pkg._id },
+            { $inc: { "packages.$.remainingUnits": -takeUnits } }
+        );
+
+        remainingNeeded -= takeUnits;
     }
 
+    if (remainingNeeded > 0) {
+        throw new Error("Not enough stock in category packages");
+    }
+
+    /* ================= 3. UPDATE PRODUCT ================= */
     const updateData = {
         name: data.name,
         category: data.category,
-        cost: cost,
-        depositPercentage: depositPercentage,
+        cost,
+        purchasePrice: totalCost,
+        depositPercentage,
         depositAmount: (cost * depositPercentage) / 100,
-        itemsAvailable: itemsAvailable,
-        productUnits: productUnits,
+        itemsAvailable,
+        productUnits,
+        allocations: newAllocations,
         description: data.description
     };
 
@@ -172,6 +213,26 @@ exports.updateProduct = async (id, data, file) => {
 };
 
 exports.deleteProduct = async (id) => {
+
+    const product = await Product.findOne({ id });
+
+    /* 🔥 RESTORE STOCK BEFORE DELETE */
+    if (product && product.allocations) {
+        for (let alloc of product.allocations) {
+            await Product.updateOne(
+                {
+                    _id: alloc.parentId,
+                    "packages._id": alloc.packageId
+                },
+                {
+                    $inc: {
+                        "packages.$.remainingUnits": alloc.unitsTaken
+                    }
+                }
+            );
+        }
+    }
+
     await Product.findOneAndDelete({ id });
 };
 
@@ -183,15 +244,11 @@ exports.getCategories = async () => {
         {
             $group: {
                 _id: "$category",
-
-                /* marketed units */
                 stockedUnits: {
                     $sum: {
                         $multiply: ["$productUnits", "$itemsAvailable"]
                     }
                 },
-
-                /* collect all packages */
                 packages: { $push: "$packages" }
             }
         }
@@ -200,7 +257,6 @@ exports.getCategories = async () => {
     return data.map(cat => {
 
         const stockedUnits = cat.stockedUnits || 0;
-
         const allPackages = (cat.packages || []).flat();
 
         const totalUnits = allPackages.reduce(
