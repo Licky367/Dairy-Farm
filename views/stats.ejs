@@ -1,6 +1,6 @@
 <%- include("../partials/layout", { title: "Financial Analytics" }) %>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 .container {
@@ -143,7 +143,7 @@ th, td {
 
 <!-- PRODUCT TABLE -->
 <div class="box" style="margin-top:20px;">
-    <h3>Top Products</h3>
+    <h3 id="productTitle">Top Products</h3>
 
     <table>
         <thead>
@@ -155,16 +155,7 @@ th, td {
         </tr>
         </thead>
 
-        <tbody>
-        <% productStats.slice(0, 10).forEach(p => { %>
-            <tr>
-                <td><%= p.name %></td>
-                <td><%= p.revenue %></td>
-                <td><%= p.profit %></td>
-                <td><%= p.unitsSold %></td>
-            </tr>
-        <% }) %>
-        </tbody>
+        <tbody id="productTableBody"></tbody>
     </table>
 </div>
 
@@ -173,9 +164,35 @@ th, td {
 <script>
 let majorData = <%- JSON.stringify(majorCategoryStats) %>;
 let categoryData = <%- JSON.stringify(categoryStats) %>;
+let productData = <%- JSON.stringify(productStats) %>;
 
 let categoryChart;
 let majorChart;
+
+// =========================
+// PRODUCT RENDER
+// =========================
+function renderProducts(data, title = "Top Products") {
+    const tbody = document.getElementById("productTableBody");
+    const titleEl = document.getElementById("productTitle");
+
+    titleEl.innerText = title;
+    tbody.innerHTML = "";
+
+    data
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .forEach(p => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.revenue}</td>
+                    <td>${p.profit}</td>
+                    <td>${p.unitsSold}</td>
+                </tr>
+            `;
+        });
+}
 
 // =========================
 // CATEGORY RENDER
@@ -196,6 +213,28 @@ function renderCategoryChart(data, label = "Category Performance") {
             }]
         }
     });
+
+    // 🔵 CATEGORY CLICK → FILTER PRODUCTS
+    document.getElementById("categoryChart").onclick = function(evt) {
+
+        const points = categoryChart.getElementsAtEventForMode(
+            evt,
+            'nearest',
+            { intersect: true },
+            true
+        );
+
+        if (!points.length) return;
+
+        const index = points[0].index;
+        const selectedCategory = categoryChart.data.labels[index];
+
+        const filteredProducts = productData.filter(
+            p => p.category === selectedCategory
+        );
+
+        renderProducts(filteredProducts, "Top Products - " + selectedCategory);
+    };
 }
 
 // =========================
@@ -211,7 +250,7 @@ majorChart = new Chart(document.getElementById("majorChart"), {
     }
 });
 
-// CLICK → DRILL DOWN
+// 🟢 MAJOR CLICK → DRILLDOWN + PRODUCTS
 document.getElementById("majorChart").onclick = async function(evt) {
 
     const points = majorChart.getElementsAtEventForMode(
@@ -226,23 +265,37 @@ document.getElementById("majorChart").onclick = async function(evt) {
     const index = points[0].index;
     const selectedMajor = majorData[index].majorCategory;
 
+    // CATEGORY DRILLDOWN
     const res = await fetch(
         `/admin/category-stats?month=${<%= financial.month || '' %>}&year=${<%= financial.year || '' %>}&majorCategory=${selectedMajor}`
     );
 
-    const filtered = await res.json();
+    const filteredCategories = await res.json();
+    renderCategoryChart(filteredCategories, selectedMajor + " Categories");
 
-    renderCategoryChart(filtered, selectedMajor + " Categories");
+    // 🔥 FILTER PRODUCTS BY MAJOR CATEGORY
+    const filteredProducts = productData.filter(
+        p => p.majorCategory === selectedMajor
+    );
+
+    renderProducts(filteredProducts, "Top Products - " + selectedMajor);
 
     document.getElementById("backBtn").classList.add("active");
 };
 
-// RESET → ALL CATEGORIES
+// =========================
+// RESET
+// =========================
 function resetCategories() {
     renderCategoryChart(categoryData, "Category Performance");
+    renderProducts(productData, "Top Products");
     document.getElementById("backBtn").classList.remove("active");
 }
 
+// =========================
 // INIT
+// =========================
 renderCategoryChart(categoryData);
+renderProducts(productData);
+
 </script>
