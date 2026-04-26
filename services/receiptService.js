@@ -1,74 +1,24 @@
-// services/receiptService.js
-const PDFDocument = require("pdfkit");
+const puppeteer = require("puppeteer");
 
-exports.generateReceipt = (order, res) => {
+exports.generateReceipt = async (html) => {
 
-    const doc = new PDFDocument();
-
-    // 🔽 download headers
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=receipt-${order._id}.pdf`
-    );
-
-    doc.pipe(res);
-
-    // =========================
-    // COMPANY
-    // =========================
-    doc.fontSize(18).text(process.env.COMPANY_NAME || "My Company");
-
-    doc.moveDown();
-
-    // =========================
-    // ORDER INFO
-    // =========================
-    doc.fontSize(12).text(`Order ID: ${order._id}`);
-    doc.text(`Customer: ${order.customerName}`);
-    doc.text(`Date: ${new Date(order.orderedAt).toLocaleString()}`);
-
-    doc.moveDown();
-
-    // =========================
-    // PAYMENT STATUS
-    // =========================
-    const status = order.status;
-
-    let paymentLabel = "UNKNOWN";
-
-    if (status === "paid" || status === "paid(cash)") {
-        paymentLabel = "PAID";
-    } else if (status === "depositPaid") {
-        paymentLabel = "DEPOSIT PAID ONLY";
-    } else if (status === "payAfter") {
-        paymentLabel = "NOT PAID YET";
-    }
-
-    doc.fontSize(14).text(`Payment Status: ${paymentLabel}`);
-
-    doc.moveDown();
-
-    // =========================
-    // ITEMS
-    // =========================
-    doc.text("Items:");
-
-    order.items.forEach(item => {
-        doc.text(
-            `${item.name} | Qty: ${item.quantity} | KES ${item.cost}`
-        );
+    const browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
-    doc.moveDown();
+    const page = await browser.newPage();
 
-    // =========================
-    // TOTALS
-    // =========================
-    doc.text(`Total: KES ${order.totalAmount}`);
-    doc.text(`Deposit Paid: KES ${order.depositAmountPaid}`);
-    doc.text(`Balance: KES ${order.arrearAmount}`);
-    doc.text(`Shipping: KES ${order.shippingCost}`);
+    await page.setContent(html, {
+        waitUntil: ["domcontentloaded", "networkidle0"]
+    });
 
-    doc.end();
+    const pdf = await page.pdf({
+        format: "A4",
+        printBackground: true
+    });
+
+    await browser.close();
+
+    return pdf;
 };
