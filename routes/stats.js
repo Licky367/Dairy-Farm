@@ -2,29 +2,14 @@ const express = require("express");
 const router = express.Router();
 const statsController = require("../controllers/statsController");
 
-/* =========================
-   FINANCIAL ANALYTICS
-========================= */
-router.get("/financial", statsController.getFinancialStats);
+router.get("/stats", statsController.renderDashboard);
 
-/* =========================
-   SNAPSHOT BUILDER (MANUAL TRIGGER)
-========================= */
-router.post("/build", statsController.buildMonthlyStats);
+router.get("/financial-stats", statsController.getFinancialStats);
+router.get("/category-stats", statsController.getCategoryStats);
+router.get("/product-stats", statsController.getProductStats);
+router.get("/dashboard-stats", statsController.getDashboardStats);
 
-/* =========================
-   CATEGORY BREAKDOWN
-========================= */
-router.get("/categories", statsController.getCategoryStats);
-
-/* =========================
-   PRODUCT PERFORMANCE
-========================= */
-router.get("/products", statsController.getProductStats);
-
-/* =========================
-   DASHBOARD SUMMARY
-========================= */
-router.get("/dashboard", statsController.getDashboardStats);
+// optional
+router.get("/build-stats", statsController.buildMonthlyStats);
 
 module.exports = router;
