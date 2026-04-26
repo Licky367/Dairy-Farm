@@ -4,7 +4,8 @@ const orderSchema = new mongoose.Schema(
 {
     userId: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
 
     // 👤 CUSTOMER SNAPSHOT
@@ -33,13 +34,13 @@ const orderSchema = new mongoose.Schema(
         }
     ],
 
-    // 🚚 ORDER LEVEL SHIPPING (IMPORTANT FIX)
+    // 🚚 SHIPPING
     shippingCost: {
         type: Number,
         default: 0
     },
 
-    // 💰 FINANCIALS
+    // 💰 FINANCIALS (ALIGNED WITH SERVICE)
     totalAmount: {
         type: Number,
         required: true
@@ -60,12 +61,13 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
+    // 🔥 THESE MUST MATCH statsService
     totalRevenue: {
         type: Number,
         default: 0
     },
 
-    totalCost: {
+    totalCost: {   // ✅ used by stats
         type: Number,
         default: 0
     },
@@ -78,7 +80,8 @@ const orderSchema = new mongoose.Schema(
     // 🕒 ORDER TIME
     orderedAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
+        index: true
     },
 
     // =========================
@@ -87,7 +90,8 @@ const orderSchema = new mongoose.Schema(
     status: {
         type: String,
         enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
-        default: "payAfter"
+        default: "payAfter",
+        index: true
     },
 
     paymentType: {
@@ -116,7 +120,7 @@ const orderSchema = new mongoose.Schema(
         paidAt: Date
     },
 
-    // 🚚 DELIVERY STATUS
+    // 🚚 DELIVERY
     delivered: {
         type: Boolean,
         default: false
@@ -129,14 +133,14 @@ const orderSchema = new mongoose.Schema(
 
     deliveredAt: Date,
 
-    // 📍 DELIVERY INFO
+    // 📍 LOCATION
     deliveryAddress: String,
     locationUrl: String,
     locationLat: Number,
     locationLng: Number,
     locationText: String,
 
-    // 📅 DELIVERY TIMING
+    // 📅 DELIVERY TIME
     expectedDeliveryDate: {
         type: Date,
         default: null
@@ -145,8 +149,7 @@ const orderSchema = new mongoose.Schema(
 },
 {
     timestamps: true
-}
-);
+});
 
 /* =========================
    FINANCIAL CALCULATIONS
@@ -171,7 +174,7 @@ function calculateFinancials(doc) {
     let revenue = 0;
     let cost = 0;
 
-    doc.items.forEach(item => {
+    (doc.items || []).forEach(item => {
 
         const sellPrice = Number(item.cost || 0);
         const buyPrice = Number(item.purchasePrice || 0);
@@ -183,30 +186,53 @@ function calculateFinancials(doc) {
 
     doc.totalRevenue = revenue;
     doc.totalCost = cost;
-    doc.totalProfit = revenue - cost - (Number(doc.shippingCost || 0));
+
+    // 🔥 IMPORTANT: keep order-level profit clean
+    doc.totalProfit = revenue - cost - Number(doc.shippingCost || 0);
 }
 
-/* BEFORE SAVE */
+/* =========================
+   HOOKS
+========================= */
+
+// SAFE: full document available
 orderSchema.pre("save", function (next) {
     calculateFinancials(this);
     next();
 });
 
-/* BEFORE UPDATE */
-orderSchema.pre("findOneAndUpdate", function (next) {
+// ⚠️ LIMITED SAFE UPDATE (only when items exist)
+orderSchema.pre("findOneAndUpdate", async function (next) {
 
-    let update = this.getUpdate() || {};
-    let doc = update.$set || update;
+    const update = this.getUpdate();
 
-    calculateFinancials(doc);
-
-    if (update.$set) {
-        update.$set = doc;
-    } else {
-        update = doc;
+    // If items not being updated → skip recalculation
+    if (!update.items && !(update.$set && update.$set.items)) {
+        return next();
     }
 
-    this.setUpdate(update);
+    // Fetch full document to recalc properly
+    const docToUpdate = await this.model.findOne(this.getQuery());
+
+    if (!docToUpdate) return next();
+
+    const merged = {
+        ...docToUpdate.toObject(),
+        ...(update.$set || update)
+    };
+
+    calculateFinancials(merged);
+
+    this.setUpdate({
+        ...update,
+        $set: {
+            ...(update.$set || {}),
+            totalRevenue: merged.totalRevenue,
+            totalCost: merged.totalCost,
+            totalProfit: merged.totalProfit,
+            arrearAmount: merged.arrearAmount
+        }
+    });
 
     next();
 });
