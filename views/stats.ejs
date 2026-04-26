@@ -7,9 +7,10 @@
     padding: 20px;
 }
 
+/* ================= CARDS ================= */
 .cards {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr); /* 2 per row */
     gap: 15px;
     margin-bottom: 25px;
 }
@@ -31,9 +32,10 @@
     margin-top: 8px;
 }
 
+/* ================= CHARTS ================= */
 .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* stack vertically */
     gap: 20px;
 }
 
@@ -44,6 +46,7 @@
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
 }
 
+/* ================= TABLE ================= */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -53,6 +56,13 @@ th, td {
     padding: 10px;
     border-bottom: 1px solid #eee;
     text-align: left;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+    .cards {
+        grid-template-columns: 1fr; /* stack cards on small screens */
+    }
 }
 </style>
 
