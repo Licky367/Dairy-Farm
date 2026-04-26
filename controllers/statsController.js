@@ -15,9 +15,16 @@ exports.getFinancialStats = async (req, res) => {
 /* =========================
    BUILD SNAPSHOT
 ========================= */
-exports.buildMonthlyStats = async (req, res) => {
+exports.getCategoryStats = async (req, res) => {
     try {
-        const data = await statsService.buildMonthlyStatistics(req.body);
+        const { month, year, majorCategory } = req.query;
+
+        const data = await statsService.getCategoryStats({
+            month,
+            year,
+            majorCategory
+        });
+
         res.json(data);
     } catch (err) {
         res.status(500).json({ message: err.message });
