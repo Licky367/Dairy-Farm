@@ -31,7 +31,8 @@ margin-bottom:5px;
 color:#444;
 }
 
-input{
+input,
+select{
 width:100%;
 padding:12px;
 border-radius:8px;
@@ -65,20 +66,38 @@ cursor:pointer;
 
 <div class="field">
 <label>Major Category</label>
+
+<select id="majorCategorySelect">
+<option value="">Choose existing major category</option>
+
+<% if (majorCategories && majorCategories.length > 0) { %>
+    <% majorCategories.forEach(item => { %>
+        <option value="<%= item %>"><%= item %></option>
+    <% }) %>
+<% } %>
+
+<option value="custom">+ Type New Major Category</option>
+</select>
+
 <input 
 type="text" 
-name="majorCategory" 
-placeholder="Enter major category (e.g. Electronics, Groceries)" 
+name="majorCategory"
+id="majorCategoryInput"
+placeholder="Select above or type new major category"
 required
+style="margin-top:10px;"
 >
+
+<small>Select an existing major category or type a new one.</small>
+
 </div>
 
 <div class="field">
-<label>Category Name</label>
+<label>Enter Sub-category Name</label>
 <input 
 type="text" 
 name="category" 
-placeholder="Enter category name" 
+placeholder="e.g. Cooking Oil, Rice, Phone Charger" 
 required
 >
 </div>
@@ -88,7 +107,7 @@ required
 <input 
 type="number" 
 name="packageUnits" 
-placeholder="Enter number of units in this batch" 
+placeholder="e.g. 12" 
 min="1"
 required
 >
@@ -100,7 +119,7 @@ required
 <input 
 type="number" 
 name="BP" 
-placeholder="Enter total cost of this package" 
+placeholder="e.g. 2500" 
 min="1"
 required
 >
@@ -114,3 +133,19 @@ required
 </div>
 
 </div>
+
+<script>
+const select = document.getElementById("majorCategorySelect");
+const input = document.getElementById("majorCategoryInput");
+
+select.addEventListener("change", function () {
+
+if(this.value === "custom"){
+input.value = "";
+input.focus();
+}else{
+input.value = this.value;
+}
+
+});
+</script>
