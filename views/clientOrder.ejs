@@ -31,6 +31,13 @@ display:inline-block;
 .depositPaid{background:#fef3c7;color:#92400e;}
 .payAfter{background:#e0e7ff;color:#3730a3;}
 
+/* 🔥 ACTION BUTTONS WRAPPER */
+.actions{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
 button{
 background:#0b5d1e;
 color:white;
@@ -38,9 +45,15 @@ border:none;
 padding:10px 15px;
 border-radius:8px;
 cursor:pointer;
+font-size:13px;
 }
 
 button:hover{opacity:0.9;}
+
+/* secondary button (receipt) */
+.receipt-btn{
+background:#374151;
+}
 </style>
 
 
@@ -68,9 +81,19 @@ Delivered: <%= order.delivered ? "Yes" : "No" %>
 
 </div>
 
+<!-- 🔥 ACTIONS -->
+<div class="actions">
+
 <a href="/client/orders/<%= order._id %>">
 <button>Track Order</button>
 </a>
+
+<!-- 🔥 RECEIPT BUTTON -->
+<a href="/client/orders/<%= order._id %>/receipt" target="_blank">
+<button class="receipt-btn">Download Receipt</button>
+</a>
+
+</div>
 
 </div>
 
