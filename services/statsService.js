@@ -10,10 +10,9 @@ const paidFilter = {
 };
 
 /* =========================
-   FINANCIAL STATS
+   DATE HELPER
 ========================= */
-exports.getFinancialStats = async ({ month, year }) => {
-
+function getDateRange(month, year) {
     const now = new Date();
 
     const selectedYear = Number(year) || now.getFullYear();
@@ -21,6 +20,16 @@ exports.getFinancialStats = async ({ month, year }) => {
 
     const start = new Date(selectedYear, selectedMonth - 1, 1);
     const end = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
+
+    return { start, end, selectedMonth, selectedYear };
+}
+
+/* =========================
+   FINANCIAL STATS
+========================= */
+exports.getFinancialStats = async ({ month, year }) => {
+
+    const { start, end } = getDateRange(month, year);
 
     const orders = await Order.find({
         ...paidFilter,
@@ -31,11 +40,11 @@ exports.getFinancialStats = async ({ month, year }) => {
     let cost = 0;
     let shipping = 0;
 
-    orders.forEach(o => {
+    for (let o of orders) {
         revenue += Number(o.totalRevenue || 0);
         cost += Number(o.orderPurchasePrice || 0);
         shipping += Number(o.shippingCost || 0);
-    });
+    }
 
     const profit = revenue - cost;
     const netProfit = profit - shipping;
@@ -50,21 +59,23 @@ exports.getFinancialStats = async ({ month, year }) => {
 };
 
 /* =========================
-   BUILD SNAPSHOT
+   BUILD SNAPSHOT (OPTIMIZED)
 ========================= */
 exports.buildMonthlyStatistics = async ({ month, year }) => {
 
-    const now = new Date();
-
-    const selectedYear = Number(year) || now.getFullYear();
-    const selectedMonth = Number(month) || (now.getMonth() + 1);
-
-    const start = new Date(selectedYear, selectedMonth - 1, 1);
-    const end = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
+    const { start, end, selectedMonth, selectedYear } = getDateRange(month, year);
 
     const orders = await Order.find({
         ...paidFilter,
         orderedAt: { $gte: start, $lte: end }
+    });
+
+    // 🔥 FETCH ALL PRODUCTS ONCE (fixes N+1 problem)
+    const products = await Product.find({});
+    const productLookup = {};
+
+    products.forEach(p => {
+        productLookup[p.id] = p;
     });
 
     let revenue = 0;
@@ -83,7 +94,7 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
 
         for (let item of order.items) {
 
-            const product = await Product.findOne({ id: item.id });
+            const product = productLookup[item.id];
             if (!product) continue;
 
             const qty = item.quantity || 0;
@@ -91,24 +102,42 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
             const itemRevenue = (item.cost || 0) * qty;
             const itemCost = (item.purchasePrice || 0) * qty;
             const itemProfit = itemRevenue - itemCost;
-            const itemNet = itemProfit - (order.shippingCost || 0);
+
+            // 🔥 FIX: distribute shipping properly per item
+            const itemShippingShare = (order.shippingCost || 0) / (order.items.length || 1);
+            const itemNet = itemProfit - itemShippingShare;
 
             const major = product.majorCategory || "Uncategorized";
             const category = product.category || "General";
 
-            // MAJOR
+            // ===== MAJOR =====
             if (!majorMap[major]) {
-                majorMap[major] = { majorCategory: major, revenue: 0, purchaseCost: 0, profit: 0, netProfit: 0, orderCount: 0 };
+                majorMap[major] = {
+                    majorCategory: major,
+                    revenue: 0,
+                    purchaseCost: 0,
+                    profit: 0,
+                    netProfit: 0,
+                    unitsSold: 0
+                };
             }
 
-            // CATEGORY
-            const catKey = `${major}-${category}`;
+            // ===== CATEGORY =====
+            const catKey = `${major}__${category}`;
 
             if (!categoryMap[catKey]) {
-                categoryMap[catKey] = { majorCategory: major, category, revenue: 0, purchaseCost: 0, profit: 0, netProfit: 0, orderCount: 0 };
+                categoryMap[catKey] = {
+                    majorCategory: major,
+                    category,
+                    revenue: 0,
+                    purchaseCost: 0,
+                    profit: 0,
+                    netProfit: 0,
+                    unitsSold: 0
+                };
             }
 
-            // PRODUCT
+            // ===== PRODUCT =====
             if (!productMap[item.id]) {
                 productMap[item.id] = {
                     productId: item.id,
@@ -123,16 +152,18 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
                 };
             }
 
-            // ACCUMULATE
+            // ===== ACCUMULATE =====
             majorMap[major].revenue += itemRevenue;
             majorMap[major].purchaseCost += itemCost;
             majorMap[major].profit += itemProfit;
             majorMap[major].netProfit += itemNet;
+            majorMap[major].unitsSold += qty;
 
             categoryMap[catKey].revenue += itemRevenue;
             categoryMap[catKey].purchaseCost += itemCost;
             categoryMap[catKey].profit += itemProfit;
             categoryMap[catKey].netProfit += itemNet;
+            categoryMap[catKey].unitsSold += qty;
 
             productMap[item.id].revenue += itemRevenue;
             productMap[item.id].purchaseCost += itemCost;
@@ -162,23 +193,22 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
         productStats: Object.values(productMap)
     };
 
-    const existing = await Statistical.findOne({
-        year: selectedYear,
-        month: selectedMonth,
-        periodType: "monthly"
-    });
-
-    if (existing) {
-        await Statistical.findByIdAndUpdate(existing._id, payload);
-    } else {
-        await Statistical.create(payload);
-    }
+    // UPSERT
+    await Statistical.findOneAndUpdate(
+        {
+            year: selectedYear,
+            month: selectedMonth,
+            periodType: "monthly"
+        },
+        payload,
+        { upsert: true, new: true }
+    );
 
     return payload;
 };
 
 /* =========================
-   CATEGORY STATS (FILTERED)
+   CATEGORY STATS
 ========================= */
 exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 
@@ -192,7 +222,6 @@ exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 
     let categories = data.categoryStats || [];
 
-    // 🔥 FILTER BY MAJOR CATEGORY (NEW)
     if (majorCategory) {
         categories = categories.filter(
             c => c.majorCategory === majorCategory
@@ -203,9 +232,9 @@ exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 };
 
 /* =========================
-   PRODUCT STATS
+   PRODUCT STATS (FILTERABLE 🔥)
 ========================= */
-exports.getProductStats = async ({ month, year }) => {
+exports.getProductStats = async ({ month, year, majorCategory, category }) => {
 
     const data = await Statistical.findOne({
         month: Number(month),
@@ -213,7 +242,25 @@ exports.getProductStats = async ({ month, year }) => {
         periodType: "monthly"
     });
 
-    return data?.productStats || [];
+    if (!data) return [];
+
+    let products = data.productStats || [];
+
+    // 🔥 FILTER BY MAJOR
+    if (majorCategory) {
+        products = products.filter(
+            p => p.majorCategory === majorCategory
+        );
+    }
+
+    // 🔥 FILTER BY CATEGORY
+    if (category) {
+        products = products.filter(
+            p => p.category === category
+        );
+    }
+
+    return products;
 };
 
 /* =========================
@@ -223,16 +270,21 @@ exports.getDashboardStats = async ({ month, year }) => {
 
     const financial = await exports.getFinancialStats({ month, year });
 
-    const snapshot = await Statistical.findOne({
+    let snapshot = await Statistical.findOne({
         month: Number(month),
         year: Number(year),
         periodType: "monthly"
     });
 
+    // 🔥 AUTO-BUILD if missing
+    if (!snapshot) {
+        snapshot = await exports.buildMonthlyStatistics({ month, year });
+    }
+
     return {
         financial,
-        majorCategoryStats: snapshot?.majorCategoryStats || [],
-        categoryStats: snapshot?.categoryStats || [],
-        productStats: snapshot?.productStats || []
+        majorCategoryStats: snapshot.majorCategoryStats || [],
+        categoryStats: snapshot.categoryStats || [],
+        productStats: snapshot.productStats || []
     };
 };
