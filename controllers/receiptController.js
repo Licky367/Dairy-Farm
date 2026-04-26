@@ -3,6 +3,17 @@ const ejs = require("ejs");
 const path = require("path");
 const receiptService = require("../services/receiptService");
 
+/* .....COMPANY INFORMATION... */
+company: {
+    name: process.env.COMPANY_NAME,
+    logo: process.env.COMPANY_LOGO,
+    address: process.env.COMPANY_ADDRESS,
+    email: process.env.COMPANY_EMAIL,
+    phone: process.env.COMPANY_PHONE,
+    website: process.env.COMPANY_WEBSITE,
+    whatsapp: process.env.COMPANY_WHATSAPP
+}
+
 /* =========================
    PAYMENT LABEL
 ========================= */
