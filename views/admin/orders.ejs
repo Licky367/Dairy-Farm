@@ -130,16 +130,21 @@ border:1px solid #ccc;
       <!-- 🔥 ACTIONS -->
       <div class="actions">
 
-        <button onclick="window.location.href='/admin/orders/<%= order._id %>'">
-          View Details
-        </button>
+  <button onclick="window.location.href='/admin/orders/<%= order._id %>'">
+    View Details
+  </button>
 
-        <!-- 🔥 RECEIPT BUTTON -->
-        <a href="/admin/orders/<%= order._id %>/receipt" target="_blank">
-          <button class="receipt-btn">Download Receipt</button>
-        </a>
+  <!-- DOWNLOAD -->
+  <a href="/admin/orders/<%= order._id %>/receipt">
+    <button class="receipt-btn">Download Receipt</button>
+  </a>
 
-      </div>
+  <!-- PRINT -->
+  <a href="/admin/orders/<%= order._id %>/receipt?print=true" target="_blank">
+    <button class="print-btn">Print Receipt</button>
+  </a>
+
+</div>
 
     </div>
 
