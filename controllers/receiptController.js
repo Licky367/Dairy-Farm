@@ -48,10 +48,14 @@ exports.downloadReceiptAdmin = async (req, res) => {
 
         const pdf = await buildReceipt(order);
 
-        res.set({
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename=receipt-${order._id}.pdf`
-        });
+        const isPrint = req.query.print === "true";
+
+res.set({
+    "Content-Type": "application/pdf",
+    "Content-Disposition": isPrint
+        ? "inline"
+        : `attachment; filename=receipt-${order._id}.pdf`
+});
 
         res.send(pdf);
 
