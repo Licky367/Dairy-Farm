@@ -30,13 +30,6 @@ z-index:999;
 .left-menu{display:flex;align-items:center;gap:18px;}
 .menu-btn{font-size:24px;cursor:pointer;color:#0b5d1e;}
 
-.icon-group{display:flex;gap:18px;}
-.icon-group a{
-text-decoration:none;
-color:#0b5d1e;
-font-size:18px;
-}
-
 /* PROFILE */
 .profile-box{position:relative;}
 
@@ -176,9 +169,6 @@ Corevester Investments Limited
 
 <div class="left-menu">
 <div class="menu-btn" onclick="openSidebar()">☰</div>
-
-<!-- ❌ CLIENT ICONS REMOVED (nothing here now) -->
-
 </div>
 
 <!-- PROFILE -->
@@ -215,18 +205,13 @@ Corevester Investments Limited
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
-<% if(user && user.role === "client")
-
-{ %>
+<% if(user && user.role === "client") { %>
 <a href="/client">⌂ Home</a>
 <a href="/cart">🛍 Cart</a>
 <a href="/client/orders">📦 My Orders</a>
 <a href="/client/unpaid/orders">⏳ Pending Payments</a>
 <a href="/logout">🚪 Logout</a>
-<% }
-
- else 
-{ %>
+<% } else { %>
 <a href="/admin/dashboard">📊 Dashboard</a>
 <a href="/category/create">➕ Add Category</a>
 <a href="/admin/products">📦 Products</a>
@@ -256,6 +241,10 @@ Corevester Investments Limited
 </div>
 
 <script>
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+const profileBox = document.getElementById("profileBox");
+
 function openSidebar(){
 sidebar.classList.add("active");
 overlay.classList.add("active");
