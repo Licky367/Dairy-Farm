@@ -19,16 +19,47 @@ font-size:22px;font-weight:bold;z-index:1000;
 
 /* TOP MENU */
 .topmenu{
-position:fixed;top:70px;left:0;right:0;height:60px;
+position:fixed;
+top:70px;
+left:0;
+right:0;
+height:60px;
 background:#fff;
-display:flex;align-items:center;justify-content:space-between;
+display:flex;
+align-items:center;
+justify-content:space-between;
 padding:0 20px;
 box-shadow:0 4px 12px rgba(0,0,0,.05);
-z-index:999;
+z-index:1500;
 }
 
-.left-menu{display:flex;align-items:center;gap:18px;}
-.menu-btn{font-size:24px;cursor:pointer;color:#0b5d1e;}
+.left-menu{
+display:flex;
+align-items:center;
+gap:18px;
+}
+
+/* MENU BUTTON (FIXED VISIBILITY) */
+.menu-btn{
+font-size:28px;
+cursor:pointer;
+color:#0b5d1e;
+font-weight:bold;
+display:flex;
+align-items:center;
+justify-content:center;
+width:42px;
+height:42px;
+border-radius:8px;
+background:#fff;
+border:1px solid #ddd;
+transition:.2s ease;
+z-index:1600;
+}
+
+.menu-btn:hover{
+background:rgba(11,93,30,0.1);
+}
 
 /* PROFILE */
 .profile-box{position:relative;}
@@ -168,7 +199,9 @@ Corevester Investments Limited
 <div class="topmenu">
 
 <div class="left-menu">
-<div class="menu-btn" onclick="openSidebar()">☰</div>
+<div class="menu-btn" onclick="openSidebar()" aria-label="Open Menu">
+&#9776;
+</div>
 </div>
 
 <!-- PROFILE -->
@@ -249,14 +282,17 @@ function openSidebar(){
 sidebar.classList.add("active");
 overlay.classList.add("active");
 }
+
 function closeSidebar(){
 sidebar.classList.remove("active");
 overlay.classList.remove("active");
 }
+
 function toggleProfile(e){
 e.stopPropagation();
 profileBox.classList.toggle("active");
 }
+
 document.addEventListener("click",()=>{
 profileBox.classList.remove("active");
 });
