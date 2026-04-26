@@ -50,7 +50,7 @@ exports.getFinancialStats = async ({ month, year }) => {
 };
 
 /* =========================
-   BUILD SNAPSHOT (FROM MODEL LOGIC)
+   BUILD SNAPSHOT
 ========================= */
 exports.buildMonthlyStatistics = async ({ month, year }) => {
 
@@ -110,9 +110,20 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
 
             // PRODUCT
             if (!productMap[item.id]) {
-                productMap[item.id] = { productId: item.id, name: product.name, majorCategory: major, category, revenue: 0, purchaseCost: 0, profit: 0, netProfit: 0, unitsSold: 0 };
+                productMap[item.id] = {
+                    productId: item.id,
+                    name: product.name,
+                    majorCategory: major,
+                    category,
+                    revenue: 0,
+                    purchaseCost: 0,
+                    profit: 0,
+                    netProfit: 0,
+                    unitsSold: 0
+                };
             }
 
+            // ACCUMULATE
             majorMap[major].revenue += itemRevenue;
             majorMap[major].purchaseCost += itemCost;
             majorMap[major].profit += itemProfit;
@@ -167,9 +178,9 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
 };
 
 /* =========================
-   CATEGORY STATS (FROM SNAPSHOT)
+   CATEGORY STATS (FILTERED)
 ========================= */
-exports.getCategoryStats = async ({ month, year }) => {
+exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 
     const data = await Statistical.findOne({
         month: Number(month),
@@ -177,7 +188,18 @@ exports.getCategoryStats = async ({ month, year }) => {
         periodType: "monthly"
     });
 
-    return data?.categoryStats || [];
+    if (!data) return [];
+
+    let categories = data.categoryStats || [];
+
+    // 🔥 FILTER BY MAJOR CATEGORY (NEW)
+    if (majorCategory) {
+        categories = categories.filter(
+            c => c.majorCategory === majorCategory
+        );
+    }
+
+    return categories;
 };
 
 /* =========================
@@ -200,6 +222,7 @@ exports.getProductStats = async ({ month, year }) => {
 exports.getDashboardStats = async ({ month, year }) => {
 
     const financial = await exports.getFinancialStats({ month, year });
+
     const snapshot = await Statistical.findOne({
         month: Number(month),
         year: Number(year),
