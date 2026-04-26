@@ -15,11 +15,26 @@ color:#0b5d1e;
 
 .card p{margin-bottom:6px;}
 
+/* 🔥 BUTTON GROUP */
+.actions{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-top:10px;
+}
+
 button{
 padding:8px 14px;border:none;border-radius:8px;
 background:#0b5d1e;color:#fff;cursor:pointer;
-margin-top:10px;
+font-size:13px;
 }
+
+/* secondary button */
+.receipt-btn{
+background:#374151;
+}
+
+button:hover{opacity:0.9;}
 
 .empty{text-align:center;padding:20px;color:#777;}
 
@@ -112,9 +127,19 @@ border:1px solid #ccc;
         <%= new Date(order.orderedAt || order.createdAt).toLocaleString() %>
       </p>
 
-      <button onclick="window.location.href='/admin/orders/<%= order._id %>'">
-        View Details
-      </button>
+      <!-- 🔥 ACTIONS -->
+      <div class="actions">
+
+        <button onclick="window.location.href='/admin/orders/<%= order._id %>'">
+          View Details
+        </button>
+
+        <!-- 🔥 RECEIPT BUTTON -->
+        <a href="/admin/orders/<%= order._id %>/receipt" target="_blank">
+          <button class="receipt-btn">Download Receipt</button>
+        </a>
+
+      </div>
 
     </div>
 
