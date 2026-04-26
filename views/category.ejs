@@ -161,7 +161,7 @@ Total Units: <strong><%= cat.totalUnits %></strong>
 <% if(cat.currentUnits <= (0.3 * cat.totalUnits)) { %>
 
 <div class="warning">
-Marketed Products for this category are almost sold out completely.
+almost sold out.
 <span onclick="toggleRestock('<%= safeId %>')">RESTOCK NOW</span>
 </div>
 
