@@ -28,6 +28,7 @@ const clientOrderRoutes = require("./routes/clientOrder");
 const unpaidRoutes = require("./routes/unpaidDeliveredOrders");
 const categoryRoutes = require("./routes/category");
 const statsRoutes = require("./routes/stats");
+const receiptRoutes = require("./routes/receiptRoutes");
 
 /* ===============================
    VIEW ENGINE
@@ -113,6 +114,7 @@ adminApp.use("/", adminRoutes);
 adminApp.use("/", unpaidRoutes);
 adminApp.use("/category", categoryRoutes);
 adminApp.use("/admin", statsRoutes);
+adminApp.use("/admin", receiptRoutes);
 
 /* Redirect root */
 adminApp.get("/", (req, res) => {
