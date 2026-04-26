@@ -1,90 +1,116 @@
-<%- include("../partials/layout", { title: "Financial Analytics" }) %>
+<%- include("{ title: "Financial Analytics" }) %>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-.container {
-    padding: 20px;
+.container{
+    padding:20px;
 }
 
 /* ================= CARDS ================= */
-.cards {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    margin-bottom: 25px;
+.cards{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:15px;
+    margin-bottom:25px;
 }
 
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.05);
 }
 
-.card h3 {
-    margin: 0;
-    font-size: 14px;
-    color: #666;
+.card h3{
+    margin:0;
+    font-size:14px;
+    color:#666;
 }
 
-.card h2 {
-    margin-top: 8px;
+.card h2{
+    margin-top:8px;
 }
 
 /* ================= CHARTS ================= */
-.grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
+.grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:20px;
 }
 
-.box {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+.box{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.05);
 }
 
-/* chart header row */
-.chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+.chart-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
 }
 
-.back-btn {
-    display: none;
-    padding: 6px 12px;
-    border: none;
-    background: #0b5d1e;
-    color: #fff;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
+.back-btn{
+    display:none;
+    padding:6px 12px;
+    border:none;
+    background:#0b5d1e;
+    color:#fff;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12px;
 }
 
-.back-btn.active {
-    display: inline-block;
+.back-btn.active{
+    display:inline-block;
 }
 
 /* ================= TABLE ================= */
-table {
-    width: 100%;
-    border-collapse: collapse;
+table{
+    width:100%;
+    border-collapse:collapse;
 }
 
-th, td {
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-    text-align: left;
+th, td{
+    padding:10px;
+    border-bottom:1px solid #eee;
+    text-align:left;
+}
+
+tfoot td{
+    font-weight:bold;
+    background:#f8f8f8;
+}
+
+/* ================= FILTER ================= */
+form{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+}
+
+form input,
+form button{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ddd;
+}
+
+form button{
+    background:#0b5d1e;
+    color:#fff;
+    border:none;
+    cursor:pointer;
 }
 
 /* ================= MOBILE ================= */
-@media (max-width: 768px) {
-    .cards {
-        grid-template-columns: 1fr;
+@media (max-width:768px){
+    .cards{
+        grid-template-columns:1fr;
     }
 }
 </style>
@@ -93,13 +119,14 @@ th, td {
 
 <!-- FILTER -->
 <form method="GET" action="/admin/stats">
-    <input type="number" name="month" placeholder="Month" />
-    <input type="number" name="year" placeholder="Year" />
+    <input type="number" name="month" placeholder="Month">
+    <input type="number" name="year" placeholder="Year">
     <button type="submit">Filter</button>
 </form>
 
 <!-- CARDS -->
 <div class="cards">
+
     <div class="card">
         <h3>Revenue</h3>
         <h2>KES <%= financial.revenue %></h2>
@@ -119,6 +146,7 @@ th, td {
         <h3>Orders</h3>
         <h2><%= financial.orders %></h2>
     </div>
+
 </div>
 
 <!-- CHARTS -->
@@ -128,8 +156,15 @@ th, td {
     <div class="box">
         <div class="chart-header">
             <h3>Major Category Performance</h3>
-            <button id="backBtn" class="back-btn" onclick="resetCategories()">Back</button>
+            <button
+                id="backBtn"
+                class="back-btn"
+                onclick="resetCategories()"
+            >
+                Back
+            </button>
         </div>
+
         <canvas id="majorChart"></canvas>
     </div>
 
@@ -143,20 +178,32 @@ th, td {
 
 <!-- PRODUCT TABLE -->
 <div class="box" style="margin-top:20px;">
+
     <h3 id="productTitle">Top Products</h3>
 
     <table>
         <thead>
-        <tr>
-            <th>Product</th>
-            <th>Revenue</th>
-            <th>Profit</th>
-            <th>Units</th>
-        </tr>
+            <tr>
+                <th>Product</th>
+                <th>Revenue</th>
+                <th>Profit</th>
+                <th>Units</th>
+            </tr>
         </thead>
 
         <tbody id="productTableBody"></tbody>
+
+        <tfoot>
+            <tr>
+                <td>Total</td>
+                <td id="totalRevenue">0</td>
+                <td id="totalProfit">0</td>
+                <td>-</td>
+            </tr>
+        </tfoot>
+
     </table>
+
 </div>
 
 </div>
@@ -169,132 +216,188 @@ let productData = <%- JSON.stringify(productStats) %>;
 let categoryChart;
 let majorChart;
 
-// =========================
-// PRODUCT RENDER
-// =========================
+/* =========================
+   PRODUCT RENDER
+========================= */
 function renderProducts(data, title = "Top Products") {
+
     const tbody = document.getElementById("productTableBody");
     const titleEl = document.getElementById("productTitle");
+    const totalRevenueEl = document.getElementById("totalRevenue");
+    const totalProfitEl = document.getElementById("totalProfit");
 
     titleEl.innerText = title;
     tbody.innerHTML = "";
 
-    data
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 10)
-        .forEach(p => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${p.name}</td>
-                    <td>${p.revenue}</td>
-                    <td>${p.profit}</td>
-                    <td>${p.unitsSold}</td>
-                </tr>
-            `;
-        });
+    let totalRevenue = 0;
+    let totalProfit = 0;
+
+    const displayed = data
+        .sort((a,b) => b.revenue - a.revenue)
+        .slice(0,10);
+
+    displayed.forEach(p => {
+
+        totalRevenue += Number(p.revenue || 0);
+        totalProfit += Number(p.profit || 0);
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${p.name}</td>
+                <td>${p.revenue}</td>
+                <td>${p.profit}</td>
+                <td>${p.unitsSold}</td>
+            </tr>
+        `;
+    });
+
+    totalRevenueEl.innerText = totalRevenue;
+    totalProfitEl.innerText = totalProfit;
 }
 
-// =========================
-// CATEGORY RENDER
-// =========================
+/* =========================
+   CATEGORY RENDER
+========================= */
 function renderCategoryChart(data, label = "Category Performance") {
 
     document.getElementById("categoryTitle").innerText = label;
 
-    if (categoryChart) categoryChart.destroy();
+    if(categoryChart) categoryChart.destroy();
 
-    categoryChart = new Chart(document.getElementById("categoryChart"), {
-        type: "bar",
-        data: {
-            labels: data.map(c => c.category),
-            datasets: [{
-                label: "Revenue",
-                data: data.map(c => c.revenue)
-            }]
+    categoryChart = new Chart(
+        document.getElementById("categoryChart"),
+        {
+            type:"bar",
+            data:{
+                labels:data.map(c => c.category),
+                datasets:[
+                    {
+                        label:"Revenue",
+                        data:data.map(c => c.revenue)
+                    }
+                ]
+            }
         }
-    });
+    );
 
-    // 🔵 CATEGORY CLICK → FILTER PRODUCTS
-    document.getElementById("categoryChart").onclick = function(evt) {
+    // CLICK CATEGORY => FILTER PRODUCTS
+    document.getElementById("categoryChart").onclick = function(evt){
 
         const points = categoryChart.getElementsAtEventForMode(
             evt,
-            'nearest',
-            { intersect: true },
+            "nearest",
+            { intersect:true },
             true
         );
 
-        if (!points.length) return;
+        if(!points.length) return;
 
         const index = points[0].index;
-        const selectedCategory = categoryChart.data.labels[index];
+        const selectedCategory =
+            categoryChart.data.labels[index];
 
-        const filteredProducts = productData.filter(
-            p => p.category === selectedCategory
+        const filteredProducts =
+            productData.filter(
+                p => p.category === selectedCategory
+            );
+
+        renderProducts(
+            filteredProducts,
+            "Top Products - " + selectedCategory
         );
-
-        renderProducts(filteredProducts, "Top Products - " + selectedCategory);
     };
 }
 
-// =========================
-// MAJOR CHART
-// =========================
-majorChart = new Chart(document.getElementById("majorChart"), {
-    type: "pie",
-    data: {
-        labels: majorData.map(m => m.majorCategory),
-        datasets: [{
-            data: majorData.map(m => m.revenue)
-        }]
+/* =========================
+   MAJOR CHART
+========================= */
+majorChart = new Chart(
+    document.getElementById("majorChart"),
+    {
+        type:"pie",
+        data:{
+            labels:majorData.map(
+                m => m.majorCategory
+            ),
+            datasets:[
+                {
+                    data:majorData.map(
+                        m => m.revenue
+                    )
+                }
+            ]
+        }
     }
-});
+);
 
-// 🟢 MAJOR CLICK → DRILLDOWN + PRODUCTS
-document.getElementById("majorChart").onclick = async function(evt) {
+/* CLICK MAJOR => DRILLDOWN */
+document.getElementById("majorChart").onclick =
+async function(evt){
 
-    const points = majorChart.getElementsAtEventForMode(
-        evt,
-        'nearest',
-        { intersect: true },
-        true
-    );
+    const points =
+        majorChart.getElementsAtEventForMode(
+            evt,
+            "nearest",
+            { intersect:true },
+            true
+        );
 
-    if (!points.length) return;
+    if(!points.length) return;
 
     const index = points[0].index;
-    const selectedMajor = majorData[index].majorCategory;
+    const selectedMajor =
+        majorData[index].majorCategory;
 
-    // CATEGORY DRILLDOWN
     const res = await fetch(
         `/admin/category-stats?month=${<%= financial.month || '' %>}&year=${<%= financial.year || '' %>}&majorCategory=${selectedMajor}`
     );
 
-    const filteredCategories = await res.json();
-    renderCategoryChart(filteredCategories, selectedMajor + " Categories");
+    const filteredCategories =
+        await res.json();
 
-    // 🔥 FILTER PRODUCTS BY MAJOR CATEGORY
-    const filteredProducts = productData.filter(
-        p => p.majorCategory === selectedMajor
+    renderCategoryChart(
+        filteredCategories,
+        selectedMajor + " Categories"
     );
 
-    renderProducts(filteredProducts, "Top Products - " + selectedMajor);
+    const filteredProducts =
+        productData.filter(
+            p => p.majorCategory === selectedMajor
+        );
 
-    document.getElementById("backBtn").classList.add("active");
+    renderProducts(
+        filteredProducts,
+        "Top Products - " + selectedMajor
+    );
+
+    document
+        .getElementById("backBtn")
+        .classList.add("active");
 };
 
-// =========================
-// RESET
-// =========================
-function resetCategories() {
-    renderCategoryChart(categoryData, "Category Performance");
-    renderProducts(productData, "Top Products");
-    document.getElementById("backBtn").classList.remove("active");
+/* =========================
+   RESET
+========================= */
+function resetCategories(){
+
+    renderCategoryChart(
+        categoryData,
+        "Category Performance"
+    );
+
+    renderProducts(
+        productData,
+        "Top Products"
+    );
+
+    document
+        .getElementById("backBtn")
+        .classList.remove("active");
 }
 
-// =========================
-// INIT
-// =========================
+/* =========================
+   INIT
+========================= */
 renderCategoryChart(categoryData);
 renderProducts(productData);
 
