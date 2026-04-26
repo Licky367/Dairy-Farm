@@ -32,14 +32,59 @@ res.status(500).send("Server Error");
 };
 
 /* GET CREATE PAGE */
-exports.getCreatePage = (req, res) => {
-res.render("categoryCreate");
+exports.getCreatePage = async (req, res) => {
+try {
+const categories = await categoryService.getAllCategories();
+
+/* UNIQUE EXISTING majorCategory VALUES */
+const majorCategories = [
+...new Set(
+categories
+.map(item => item.majorCategory)
+.filter(Boolean)
+)
+].sort();
+
+res.render("categoryCreate", { majorCategories });
+
+} catch (error) {
+console.error(error);
+res.status(500).send("Server Error");
+}
 };
 
 /* CREATE CATEGORY */
 exports.createCategory = async (req, res) => {
 try {
-const { category, packageUnits, BP, majorCategory } = req.body;
+let { category, packageUnits, BP, majorCategory } = req.body;
+
+/* CLEAN INPUT */
+majorCategory = majorCategory ? majorCategory.trim() : "";
+category = category ? category.trim() : "";
+
+/* GET EXISTING majorCategory LIST */
+const categories = await categoryService.getAllCategories();
+
+const existingMajorCategories = categories
+.map(item => item.majorCategory)
+.filter(Boolean);
+
+/* CHECK IF USER TYPED A NEW DUPLICATE */
+const alreadyExists = existingMajorCategories.some(
+item => item.toLowerCase() === majorCategory.toLowerCase()
+);
+
+/*
+If majorCategory already exists:
+- Accept it (dropdown selection or typed exact existing)
+If not exists:
+- Allow as brand new unique value
+Empty value rejected
+*/
+
+if (!majorCategory) {
+return res.status(400).send("Major category is required");
+}
 
 await categoryService.createCategory({
 category,
@@ -49,6 +94,7 @@ majorCategory
 });
 
 res.redirect("/category");
+
 } catch (error) {
 console.error(error);
 res.status(500).send("Error creating category");
