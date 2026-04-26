@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    padding: 30px;
+    color: #333;
+}
+
+/* HEADER */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:3px solid #0b5d1e;
+    padding-bottom:10px;
+}
+
+.company{
+    font-size:22px;
+    font-weight:bold;
+    color:#0b5d1e;
+}
+
+.logo{
+    height:60px;
+}
+
+/* COMPANY DETAILS */
+.company-details{
+    margin-top:10px;
+    font-size:12px;
+    line-height:1.6;
+    color:#555;
+}
+
+/* META */
+.meta{
+    margin-top:20px;
+    display:flex;
+    justify-content:space-between;
+}
+
+/* STATUS */
+.badge{
+    margin-top:20px;
+    display:inline-block;
+    padding:8px 14px;
+    border-radius:20px;
+    font-weight:bold;
+    font-size:12px;
+    color:#fff;
+}
+
+.paid{background:#059669;}
+.deposit{background:#d97706;}
+.unpaid{background:#dc2626;}
+
+/* TABLE */
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th, td{
+    padding:12px;
+    border-bottom:1px solid #eee;
+}
+
+th{background:#f9fafb;}
+
+td:last-child, th:last-child{
+    text-align:right;
+}
+
+/* SUMMARY */
+.summary{
+    margin-top:20px;
+    width:300px;
+    margin-left:auto;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:15px;
+}
+
+.summary p{
+    display:flex;
+    justify-content:space-between;
+}
+
+/* SIGNATURE */
+.signature{
+    margin-top:40px;
+    text-align:right;
+}
+
+.confirmed{
+    color:#059669;
+    font-weight:bold;
+    font-size:14px;
+}
+
+.pending{
+    color:#dc2626;
+    font-weight:bold;
+    font-size:14px;
+}
+
+/* FOOTER */
+.footer{
+    margin-top:40px;
+    text-align:center;
+    font-size:12px;
+    color:#777;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div>
+        <div class="company"><%= company.name %></div>
+
+        <div class="company-details">
+            📍 <%= company.address %><br>
+            📧 <%= company.email %><br>
+            📞 <%= company.phone %><br>
+            🌐 <%= company.website %><br>
+            💬 <%= company.whatsapp %>
+        </div>
+    </div>
+
+    <% if(company.logo){ %>
+        <img src="<%= company.logo %>" class="logo">
+    <% } %>
+</div>
+
+<!-- META -->
+<div class="meta">
+    <div>
+        <p><strong>Receipt ID:</strong> <%= order._id %></p>
+        <p><strong>Date:</strong> <%= new Date(order.orderedAt).toLocaleString() %></p>
+    </div>
+
+    <div>
+        <p><strong>Customer:</strong> <%= order.customerName %></p>
+        <p><strong>Phone:</strong> <%= order.customerPhone || "N/A" %></p>
+    </div>
+</div>
+
+<!-- PAYMENT -->
+<%
+let badgeClass = "unpaid";
+if(order.status === "paid" || order.status === "paid(cash)") badgeClass = "paid";
+else if(order.status === "depositPaid") badgeClass = "deposit";
+%>
+
+<div class="badge <%= badgeClass %>">
+    <%= paymentLabel %>
+</div>
+
+<!-- ITEMS -->
+<table>
+<thead>
+<tr>
+<th>Product</th>
+<th>Qty</th>
+<th>Price</th>
+<th>Total</th>
+</tr>
+</thead>
+
+<tbody>
+<% order.items.forEach(item => { %>
+<tr>
+<td><%= item.name %></td>
+<td><%= item.quantity %></td>
+<td>KES <%= item.cost.toLocaleString() %></td>
+<td>KES <%= (item.cost * item.quantity).toLocaleString() %></td>
+</tr>
+<% }) %>
+</tbody>
+</table>
+
+<!-- SUMMARY -->
+<div class="summary">
+<p><span>Subtotal</span><span>KES <%= order.totalRevenue.toLocaleString() %></span></p>
+<p><span>Shipping</span><span>KES <%= order.shippingCost.toLocaleString() %></span></p>
+<p><span>Deposit Paid</span><span>KES <%= order.depositAmountPaid.toLocaleString() %></span></p>
+<p><b>Total</b><b>KES <%= order.totalAmount.toLocaleString() %></b></p>
+<p><span>Balance</span><span>KES <%= order.arrearAmount.toLocaleString() %></span></p>
+</div>
+
+<!-- SIGNATURE -->
+<div class="signature">
+
+<%
+const isConfirmed =
+(order.status === "paid" || order.status === "paid(cash"))
+&& order.delivered === true;
+%>
+
+<% if(isConfirmed){ %>
+<div class="confirmed">✔ CONFIRMED</div>
+<% } else { %>
+<div class="pending">⏳ PENDING CONFIRMATION</div>
+<% } %>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+Thank you for doing business with us.
+</div>
+
+</body>
+</html>
