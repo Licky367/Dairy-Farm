@@ -1,215 +1,242 @@
-<div class="container-fluid py-4">
+<div class="container-fluid py-3">
 
-  <div class="card shadow-sm">
-    <div class="card-body">
+  <!-- CHANNEL NAV -->
+  <div class="d-flex gap-3 mb-3 border-bottom pb-2">
 
-      <h4 class="mb-4">Send Notification</h4>
+    <button class="btn btn-light channel-tab active" data-channel="email">
+      <i class="bi bi-envelope-fill text-primary"></i> Email
+    </button>
 
-      <!-- ALERTS -->
-      <% if (query && query.success) { %>
-        <div class="alert alert-success">Notification sent successfully</div>
-      <% } %>
+    <button class="btn btn-light channel-tab" data-channel="sms">
+      <i class="bi bi-chat-dots-fill text-success"></i> SMS
+    </button>
 
-      <% if (query && query.error) { %>
-        <div class="alert alert-danger">Failed to send notification</div>
-      <% } %>
+    <button class="btn btn-light channel-tab" data-channel="whatsapp">
+      <i class="bi bi-whatsapp text-success"></i> WhatsApp
+    </button>
 
-      <form action="/notifications/send" method="POST" id="notificationForm">
+  </div>
 
-        <!-- CHANNEL -->
-        <div class="mb-3">
-          <label class="form-label">Channel</label>
-          <select name="channel" id="channel" class="form-select" required>
-            <option value="">-- Select Channel --</option>
-            <option value="email">Email</option>
-            <option value="sms">SMS</option>
-            <option value="whatsapp">WhatsApp</option>
-          </select>
-        </div>
+  <div class="row">
 
-        <!-- SEND TO ALL -->
-        <div class="form-check mb-3">
-          <input class="form-check-input" type="checkbox" id="sendToAll" name="sendToAll">
-          <label class="form-check-label">Send to all users</label>
-        </div>
+    <!-- LEFT: CONTACTS -->
+    <div class="col-md-4 border-end" style="height:75vh; overflow-y:auto;">
 
-        <!-- USER SELECT -->
-        <div class="mb-3" id="userSelectWrapper">
-          <label class="form-label">Select Users</label>
-          <select id="userSelect" name="userIds" multiple>
-            <% users.forEach(user => { %>
-              <option 
-                value="<%= user._id %>" 
-                data-email="<%= user.email %>" 
-                data-phone="<%= user.phone %>">
-                <%= user.name %> | <%= user.email %> | <%= user.phone %>
-              </option>
-            <% }) %>
-          </select>
-        </div>
+      <h6 class="mb-3">Contacts</h6>
 
-        <!-- MANUAL INPUTS -->
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Manual Emails</label>
-            <input type="text" name="manualEmails" class="form-control" placeholder="a@gmail.com, b@mail.com">
+      <input 
+        type="text" 
+        id="searchUser" 
+        class="form-control mb-3" 
+        placeholder="Search users..."
+      >
+
+      <div id="contactList">
+
+        <% users.forEach(user => { %>
+          <div 
+            class="contact-item p-2 border rounded mb-2"
+            data-id="<%= user._id %>"
+            data-name="<%= user.name %>"
+            data-email="<%= user.email %>"
+            data-phone="<%= user.phone %>"
+          >
+            <strong><%= user.name %></strong><br>
+            <small><%= user.email %></small><br>
+            <small><%= user.phone %></small>
           </div>
+        <% }) %>
 
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Manual Phones</label>
-            <input type="text" name="manualPhones" class="form-control" placeholder="+2547XXXXXXXX">
-          </div>
-        </div>
+      </div>
+    </div>
 
-        <!-- MESSAGE -->
-        <div class="mb-3">
-          <label class="form-label d-flex justify-content-between">
-            Message
-            <span id="charCount" class="text-muted small">0 chars</span>
-          </label>
+    <!-- RIGHT: CHAT + SEND -->
+    <div class="col-md-8 d-flex flex-column" style="height:75vh;">
 
-          <textarea id="message" name="message" rows="5" class="form-control" required></textarea>
+      <!-- HEADER -->
+      <div class="border-bottom pb-2 mb-2">
+        <h6 id="selectedUsersLabel">No contact selected</h6>
+      </div>
 
+      <!-- MESSAGE HISTORY -->
+      <div 
+        id="messageHistory" 
+        class="flex-grow-1 mb-3 p-2 border rounded bg-light"
+        style="overflow-y:auto;"
+      >
+        <em class="text-muted">Select a contact to view messages</em>
+      </div>
+
+      <!-- MULTI SELECT BADGES -->
+      <div id="selectedUsersContainer" class="mb-2"></div>
+
+      <!-- COMPOSER -->
+      <form action="/notifications/send" method="POST" id="sendForm">
+
+        <input type="hidden" name="channel" id="channelInput" value="email">
+        <input type="hidden" name="userIds" id="userIdsInput">
+
+        <div class="mb-2">
+          <textarea 
+            name="message" 
+            id="messageInput"
+            class="form-control" 
+            rows="3"
+            placeholder="Type your message..."
+            required
+          ></textarea>
+
+          <small id="charCount" class="text-muted">0 chars</small>
           <small id="smsInfo" class="text-muted d-none">
-            SMS segments: <span id="smsSegments">1</span>
+            | SMS segments: <span id="smsSegments">1</span>
           </small>
         </div>
 
-        <!-- PREVIEW -->
-        <div class="mb-4">
-          <label class="form-label">Preview</label>
+        <div class="d-flex justify-content-between">
 
-          <div class="border rounded p-3 bg-light" id="previewBox">
-            <em class="text-muted">Message preview will appear here...</em>
-          </div>
-        </div>
-
-        <!-- SUBMIT -->
-        <div class="d-flex justify-content-end">
-          <button class="btn btn-primary">
-            Send Notification
+          <button type="button" class="btn btn-outline-secondary" id="clearSelection">
+            Clear Selection
           </button>
+
+          <button class="btn btn-primary">
+            Send
+          </button>
+
         </div>
 
       </form>
 
     </div>
-  </div>
 
+  </div>
 </div>
 
-<!-- TomSelect CDN -->
-<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+<!-- BOOTSTRAP ICONS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <script>
-  const channel = document.getElementById("channel");
-  const message = document.getElementById("message");
-  const previewBox = document.getElementById("previewBox");
+  let selectedUsers = [];
+  let currentChannel = "email";
+
+  const tabs = document.querySelectorAll(".channel-tab");
+  const channelInput = document.getElementById("channelInput");
+
+  const contactItems = document.querySelectorAll(".contact-item");
+  const selectedContainer = document.getElementById("selectedUsersContainer");
+  const selectedLabel = document.getElementById("selectedUsersLabel");
+  const userIdsInput = document.getElementById("userIdsInput");
+
+  const messageInput = document.getElementById("messageInput");
   const charCount = document.getElementById("charCount");
   const smsInfo = document.getElementById("smsInfo");
   const smsSegments = document.getElementById("smsSegments");
-  const sendToAll = document.getElementById("sendToAll");
-  const userWrapper = document.getElementById("userSelectWrapper");
 
-  // TomSelect init
-  const userSelect = new TomSelect("#userSelect", {
-    plugins: ['remove_button'],
-    persist: false,
-    create: false
+  const messageHistory = document.getElementById("messageHistory");
+
+  // CHANNEL SWITCH
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      currentChannel = tab.dataset.channel;
+      channelInput.value = currentChannel;
+
+      updateUIForChannel();
+      loadMessages();
+    });
   });
 
-  // Toggle user select
-  sendToAll.addEventListener("change", () => {
-    userWrapper.style.display = sendToAll.checked ? "none" : "block";
-  });
-
-  // Character + SMS logic
-  message.addEventListener("input", () => {
-    const text = message.value;
-    charCount.textContent = text.length + " chars";
-
-    if (channel.value === "sms") {
+  function updateUIForChannel() {
+    if (currentChannel === "sms") {
       smsInfo.classList.remove("d-none");
-
-      let segments = Math.ceil(text.length / 160) || 1;
-      smsSegments.textContent = segments;
     } else {
       smsInfo.classList.add("d-none");
     }
+  }
 
-    updatePreview();
-  });
+  // CONTACT SELECT
+  contactItems.forEach(item => {
+    item.addEventListener("click", () => {
+      const id = item.dataset.id;
+      const name = item.dataset.name;
 
-  // Channel change
-  channel.addEventListener("change", () => {
-    filterUsers();
-    updatePreview();
-  });
-
-  // Filter users based on channel
-  function filterUsers() {
-    const selectedChannel = channel.value;
-
-    userSelect.clearOptions();
-
-    const options = document.querySelectorAll("#userSelect option");
-
-    options.forEach(opt => {
-      const hasEmail = opt.dataset.email;
-      const hasPhone = opt.dataset.phone;
-
-      if (
-        (selectedChannel === "email" && hasEmail) ||
-        ((selectedChannel === "sms" || selectedChannel === "whatsapp") && hasPhone) ||
-        selectedChannel === ""
-      ) {
-        userSelect.addOption({
-          value: opt.value,
-          text: opt.text
-        });
+      if (!selectedUsers.find(u => u.id === id)) {
+        selectedUsers.push({ id, name });
       }
+
+      renderSelectedUsers();
+      loadMessages();
+    });
+  });
+
+  function renderSelectedUsers() {
+    selectedContainer.innerHTML = "";
+
+    selectedUsers.forEach(user => {
+      const badge = document.createElement("span");
+      badge.className = "badge bg-primary me-2";
+      badge.innerText = user.name;
+
+      badge.onclick = () => {
+        selectedUsers = selectedUsers.filter(u => u.id !== user.id);
+        renderSelectedUsers();
+      };
+
+      selectedContainer.appendChild(badge);
     });
 
-    userSelect.refreshOptions(false);
+    selectedLabel.innerText = selectedUsers.length
+      ? selectedUsers.map(u => u.name).join(", ")
+      : "No contact selected";
+
+    userIdsInput.value = selectedUsers.map(u => u.id).join(",");
   }
 
-  // Preview renderer
-  function updatePreview() {
-    const text = message.value || "";
-    const ch = channel.value;
+  // CLEAR
+  document.getElementById("clearSelection").onclick = () => {
+    selectedUsers = [];
+    renderSelectedUsers();
+    messageHistory.innerHTML = "<em class='text-muted'>Selection cleared</em>";
+  };
 
-    if (!text) {
-      previewBox.innerHTML = "<em class='text-muted'>Message preview will appear here...</em>";
-      return;
+  // CHARACTER COUNT
+  messageInput.addEventListener("input", () => {
+    const len = messageInput.value.length;
+    charCount.innerText = len + " chars";
+
+    if (currentChannel === "sms") {
+      let segments = Math.ceil(len / 160) || 1;
+      smsSegments.innerText = segments;
     }
+  });
 
-    if (ch === "email") {
-      previewBox.innerHTML = `
-        <strong>Email Preview</strong>
-        <hr>
-        <p>${text.replace(/\n/g, "<br>")}</p>
+  // LOAD MESSAGES (placeholder)
+  async function loadMessages() {
+    if (!selectedUsers.length) return;
+
+    messageHistory.innerHTML = "<em>Loading...</em>";
+
+    // This should hit backend later
+    setTimeout(() => {
+      messageHistory.innerHTML = `
+        <div class="text-muted small">Conversation preview (mock)</div>
+        <div class="bg-white p-2 rounded mb-2">Previous message 1</div>
+        <div class="bg-white p-2 rounded">Previous message 2</div>
       `;
-    }
-
-    if (ch === "sms") {
-      previewBox.innerHTML = `
-        <strong>SMS Preview</strong>
-        <hr>
-        <p>${text}</p>
-      `;
-    }
-
-    if (ch === "whatsapp") {
-      previewBox.innerHTML = `
-        <strong>WhatsApp Preview</strong>
-        <hr>
-        <div style="background:#e5ddd5;padding:10px;border-radius:10px;">
-          <div style="background:white;padding:8px;border-radius:8px;display:inline-block;">
-            ${text.replace(/\n/g, "<br>")}
-          </div>
-        </div>
-      `;
-    }
+    }, 500);
   }
+
+  // SEARCH
+  document.getElementById("searchUser").addEventListener("input", function () {
+    const val = this.value.toLowerCase();
+
+    contactItems.forEach(item => {
+      const name = item.dataset.name.toLowerCase();
+      item.style.display = name.includes(val) ? "block" : "none";
+    });
+  });
+
+  // DEFAULT CHANNEL
+  channelInput.value = "email";
 </script>
