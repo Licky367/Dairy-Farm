@@ -3,14 +3,14 @@ const Product = require("../models/Product");
 const Statistical = require("../models/Statistical");
 
 /* =========================
-   SHARED FILTER
+   PAID FILTER
 ========================= */
 const paidFilter = {
     status: { $in: ["paid", "paid(cash)"] }
 };
 
 /* =========================
-   DATE HELPER (ORIGINAL - UNTOUCHED)
+   DATE RANGE HELPERS
 ========================= */
 function getDateRange(month, year) {
     const now = new Date();
@@ -24,46 +24,36 @@ function getDateRange(month, year) {
     return { start, end, selectedMonth, selectedYear };
 }
 
-/* =========================================================
-   NEW SAFE HELPER: TIME MODE (ADDED ONLY FOR FRONTEND UPGRADE)
-   - does NOT override old month/year logic
-   - only used if frontend sends timeMode
-========================================================= */
 function getTimeRange({ timeMode, month, year }) {
-
     const now = new Date();
 
-    if (!timeMode || timeMode === "month") {
+    if (!timeMode || timeMode === "month" || timeMode === "custom") {
         return getDateRange(month, year);
     }
 
     let start, end;
-    let selectedMonth = null;
+    let selectedMonth = now.getMonth() + 1;
     let selectedYear = now.getFullYear();
 
     switch (timeMode) {
-
         case "today":
             start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-            selectedMonth = now.getMonth() + 1;
             break;
 
-        case "week":
-            const day = now.getDay(); // 0 Sunday
+        case "week": {
+            const day = now.getDay(); // Sunday = 0
             const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
 
             start = new Date(now.getFullYear(), now.getMonth(), diffToMonday);
             end = new Date(now.getFullYear(), now.getMonth(), diffToMonday + 6, 23, 59, 59);
-
-            selectedMonth = now.getMonth() + 1;
             break;
+        }
 
         case "year":
             start = new Date(now.getFullYear(), 0, 1);
             end = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
-
-            selectedYear = now.getFullYear();
+            selectedMonth = null;
             break;
 
         default:
@@ -79,8 +69,8 @@ function getTimeRange({ timeMode, month, year }) {
 }
 
 /* =========================
-   FINANCIAL STATS (UPDATED INPUT ONLY)
-   - supports timeMode WITHOUT changing logic
+   FINANCIAL STATS
+   - aligned with Order schema
 ========================= */
 exports.getFinancialStats = async ({ month, year, timeMode }) => {
 
@@ -92,30 +82,31 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
     });
 
     let revenue = 0;
-    let cost = 0;
-    let shipping = 0;
+    let purchaseCost = 0;
+    let shippingCost = 0;
 
-    for (let o of orders) {
-        revenue += Number(o.totalRevenue || 0);
-        cost += Number(o.orderPurchasePrice || 0);
-        shipping += Number(o.shippingCost || 0);
+    for (let order of orders) {
+        revenue += Number(order.totalRevenue || 0);
+        purchaseCost += Number(order.totalCost || 0);
+        shippingCost += Number(order.shippingCost || 0);
     }
 
-    const profit = revenue - cost;
-    const netProfit = profit - shipping;
+    const profit = revenue - purchaseCost;
+    const netProfit = profit - shippingCost;
 
     return {
         revenue,
-        purchaseCost: cost,
+        purchaseCost,
         profit,
         netProfit,
+        shippingCost,
         orders: orders.length
     };
 };
 
 /* =========================
-   BUILD SNAPSHOT (UNCHANGED LOGIC)
-   - ONLY TIME INPUT EXTENDED
+   BUILD STATISTICS SNAPSHOT
+   - aligned with frontend + schema
 ========================= */
 exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
 
@@ -144,30 +135,44 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
 
     for (let order of orders) {
 
-        revenue += order.totalRevenue || 0;
-        purchaseCost += order.orderPurchasePrice || 0;
-        shippingCost += order.shippingCost || 0;
+        const orderRevenue = Number(order.totalRevenue || 0);
+        const orderCost = Number(order.totalCost || 0);
+        const orderShipping = Number(order.shippingCost || 0);
 
-        for (let item of order.items) {
+        revenue += orderRevenue;
+        purchaseCost += orderCost;
+        shippingCost += orderShipping;
+
+        const itemsCount = order.items?.length || 1;
+
+        for (let item of order.items || []) {
 
             const product = productLookup[item.id];
             if (!product) continue;
 
-            const qty = item.quantity || 0;
+            const qty = Number(item.quantity || 0);
 
-            const itemRevenue = (item.cost || 0) * qty;
-            const itemCost = (item.purchasePrice || 0) * qty;
+            const sellPrice = Number(item.cost || 0); // selling price
+            const buyPrice = Number(item.purchasePrice || 0); // buying price
+
+            const itemRevenue = sellPrice * qty;
+            const itemCost = buyPrice * qty;
+
+            // ✅ profit per product = cost - purchasePrice
             const itemProfit = itemRevenue - itemCost;
 
-            const itemShippingShare =
-                (order.shippingCost || 0) /
-                (order.items.length || 1);
+            // distribute shipping equally
+            const itemShippingShare = orderShipping / itemsCount;
 
-            const itemNet = itemProfit - itemShippingShare;
+            // ✅ netProfit = profit - shippingCost
+            const itemNetProfit = itemProfit - itemShippingShare;
 
             const major = product.majorCategory || "Uncategorized";
             const category = product.category || "General";
 
+            // =========================
+            // MAJOR CATEGORY MAP
+            // =========================
             if (!majorMap[major]) {
                 majorMap[major] = {
                     majorCategory: major,
@@ -179,6 +184,9 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
                 };
             }
 
+            // =========================
+            // CATEGORY MAP
+            // =========================
             const catKey = `${major}__${category}`;
 
             if (!categoryMap[catKey]) {
@@ -193,6 +201,9 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
                 };
             }
 
+            // =========================
+            // PRODUCT MAP
+            // =========================
             if (!productMap[item.id]) {
                 productMap[item.id] = {
                     productId: item.id,
@@ -207,22 +218,23 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
                 };
             }
 
+            // update totals
             majorMap[major].revenue += itemRevenue;
             majorMap[major].purchaseCost += itemCost;
             majorMap[major].profit += itemProfit;
-            majorMap[major].netProfit += itemNet;
+            majorMap[major].netProfit += itemNetProfit;
             majorMap[major].unitsSold += qty;
 
             categoryMap[catKey].revenue += itemRevenue;
             categoryMap[catKey].purchaseCost += itemCost;
             categoryMap[catKey].profit += itemProfit;
-            categoryMap[catKey].netProfit += itemNet;
+            categoryMap[catKey].netProfit += itemNetProfit;
             categoryMap[catKey].unitsSold += qty;
 
             productMap[item.id].revenue += itemRevenue;
             productMap[item.id].purchaseCost += itemCost;
             productMap[item.id].profit += itemProfit;
-            productMap[item.id].netProfit += itemNet;
+            productMap[item.id].netProfit += itemNetProfit;
             productMap[item.id].unitsSold += qty;
         }
     }
@@ -261,7 +273,7 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
 };
 
 /* =========================
-   CATEGORY STATS (UNCHANGED)
+   CATEGORY STATS
 ========================= */
 exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 
@@ -276,16 +288,14 @@ exports.getCategoryStats = async ({ month, year, majorCategory }) => {
     let categories = data.categoryStats || [];
 
     if (majorCategory) {
-        categories = categories.filter(
-            c => c.majorCategory === majorCategory
-        );
+        categories = categories.filter(c => c.majorCategory === majorCategory);
     }
 
     return categories;
 };
 
 /* =========================
-   PRODUCT STATS (UNCHANGED)
+   PRODUCT STATS
 ========================= */
 exports.getProductStats = async ({ month, year, majorCategory, category }) => {
 
@@ -300,22 +310,19 @@ exports.getProductStats = async ({ month, year, majorCategory, category }) => {
     let products = data.productStats || [];
 
     if (majorCategory) {
-        products = products.filter(
-            p => p.majorCategory === majorCategory
-        );
+        products = products.filter(p => p.majorCategory === majorCategory);
     }
 
     if (category) {
-        products = products.filter(
-            p => p.category === category
-        );
+        products = products.filter(p => p.category === category);
     }
 
     return products;
 };
 
 /* =========================
-   DASHBOARD SUMMARY (UPDATED ONLY INPUT)
+   DASHBOARD STATS
+   - aligned with frontend ejs
 ========================= */
 exports.getDashboardStats = async ({ month, year, timeMode }) => {
 
