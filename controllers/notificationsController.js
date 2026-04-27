@@ -16,6 +16,14 @@ exports.renderPage = async (req, res) => {
   });
 };
 
+manualEmails: manualEmails 
+  ? manualEmails.split(",").map(e => e.trim()).filter(Boolean)
+  : [],
+
+manualPhones: manualPhones 
+  ? manualPhones.split(",").map(p => p.trim()).filter(Boolean)
+  : [],
+
 exports.sendNotification = async (req, res) => {
   try {
     const {
