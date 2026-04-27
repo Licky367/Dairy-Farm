@@ -5,11 +5,12 @@ const statsService = require("../services/statsService");
 ========================= */
 exports.getFinancialStats = async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, timeMode } = req.query;
 
         const data = await statsService.getFinancialStats({
             month,
-            year
+            year,
+            timeMode
         });
 
         res.json(data);
@@ -24,11 +25,12 @@ exports.getFinancialStats = async (req, res) => {
 ========================= */
 exports.buildMonthlyStats = async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, timeMode } = req.query;
 
         const data = await statsService.buildMonthlyStatistics({
             month,
-            year
+            year,
+            timeMode
         });
 
         res.json({
@@ -43,7 +45,6 @@ exports.buildMonthlyStats = async (req, res) => {
 
 /* =========================
    CATEGORY STATS (FILTERABLE)
-   ?majorCategory=Electronics
 ========================= */
 exports.getCategoryStats = async (req, res) => {
     try {
@@ -64,8 +65,6 @@ exports.getCategoryStats = async (req, res) => {
 
 /* =========================
    PRODUCT STATS (FILTERABLE 🔥)
-   ?majorCategory=Electronics
-   ?category=Phones
 ========================= */
 exports.getProductStats = async (req, res) => {
     try {
@@ -90,7 +89,7 @@ exports.getProductStats = async (req, res) => {
 ========================= */
 exports.renderDashboard = async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, timeMode } = req.query;
 
         const {
             financial,
@@ -99,14 +98,16 @@ exports.renderDashboard = async (req, res) => {
             productStats
         } = await statsService.getDashboardStats({
             month,
-            year
+            year,
+            timeMode
         });
 
         res.render("admin/financial-analytics", {
             financial: {
                 ...financial,
                 month,
-                year
+                year,
+                timeMode
             },
             majorCategoryStats,
             categoryStats,
@@ -124,11 +125,12 @@ exports.renderDashboard = async (req, res) => {
 ========================= */
 exports.getDashboardStats = async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, timeMode } = req.query;
 
         const data = await statsService.getDashboardStats({
             month,
-            year
+            year,
+            timeMode
         });
 
         res.json(data);
