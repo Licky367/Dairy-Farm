@@ -70,7 +70,6 @@ function getTimeRange({ timeMode, month, year }) {
 
 /* =========================
    FINANCIAL STATS
-   - aligned with Order schema
 ========================= */
 exports.getFinancialStats = async ({ month, year, timeMode }) => {
 
@@ -104,11 +103,11 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
     };
 };
 
-/* =========================
-   BUILD STATISTICS SNAPSHOT
-   - aligned with frontend + schema
-========================= */
-exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
+/* ======================================================
+   LIVE DASHBOARD BUILDER (NO SNAPSHOT REQUIRED)
+   - works for today/week/year/month/custom
+====================================================== */
+async function buildLiveStatistics({ month, year, timeMode }) {
 
     const { start, end, selectedMonth, selectedYear } =
         getTimeRange({ timeMode, month, year });
@@ -135,12 +134,10 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
 
     for (let order of orders) {
 
-        const orderRevenue = Number(order.totalRevenue || 0);
-        const orderCost = Number(order.totalCost || 0);
         const orderShipping = Number(order.shippingCost || 0);
 
-        revenue += orderRevenue;
-        purchaseCost += orderCost;
+        revenue += Number(order.totalRevenue || 0);
+        purchaseCost += Number(order.totalCost || 0);
         shippingCost += orderShipping;
 
         const itemsCount = order.items?.length || 1;
@@ -152,27 +149,20 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
 
             const qty = Number(item.quantity || 0);
 
-            const sellPrice = Number(item.cost || 0); // selling price
-            const buyPrice = Number(item.purchasePrice || 0); // buying price
+            const sellPrice = Number(item.cost || 0);
+            const buyPrice = Number(item.purchasePrice || 0);
 
             const itemRevenue = sellPrice * qty;
             const itemCost = buyPrice * qty;
 
-            // ✅ profit per product = cost - purchasePrice
             const itemProfit = itemRevenue - itemCost;
 
-            // distribute shipping equally
             const itemShippingShare = orderShipping / itemsCount;
-
-            // ✅ netProfit = profit - shippingCost
             const itemNetProfit = itemProfit - itemShippingShare;
 
             const major = product.majorCategory || "Uncategorized";
             const category = product.category || "General";
 
-            // =========================
-            // MAJOR CATEGORY MAP
-            // =========================
             if (!majorMap[major]) {
                 majorMap[major] = {
                     majorCategory: major,
@@ -184,9 +174,6 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
                 };
             }
 
-            // =========================
-            // CATEGORY MAP
-            // =========================
             const catKey = `${major}__${category}`;
 
             if (!categoryMap[catKey]) {
@@ -201,9 +188,6 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
                 };
             }
 
-            // =========================
-            // PRODUCT MAP
-            // =========================
             if (!productMap[item.id]) {
                 productMap[item.id] = {
                     productId: item.id,
@@ -218,7 +202,6 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
                 };
             }
 
-            // update totals
             majorMap[major].revenue += itemRevenue;
             majorMap[major].purchaseCost += itemCost;
             majorMap[major].profit += itemProfit;
@@ -242,7 +225,7 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
     const profit = revenue - purchaseCost;
     const netProfit = profit - shippingCost;
 
-    const payload = {
+    return {
         year: selectedYear,
         month: selectedMonth,
         periodType: "monthly",
@@ -258,11 +241,24 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
         categoryStats: Object.values(categoryMap),
         productStats: Object.values(productMap)
     };
+}
+
+/* =========================
+   BUILD MONTHLY SNAPSHOT
+   - ONLY for month/custom mode
+========================= */
+exports.buildMonthlyStatistics = async ({ month, year }) => {
+
+    const payload = await buildLiveStatistics({
+        month,
+        year,
+        timeMode: "custom"
+    });
 
     await Statistical.findOneAndUpdate(
         {
-            year: selectedYear,
-            month: selectedMonth,
+            year: payload.year,
+            month: payload.month,
             periodType: "monthly"
         },
         payload,
@@ -273,7 +269,7 @@ exports.buildMonthlyStatistics = async ({ month, year, timeMode }) => {
 };
 
 /* =========================
-   CATEGORY STATS
+   CATEGORY STATS (SNAPSHOT ONLY)
 ========================= */
 exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 
@@ -295,7 +291,7 @@ exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 };
 
 /* =========================
-   PRODUCT STATS
+   PRODUCT STATS (SNAPSHOT ONLY)
 ========================= */
 exports.getProductStats = async ({ month, year, majorCategory, category }) => {
 
@@ -321,28 +317,49 @@ exports.getProductStats = async ({ month, year, majorCategory, category }) => {
 };
 
 /* =========================
-   DASHBOARD STATS
-   - aligned with frontend ejs
+   DASHBOARD STATS (MAIN)
+   - FULLY ALIGNED WITH FRONTEND
 ========================= */
 exports.getDashboardStats = async ({ month, year, timeMode }) => {
 
+    // Always compute financial stats live
     const financial = await exports.getFinancialStats({
         month,
         year,
         timeMode
     });
 
+    // If timeMode is NOT monthly/custom, build everything live (NO snapshot)
+    if (timeMode && timeMode !== "custom" && timeMode !== "month") {
+
+        const live = await buildLiveStatistics({
+            month,
+            year,
+            timeMode
+        });
+
+        return {
+            financial,
+            majorCategoryStats: live.majorCategoryStats || [],
+            categoryStats: live.categoryStats || [],
+            productStats: live.productStats || []
+        };
+    }
+
+    // Monthly/custom mode → use snapshot cache
+    const selectedMonth = Number(month);
+    const selectedYear = Number(year);
+
     let snapshot = await Statistical.findOne({
-        month: Number(month),
-        year: Number(year),
+        month: selectedMonth,
+        year: selectedYear,
         periodType: "monthly"
     });
 
     if (!snapshot) {
         snapshot = await exports.buildMonthlyStatistics({
-            month,
-            year,
-            timeMode
+            month: selectedMonth,
+            year: selectedYear
         });
     }
 
