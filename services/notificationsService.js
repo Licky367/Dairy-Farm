@@ -49,6 +49,16 @@ exports.processNotification = async ({
       recipientsUsed = finalPhones;
     }
 
+
+if (!message || message.length < 1) {
+  throw new Error("Message cannot be empty");
+}
+
+if (!["email", "sms", "whatsapp"].includes(channel)) {
+  throw new Error("Invalid channel");
+}
+
+
     await Notification.create({
       channel,
       message,
