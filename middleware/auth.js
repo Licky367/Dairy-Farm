@@ -11,3 +11,8 @@ exports.isAdmin = (req, res, next) => {
     }
     next();
 };
+
+exports.ensureAuth = (req, res, next) => {
+  if (!req.session.user) return res.redirect("/login");
+  next();
+};
