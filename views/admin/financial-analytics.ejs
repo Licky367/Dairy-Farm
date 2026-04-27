@@ -3,207 +3,102 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-.container{
-    padding:20px;
+.container{padding:20px;}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-bottom:25px;}
+.card{background:white;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);}
+.card h3{font-size:14px;color:#666;}
+.grid{display:grid;gap:20px;}
+.box{background:white;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);}
+.chart-header{display:flex;justify-content:space-between;align-items:center;}
+.back-btn{display:none;padding:6px 12px;background:#0b5d1e;color:#fff;border:none;border-radius:6px;}
+.back-btn.active{display:inline-block;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #eee;}
+tfoot td{font-weight:bold;background:#f8f8f8;}
+form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+form input,form select,form button{
+padding:10px;border-radius:8px;border:1px solid #ddd;
 }
-
-/* ================= CARDS ================= */
-.cards{
-    display:grid;
-    grid-template-columns:repeat(2, 1fr);
-    gap:15px;
-    margin-bottom:25px;
-}
-
-.card{
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.05);
-}
-
-.card h3{
-    margin:0;
-    font-size:14px;
-    color:#666;
-}
-
-.card h2{
-    margin-top:8px;
-}
-
-/* ================= CHARTS ================= */
-.grid{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:20px;
-}
-
-.box{
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.05);
-}
-
-.chart-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:10px;
-}
-
-.back-btn{
-    display:none;
-    padding:6px 12px;
-    border:none;
-    background:#0b5d1e;
-    color:#fff;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:12px;
-}
-
-.back-btn.active{
-    display:inline-block;
-}
-
-/* ================= TABLE ================= */
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-th, td{
-    padding:10px;
-    border-bottom:1px solid #eee;
-    text-align:left;
-}
-
-tfoot td{
-    font-weight:bold;
-    background:#f8f8f8;
-}
-
-/* ================= FILTER ================= */
-form{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-bottom:20px;
-}
-
-form input,
-form button{
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ddd;
-}
-
-form button{
-    background:#0b5d1e;
-    color:#fff;
-    border:none;
-    cursor:pointer;
-}
-
-/* ================= MOBILE ================= */
-@media (max-width:768px){
-    .cards{
-        grid-template-columns:1fr;
-    }
-}
+form button{background:#0b5d1e;color:#fff;border:none;}
+@media (max-width:768px){.cards{grid-template-columns:1fr;}}
 </style>
 
 <div class="container">
 
 <!-- FILTER -->
-<form method="GET" action="/admin/stats">
-    <input type="number" name="month" placeholder="Month">
-    <input type="number" name="year" placeholder="Year">
-    <button type="submit">Filter</button>
+<form id="filterForm" onsubmit="applyFilters(event)">
+    
+    <select id="timeFilter">
+        <option value="month">Custom Month</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month_current">This Month</option>
+        <option value="year">This Year</option>
+    </select>
+
+    <input type="number" id="monthInput" placeholder="Month">
+    <input type="number" id="yearInput" placeholder="Year">
+
+    <select id="metricFilter">
+        <option value="revenue">Revenue</option>
+        <option value="profit">Profit</option>
+        <option value="netProfit">Net Profit</option>
+    </select>
+
+    <button type="submit">Apply</button>
 </form>
 
 <!-- CARDS -->
 <div class="cards">
-
-    <div class="card">
-        <h3>Revenue</h3>
-        <h2>KES <%= financial.revenue %></h2>
-    </div>
-
-    <div class="card">
-        <h3>Profit</h3>
-        <h2>KES <%= financial.profit %></h2>
-    </div>
-
-    <div class="card">
-        <h3>Net Profit</h3>
-        <h2>KES <%= financial.netProfit %></h2>
-    </div>
-
-    <div class="card">
-        <h3>Orders</h3>
-        <h2><%= financial.orders %></h2>
-    </div>
-
+    <div class="card"><h3>Revenue</h3><h2>KES <%= financial.revenue %></h2></div>
+    <div class="card"><h3>Profit</h3><h2>KES <%= financial.profit %></h2></div>
+    <div class="card"><h3>Net Profit</h3><h2>KES <%= financial.netProfit %></h2></div>
+    <div class="card"><h3>Orders</h3><h2><%= financial.orders %></h2></div>
 </div>
 
 <!-- CHARTS -->
 <div class="grid">
 
-    <!-- MAJOR CATEGORY -->
-    <div class="box">
-        <div class="chart-header">
-            <h3>Major Category Performance</h3>
-            <button
-                id="backBtn"
-                class="back-btn"
-                onclick="resetCategories()"
-            >
-                Back
-            </button>
-        </div>
-
-        <canvas id="majorChart"></canvas>
+<div class="box">
+    <div class="chart-header">
+        <h3>Major Category Performance</h3>
+        <button id="backBtn" class="back-btn" onclick="resetCategories()">Back</button>
     </div>
+    <canvas id="majorChart"></canvas>
+</div>
 
-    <!-- CATEGORY -->
-    <div class="box">
-        <h3 id="categoryTitle">Category Performance</h3>
-        <canvas id="categoryChart"></canvas>
-    </div>
+<div class="box">
+    <h3 id="categoryTitle">Category Performance</h3>
+    <canvas id="categoryChart"></canvas>
+</div>
 
 </div>
 
-<!-- PRODUCT TABLE -->
+<!-- TABLE -->
 <div class="box" style="margin-top:20px;">
+<h3 id="productTitle">Top Products</h3>
 
-    <h3 id="productTitle">Top Products</h3>
+<table>
+<thead>
+<tr>
+<th>Product</th>
+<th>Revenue</th>
+<th>Profit</th>
+<th>Units</th>
+</tr>
+</thead>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Revenue</th>
-                <th>Profit</th>
-                <th>Units</th>
-            </tr>
-        </thead>
+<tbody id="productTableBody"></tbody>
 
-        <tbody id="productTableBody"></tbody>
-
-        <tfoot>
-            <tr>
-                <td>Total</td>
-                <td id="totalRevenue">0</td>
-                <td id="totalProfit">0</td>
-                <td>-</td>
-            </tr>
-        </tfoot>
-
-    </table>
-
+<tfoot>
+<tr>
+<td>Total</td>
+<td id="totalRevenue">0</td>
+<td id="totalProfit">0</td>
+<td>-</td>
+</tr>
+</tfoot>
+</table>
 </div>
 
 </div>
@@ -215,50 +110,40 @@ let productData = <%- JSON.stringify(productStats) %>;
 
 let categoryChart;
 let majorChart;
+let currentMetric = "revenue";
 
-/* =========================
-   PRODUCT RENDER
-========================= */
-function renderProducts(data, title = "Top Products") {
+/* ================= PRODUCT ================= */
+function renderProducts(data, title="Top Products"){
 
     const tbody = document.getElementById("productTableBody");
-    const titleEl = document.getElementById("productTitle");
-    const totalRevenueEl = document.getElementById("totalRevenue");
-    const totalProfitEl = document.getElementById("totalProfit");
-
-    titleEl.innerText = title;
     tbody.innerHTML = "";
 
-    let totalRevenue = 0;
-    let totalProfit = 0;
+    let totalRevenue=0, totalProfit=0;
 
     const displayed = data
-        .sort((a,b) => b.revenue - a.revenue)
+        .sort((a,b)=>b[currentMetric]-a[currentMetric])
         .slice(0,10);
 
-    displayed.forEach(p => {
-
-        totalRevenue += Number(p.revenue || 0);
-        totalProfit += Number(p.profit || 0);
+    displayed.forEach(p=>{
+        totalRevenue += p.revenue || 0;
+        totalProfit += p.profit || 0;
 
         tbody.innerHTML += `
-            <tr>
-                <td>${p.name}</td>
-                <td>${p.revenue}</td>
-                <td>${p.profit}</td>
-                <td>${p.unitsSold}</td>
-            </tr>
-        `;
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.revenue}</td>
+            <td>${p.profit}</td>
+            <td>${p.unitsSold}</td>
+        </tr>`;
     });
 
-    totalRevenueEl.innerText = totalRevenue;
-    totalProfitEl.innerText = totalProfit;
+    document.getElementById("productTitle").innerText = title;
+    document.getElementById("totalRevenue").innerText = totalRevenue;
+    document.getElementById("totalProfit").innerText = totalProfit;
 }
 
-/* =========================
-   CATEGORY RENDER
-========================= */
-function renderCategoryChart(data, label = "Category Performance") {
+/* ================= CATEGORY ================= */
+function renderCategoryChart(data, label="Category Performance"){
 
     document.getElementById("categoryTitle").innerText = label;
 
@@ -269,135 +154,96 @@ function renderCategoryChart(data, label = "Category Performance") {
         {
             type:"bar",
             data:{
-                labels:data.map(c => c.category),
-                datasets:[
-                    {
-                        label:"Revenue",
-                        data:data.map(c => c.revenue)
-                    }
-                ]
+                labels:data.map(c=>c.category),
+                datasets:[{
+                    label: currentMetric.toUpperCase(),
+                    data:data.map(c=>c[currentMetric])
+                }]
             }
         }
     );
 
-    // CLICK CATEGORY => FILTER PRODUCTS
     document.getElementById("categoryChart").onclick = function(evt){
-
-        const points = categoryChart.getElementsAtEventForMode(
-            evt,
-            "nearest",
-            { intersect:true },
-            true
-        );
-
+        const points = categoryChart.getElementsAtEventForMode(evt,"nearest",{intersect:true},true);
         if(!points.length) return;
 
-        const index = points[0].index;
-        const selectedCategory =
-            categoryChart.data.labels[index];
-
-        const filteredProducts =
-            productData.filter(
-                p => p.category === selectedCategory
-            );
+        const selected = data[points[0].index].category;
 
         renderProducts(
-            filteredProducts,
-            "Top Products - " + selectedCategory
+            productData.filter(p=>p.category === selected),
+            "Top Products - " + selected
         );
     };
 }
 
-/* =========================
-   MAJOR CHART
-========================= */
-majorChart = new Chart(
-    document.getElementById("majorChart"),
-    {
-        type:"pie",
-        data:{
-            labels:majorData.map(
-                m => m.majorCategory
-            ),
-            datasets:[
-                {
-                    data:majorData.map(
-                        m => m.revenue
-                    )
-                }
-            ]
+/* ================= MAJOR ================= */
+function updateMajorChart(){
+
+    if(majorChart) majorChart.destroy();
+
+    majorChart = new Chart(
+        document.getElementById("majorChart"),
+        {
+            type:"pie",
+            data:{
+                labels:majorData.map(m=>m.majorCategory),
+                datasets:[{
+                    label: currentMetric.toUpperCase(),
+                    data:majorData.map(m=>m[currentMetric])
+                }]
+            }
         }
-    }
-);
+    );
 
-/* CLICK MAJOR => DRILLDOWN */
-document.getElementById("majorChart").onclick =
-async function(evt){
+    document.getElementById("majorChart").onclick = function(evt){
 
-    const points =
-        majorChart.getElementsAtEventForMode(
-            evt,
-            "nearest",
-            { intersect:true },
-            true
+        const points = majorChart.getElementsAtEventForMode(evt,"nearest",{intersect:true},true);
+        if(!points.length) return;
+
+        const selected = majorData[points[0].index].majorCategory;
+
+        renderCategoryChart(
+            categoryData.filter(c=>c.majorCategory === selected),
+            selected + " Categories"
         );
 
-    if(!points.length) return;
-
-    const index = points[0].index;
-    const selectedMajor =
-        majorData[index].majorCategory;
-
-    const res = await fetch(
-        `/admin/category-stats?month=${<%= financial.month || '' %>}&year=${<%= financial.year || '' %>}&majorCategory=${selectedMajor}`
-    );
-
-    const filteredCategories =
-        await res.json();
-
-    renderCategoryChart(
-        filteredCategories,
-        selectedMajor + " Categories"
-    );
-
-    const filteredProducts =
-        productData.filter(
-            p => p.majorCategory === selectedMajor
+        renderProducts(
+            productData.filter(p=>p.majorCategory === selected),
+            "Top Products - " + selected
         );
 
-    renderProducts(
-        filteredProducts,
-        "Top Products - " + selectedMajor
-    );
-
-    document
-        .getElementById("backBtn")
-        .classList.add("active");
-};
-
-/* =========================
-   RESET
-========================= */
-function resetCategories(){
-
-    renderCategoryChart(
-        categoryData,
-        "Category Performance"
-    );
-
-    renderProducts(
-        productData,
-        "Top Products"
-    );
-
-    document
-        .getElementById("backBtn")
-        .classList.remove("active");
+        document.getElementById("backBtn").classList.add("active");
+    };
 }
 
-/* =========================
-   INIT
-========================= */
+/* ================= FILTER ================= */
+function applyFilters(e){
+    e.preventDefault();
+
+    const metric = document.getElementById("metricFilter").value;
+    currentMetric = metric;
+
+    // 👉 Ready for backend integration
+    console.log("Apply Filters:", {
+        time: document.getElementById("timeFilter").value,
+        month: document.getElementById("monthInput").value,
+        year: document.getElementById("yearInput").value,
+        metric
+    });
+
+    resetCategories();
+    updateMajorChart();
+}
+
+/* ================= RESET ================= */
+function resetCategories(){
+    renderCategoryChart(categoryData);
+    renderProducts(productData);
+    document.getElementById("backBtn").classList.remove("active");
+}
+
+/* ================= INIT ================= */
+updateMajorChart();
 renderCategoryChart(categoryData);
 renderProducts(productData);
 
