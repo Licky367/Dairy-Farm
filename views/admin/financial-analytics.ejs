@@ -12,7 +12,7 @@
 .box{background:white;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);}
 
 .chart-header{display:flex;justify-content:space-between;align-items:center;}
-.back-btn{display:none;padding:6px 12px;background:#0b5d1e;color:#fff;border:none;border-radius:6px;}
+.back-btn{display:none;padding:6px 12px;background:#0b5d1e;color:#fff;border:none;border-radius:6px;cursor:pointer;}
 .back-btn.active{display:inline-block;}
 
 table{width:100%;border-collapse:collapse;}
@@ -23,7 +23,9 @@ form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
 form input,form select,form button{
 padding:10px;border-radius:8px;border:1px solid #ddd;
 }
-form button{background:#0b5d1e;color:#fff;border:none;}
+form button{background:#0b5d1e;color:#fff;border:none;cursor:pointer;}
+
+.hidden{display:none;}
 
 @media (max-width:768px){.cards{grid-template-columns:1fr;}}
 </style>
@@ -31,7 +33,7 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 <div class="container">
 
 <!-- FILTER -->
-<form id="filterForm" onsubmit="applyFilters(event)">
+<form id="filterForm">
 
     <select id="timeFilter">
         <option value="custom">Custom Month</option>
@@ -41,8 +43,8 @@ form button{background:#0b5d1e;color:#fff;border:none;}
         <option value="year">This Year</option>
     </select>
 
-    <input type="number" id="monthInput" placeholder="Month (1-12)">
-    <input type="number" id="yearInput" placeholder="Year">
+    <input type="number" id="monthInput" placeholder="Month (1-12)" min="1" max="12">
+    <input type="number" id="yearInput" placeholder="Year" min="2000">
 
     <select id="metricFilter">
         <option value="revenue">Revenue</option>
@@ -66,8 +68,8 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 
 <div class="box">
     <div class="chart-header">
-        <h3>Major Category Performance</h3>
-        <button id="backBtn" class="back-btn" onclick="resetView()">Back</button>
+        <h3 id="majorTitle">Major Category Performance</h3>
+        <button id="backBtn" class="back-btn" type="button">Back</button>
     </div>
     <canvas id="majorChart"></canvas>
 </div>
@@ -87,8 +89,7 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 <thead>
 <tr>
 <th>Product</th>
-<th>Revenue</th>
-<th>Profit</th>
+<th id="metricColTitle">Revenue</th>
 <th>Units</th>
 </tr>
 </thead>
@@ -98,8 +99,7 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 <tfoot>
 <tr>
 <td>Total</td>
-<td id="totalRevenue">0</td>
-<td id="totalProfit">0</td>
+<td id="totalMetric">0</td>
 <td>-</td>
 </tr>
 </tfoot>
@@ -110,14 +110,28 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 
 <script>
 
-let majorData = <%- JSON.stringify(majorCategoryStats) %>;
-let categoryData = <%- JSON.stringify(categoryStats) %>;
-let productData = <%- JSON.stringify(productStats) %>;
+let majorData = <%- JSON.stringify(majorCategoryStats || []) %>;
+let categoryData = <%- JSON.stringify(categoryStats || []) %>;
+let productData = <%- JSON.stringify(productStats || []) %>;
 
 let majorChart;
 let categoryChart;
 
 let currentMetric = "revenue";
+let currentMajorCategory = null;
+
+/* =========================
+   UI HELPERS
+========================= */
+function updateMetricColumnTitle(){
+    const titleMap = {
+        revenue: "Revenue",
+        profit: "Profit",
+        netProfit: "Net Profit"
+    };
+
+    document.getElementById("metricColTitle").innerText = titleMap[currentMetric] || "Revenue";
+}
 
 /* =========================
    PRODUCT TABLE
@@ -127,34 +141,28 @@ function renderProducts(data, title="Top Products") {
     const tbody = document.getElementById("productTableBody");
     tbody.innerHTML = "";
 
-    let totalRevenue = 0;
-    let totalProfit = 0;
+    let totalMetric = 0;
 
     const displayed = [...data]
-        .sort((a,b)=>(b[currentMetric] || 0)-(a[currentMetric] || 0))
+        .sort((a,b)=>(Number(b[currentMetric] || 0))-(Number(a[currentMetric] || 0)))
         .slice(0,10);
 
     displayed.forEach(p => {
 
-        const revenue = p.revenue || 0;
-        const profit = p.profit || 0;
-
-        totalRevenue += revenue;
-        totalProfit += profit;
+        const metricValue = Number(p[currentMetric] || 0);
+        totalMetric += metricValue;
 
         tbody.innerHTML += `
             <tr>
-                <td>${p.name}</td>
-                <td>${revenue}</td>
-                <td>${profit}</td>
+                <td>${p.name || "Unknown"}</td>
+                <td>${metricValue}</td>
                 <td>${p.unitsSold || 0}</td>
             </tr>
         `;
     });
 
     document.getElementById("productTitle").innerText = title;
-    document.getElementById("totalRevenue").innerText = totalRevenue;
-    document.getElementById("totalProfit").innerText = totalProfit;
+    document.getElementById("totalMetric").innerText = totalMetric;
 }
 
 /* =========================
@@ -174,7 +182,7 @@ function renderCategory(data, label="Category Performance") {
                 labels:data.map(c => c.category),
                 datasets:[{
                     label: currentMetric,
-                    data: data.map(c => c[currentMetric] || 0)
+                    data: data.map(c => Number(c[currentMetric] || 0))
                 }]
             }
         }
@@ -188,11 +196,17 @@ function renderCategory(data, label="Category Performance") {
 
         if(!points.length) return;
 
-        const selected = data[points[0].index].category;
+        const selectedCategory = data[points[0].index].category;
+
+        // ✅ filter by BOTH majorCategory + category
+        const filteredProducts = productData.filter(p =>
+            p.majorCategory === currentMajorCategory &&
+            p.category === selectedCategory
+        );
 
         renderProducts(
-            productData.filter(p => p.category === selected),
-            "Top Products - " + selected
+            filteredProducts,
+            `Top Products - ${currentMajorCategory} / ${selectedCategory}`
         );
     };
 }
@@ -211,7 +225,8 @@ function renderMajor() {
             data:{
                 labels: majorData.map(m => m.majorCategory),
                 datasets:[{
-                    data: majorData.map(m => m[currentMetric] || 0)
+                    label: currentMetric,
+                    data: majorData.map(m => Number(m[currentMetric] || 0))
                 }]
             }
         }
@@ -225,39 +240,17 @@ function renderMajor() {
 
         if(!points.length) return;
 
-        const selected = majorData[points[0].index].majorCategory;
+        const selectedMajor = majorData[points[0].index].majorCategory;
+        currentMajorCategory = selectedMajor;
 
-        renderCategory(
-            categoryData.filter(c => c.majorCategory === selected),
-            selected + " Categories"
-        );
+        const filteredCategories = categoryData.filter(c => c.majorCategory === selectedMajor);
+        const filteredProducts = productData.filter(p => p.majorCategory === selectedMajor);
 
-        renderProducts(
-            productData.filter(p => p.majorCategory === selected),
-            "Top Products - " + selected
-        );
+        renderCategory(filteredCategories, `${selectedMajor} Categories`);
+        renderProducts(filteredProducts, `Top Products - ${selectedMajor}`);
 
         document.getElementById("backBtn").classList.add("active");
     };
-}
-
-/* =========================
-   FILTERS
-========================= */
-function applyFilters(e){
-    e.preventDefault();
-
-    currentMetric = document.getElementById("metricFilter").value;
-
-    console.log({
-        time: document.getElementById("timeFilter").value,
-        month: document.getElementById("monthInput").value,
-        year: document.getElementById("yearInput").value,
-        metric: currentMetric
-    });
-
-    resetView();
-    renderMajor();
 }
 
 /* =========================
@@ -265,17 +258,112 @@ function applyFilters(e){
 ========================= */
 function resetView(){
 
-    renderCategory(categoryData);
-    renderProducts(productData);
+    currentMajorCategory = null;
+
+    renderCategory(categoryData, "Category Performance");
+    renderProducts(productData, "Top Products");
 
     document.getElementById("backBtn").classList.remove("active");
 }
 
 /* =========================
-   INIT
+   FILTER LOGIC (RELOAD PAGE)
+   - this is the correct backend-aligned behavior
 ========================= */
+function applyFilters(e){
+    e.preventDefault();
+
+    const timeMode = document.getElementById("timeFilter").value;
+    const month = document.getElementById("monthInput").value;
+    const year = document.getElementById("yearInput").value;
+    const metric = document.getElementById("metricFilter").value;
+
+    // build query params
+    const params = new URLSearchParams();
+
+    params.set("timeMode", timeMode);
+    params.set("metric", metric);
+
+    // only send month/year if custom mode
+    if(timeMode === "custom"){
+        if(month) params.set("month", month);
+        if(year) params.set("year", year);
+    }
+
+    // redirect reload (backend will re-render new values)
+    window.location.href = window.location.pathname + "?" + params.toString();
+}
+
+/* =========================
+   INPUT VISIBILITY
+========================= */
+function updateMonthYearVisibility(){
+    const timeMode = document.getElementById("timeFilter").value;
+    const showCustom = timeMode === "custom";
+
+    document.getElementById("monthInput").classList.toggle("hidden", !showCustom);
+    document.getElementById("yearInput").classList.toggle("hidden", !showCustom);
+}
+
+/* =========================
+   INIT FROM QUERY STRING
+========================= */
+function loadInitialFiltersFromQuery(){
+
+    const params = new URLSearchParams(window.location.search);
+
+    const timeMode = params.get("timeMode") || "custom";
+    const month = params.get("month") || "";
+    const year = params.get("year") || "";
+    const metric = params.get("metric") || "revenue";
+
+    document.getElementById("timeFilter").value = timeMode;
+    document.getElementById("monthInput").value = month;
+    document.getElementById("yearInput").value = year;
+    document.getElementById("metricFilter").value = metric;
+
+    currentMetric = metric;
+
+    updateMonthYearVisibility();
+    updateMetricColumnTitle();
+}
+
+/* =========================
+   EVENTS
+========================= */
+document.getElementById("filterForm").addEventListener("submit", applyFilters);
+
+document.getElementById("timeFilter").addEventListener("change", () => {
+    updateMonthYearVisibility();
+});
+
+document.getElementById("metricFilter").addEventListener("change", () => {
+    currentMetric = document.getElementById("metricFilter").value;
+    updateMetricColumnTitle();
+
+    // re-render using same loaded dataset
+    if(currentMajorCategory){
+        const filteredCategories = categoryData.filter(c => c.majorCategory === currentMajorCategory);
+        const filteredProducts = productData.filter(p => p.majorCategory === currentMajorCategory);
+
+        renderCategory(filteredCategories, `${currentMajorCategory} Categories`);
+        renderProducts(filteredProducts, `Top Products - ${currentMajorCategory}`);
+    } else {
+        resetView();
+        renderMajor();
+    }
+});
+
+document.getElementById("backBtn").addEventListener("click", () => {
+    resetView();
+    renderMajor();
+});
+
+/* =========================
+   START
+========================= */
+loadInitialFiltersFromQuery();
 renderMajor();
-renderCategory(categoryData);
-renderProducts(productData);
+resetView();
 
 </script>
