@@ -68,6 +68,15 @@ function getTimeRange({ timeMode, month, year }) {
     };
 }
 
+function resolveMonthYear(month, year) {
+    const now = new Date();
+
+    return {
+        month: Number(month) || (now.getMonth() + 1),
+        year: Number(year) || now.getFullYear()
+    };
+}
+
 /* =========================
    FINANCIAL STATS
 ========================= */
@@ -105,7 +114,6 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
 
 /* ======================================================
    LIVE DASHBOARD BUILDER (NO SNAPSHOT REQUIRED)
-   - works for today/week/year/month/custom
 ====================================================== */
 async function buildLiveStatistics({ month, year, timeMode }) {
 
@@ -225,10 +233,15 @@ async function buildLiveStatistics({ month, year, timeMode }) {
     const profit = revenue - purchaseCost;
     const netProfit = profit - shippingCost;
 
+    let periodType = "monthly";
+    if (timeMode === "today") periodType = "daily";
+    if (timeMode === "week") periodType = "weekly";
+    if (timeMode === "year") periodType = "yearly";
+
     return {
         year: selectedYear,
         month: selectedMonth,
-        periodType: "monthly",
+        periodType,
 
         revenue,
         purchaseCost,
@@ -245,13 +258,14 @@ async function buildLiveStatistics({ month, year, timeMode }) {
 
 /* =========================
    BUILD MONTHLY SNAPSHOT
-   - ONLY for month/custom mode
 ========================= */
 exports.buildMonthlyStatistics = async ({ month, year }) => {
 
+    const fixed = resolveMonthYear(month, year);
+
     const payload = await buildLiveStatistics({
-        month,
-        year,
+        month: fixed.month,
+        year: fixed.year,
         timeMode: "custom"
     });
 
@@ -273,9 +287,11 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
 ========================= */
 exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 
+    const fixed = resolveMonthYear(month, year);
+
     const data = await Statistical.findOne({
-        month: Number(month),
-        year: Number(year),
+        month: fixed.month,
+        year: fixed.year,
         periodType: "monthly"
     });
 
@@ -295,9 +311,11 @@ exports.getCategoryStats = async ({ month, year, majorCategory }) => {
 ========================= */
 exports.getProductStats = async ({ month, year, majorCategory, category }) => {
 
+    const fixed = resolveMonthYear(month, year);
+
     const data = await Statistical.findOne({
-        month: Number(month),
-        year: Number(year),
+        month: fixed.month,
+        year: fixed.year,
         periodType: "monthly"
     });
 
@@ -318,18 +336,16 @@ exports.getProductStats = async ({ month, year, majorCategory, category }) => {
 
 /* =========================
    DASHBOARD STATS (MAIN)
-   - FULLY ALIGNED WITH FRONTEND
 ========================= */
 exports.getDashboardStats = async ({ month, year, timeMode }) => {
 
-    // Always compute financial stats live
     const financial = await exports.getFinancialStats({
         month,
         year,
         timeMode
     });
 
-    // If timeMode is NOT monthly/custom, build everything live (NO snapshot)
+    // live mode (today/week/year)
     if (timeMode && timeMode !== "custom" && timeMode !== "month") {
 
         const live = await buildLiveStatistics({
@@ -346,20 +362,19 @@ exports.getDashboardStats = async ({ month, year, timeMode }) => {
         };
     }
 
-    // Monthly/custom mode → use snapshot cache
-    const selectedMonth = Number(month);
-    const selectedYear = Number(year);
+    // snapshot mode (custom/month)
+    const fixed = resolveMonthYear(month, year);
 
     let snapshot = await Statistical.findOne({
-        month: selectedMonth,
-        year: selectedYear,
+        month: fixed.month,
+        year: fixed.year,
         periodType: "monthly"
     });
 
     if (!snapshot) {
         snapshot = await exports.buildMonthlyStatistics({
-            month: selectedMonth,
-            year: selectedYear
+            month: fixed.month,
+            year: fixed.year
         });
     }
 
