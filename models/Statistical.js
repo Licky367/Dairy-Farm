@@ -174,6 +174,14 @@ const statisticalSchema = new mongoose.Schema(
         default: null
     },
 
+    // ✅ NEW: required for weekly snapshots
+    week: {
+        type: Number,
+        min: 1,
+        max: 53,
+        default: null
+    },
+
     periodType: {
         type: String,
         enum: ["daily", "weekly", "monthly", "yearly"],
@@ -245,19 +253,20 @@ const statisticalSchema = new mongoose.Schema(
    INDEXES
 =============================== */
 
-/* Prevent duplicate same-period snapshots */
+/* Prevent duplicate snapshots per period */
 statisticalSchema.index(
 {
     year: 1,
     month: 1,
     day: 1,
+    week: 1,
     periodType: 1
 },
 { unique: true }
 );
 
-/* Faster dashboard filtering */
-statisticalSchema.index({ year: 1, month: 1 });
+/* Faster filtering */
+statisticalSchema.index({ year: 1, month: 1, periodType: 1 });
 statisticalSchema.index({ periodType: 1 });
 
 module.exports = mongoose.model("Statistical", statisticalSchema);
