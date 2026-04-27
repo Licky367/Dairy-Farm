@@ -6,6 +6,16 @@ exports.renderPage = async (req, res) => {
   });
 };
 
+exports.renderPage = async (req, res) => {
+  const users = await User.find().select("name email phone");
+
+  res.render("notifications", {
+    title: "Notifications",
+    users,
+    query: req.query
+  });
+};
+
 exports.sendNotification = async (req, res) => {
   try {
     const {
