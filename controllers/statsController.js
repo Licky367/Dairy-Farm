@@ -14,6 +14,7 @@ exports.getFinancialStats = async (req, res) => {
         });
 
         res.json(data);
+
     } catch (err) {
         console.error("Financial Stats Error:", err);
         res.status(500).json({ message: err.message });
@@ -25,18 +26,19 @@ exports.getFinancialStats = async (req, res) => {
 ========================= */
 exports.buildMonthlyStats = async (req, res) => {
     try {
-        const { month, year, timeMode } = req.query;
+        const { month, year } = req.query;
 
         const data = await statsService.buildMonthlyStatistics({
             month,
             year,
-            timeMode
+            timeMode: "custom"
         });
 
         res.json({
             message: "Statistics built successfully",
             data
         });
+
     } catch (err) {
         console.error("Build Stats Error:", err);
         res.status(500).json({ message: err.message });
@@ -57,6 +59,7 @@ exports.getCategoryStats = async (req, res) => {
         });
 
         res.json(data);
+
     } catch (err) {
         console.error("Category Stats Error:", err);
         res.status(500).json({ message: err.message });
@@ -64,7 +67,7 @@ exports.getCategoryStats = async (req, res) => {
 };
 
 /* =========================
-   PRODUCT STATS (FILTERABLE 🔥)
+   PRODUCT STATS (FILTERABLE)
 ========================= */
 exports.getProductStats = async (req, res) => {
     try {
@@ -78,6 +81,7 @@ exports.getProductStats = async (req, res) => {
         });
 
         res.json(data);
+
     } catch (err) {
         console.error("Product Stats Error:", err);
         res.status(500).json({ message: err.message });
@@ -91,27 +95,17 @@ exports.renderDashboard = async (req, res) => {
     try {
         const { month, year, timeMode } = req.query;
 
-        const {
-            financial,
-            majorCategoryStats,
-            categoryStats,
-            productStats
-        } = await statsService.getDashboardStats({
+        const dashboard = await statsService.getDashboardStats({
             month,
             year,
             timeMode
         });
 
         res.render("admin/financial-analytics", {
-            financial: {
-                ...financial,
-                month,
-                year,
-                timeMode
-            },
-            majorCategoryStats,
-            categoryStats,
-            productStats
+            financial: dashboard.financial,
+            majorCategoryStats: dashboard.majorCategoryStats,
+            categoryStats: dashboard.categoryStats,
+            productStats: dashboard.productStats
         });
 
     } catch (err) {
@@ -134,6 +128,7 @@ exports.getDashboardStats = async (req, res) => {
         });
 
         res.json(data);
+
     } catch (err) {
         console.error("Dashboard Stats Error:", err);
         res.status(500).json({ message: err.message });
