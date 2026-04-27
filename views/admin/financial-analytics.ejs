@@ -7,19 +7,24 @@
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-bottom:25px;}
 .card{background:white;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);}
 .card h3{font-size:14px;color:#666;}
+
 .grid{display:grid;gap:20px;}
 .box{background:white;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);}
+
 .chart-header{display:flex;justify-content:space-between;align-items:center;}
 .back-btn{display:none;padding:6px 12px;background:#0b5d1e;color:#fff;border:none;border-radius:6px;}
 .back-btn.active{display:inline-block;}
+
 table{width:100%;border-collapse:collapse;}
 th,td{padding:10px;border-bottom:1px solid #eee;}
 tfoot td{font-weight:bold;background:#f8f8f8;}
+
 form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
 form input,form select,form button{
 padding:10px;border-radius:8px;border:1px solid #ddd;
 }
 form button{background:#0b5d1e;color:#fff;border:none;}
+
 @media (max-width:768px){.cards{grid-template-columns:1fr;}}
 </style>
 
@@ -27,16 +32,16 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 
 <!-- FILTER -->
 <form id="filterForm" onsubmit="applyFilters(event)">
-    
+
     <select id="timeFilter">
-        <option value="month">Custom Month</option>
+        <option value="custom">Custom Month</option>
         <option value="today">Today</option>
         <option value="week">This Week</option>
-        <option value="month_current">This Month</option>
+        <option value="month">This Month</option>
         <option value="year">This Year</option>
     </select>
 
-    <input type="number" id="monthInput" placeholder="Month">
+    <input type="number" id="monthInput" placeholder="Month (1-12)">
     <input type="number" id="yearInput" placeholder="Year">
 
     <select id="metricFilter">
@@ -62,7 +67,7 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 <div class="box">
     <div class="chart-header">
         <h3>Major Category Performance</h3>
-        <button id="backBtn" class="back-btn" onclick="resetCategories()">Back</button>
+        <button id="backBtn" class="back-btn" onclick="resetView()">Back</button>
     </div>
     <canvas id="majorChart"></canvas>
 </div>
@@ -104,37 +109,47 @@ form button{background:#0b5d1e;color:#fff;border:none;}
 </div>
 
 <script>
+
 let majorData = <%- JSON.stringify(majorCategoryStats) %>;
 let categoryData = <%- JSON.stringify(categoryStats) %>;
 let productData = <%- JSON.stringify(productStats) %>;
 
-let categoryChart;
 let majorChart;
+let categoryChart;
+
 let currentMetric = "revenue";
 
-/* ================= PRODUCT ================= */
-function renderProducts(data, title="Top Products"){
+/* =========================
+   PRODUCT TABLE
+========================= */
+function renderProducts(data, title="Top Products") {
 
     const tbody = document.getElementById("productTableBody");
     tbody.innerHTML = "";
 
-    let totalRevenue=0, totalProfit=0;
+    let totalRevenue = 0;
+    let totalProfit = 0;
 
-    const displayed = data
-        .sort((a,b)=>b[currentMetric]-a[currentMetric])
+    const displayed = [...data]
+        .sort((a,b)=>(b[currentMetric] || 0)-(a[currentMetric] || 0))
         .slice(0,10);
 
-    displayed.forEach(p=>{
-        totalRevenue += p.revenue || 0;
-        totalProfit += p.profit || 0;
+    displayed.forEach(p => {
+
+        const revenue = p.revenue || 0;
+        const profit = p.profit || 0;
+
+        totalRevenue += revenue;
+        totalProfit += profit;
 
         tbody.innerHTML += `
-        <tr>
-            <td>${p.name}</td>
-            <td>${p.revenue}</td>
-            <td>${p.profit}</td>
-            <td>${p.unitsSold}</td>
-        </tr>`;
+            <tr>
+                <td>${p.name}</td>
+                <td>${revenue}</td>
+                <td>${profit}</td>
+                <td>${p.unitsSold || 0}</td>
+            </tr>
+        `;
     });
 
     document.getElementById("productTitle").innerText = title;
@@ -142,8 +157,10 @@ function renderProducts(data, title="Top Products"){
     document.getElementById("totalProfit").innerText = totalProfit;
 }
 
-/* ================= CATEGORY ================= */
-function renderCategoryChart(data, label="Category Performance"){
+/* =========================
+   CATEGORY CHART
+========================= */
+function renderCategory(data, label="Category Performance") {
 
     document.getElementById("categoryTitle").innerText = label;
 
@@ -154,30 +171,36 @@ function renderCategoryChart(data, label="Category Performance"){
         {
             type:"bar",
             data:{
-                labels:data.map(c=>c.category),
+                labels:data.map(c => c.category),
                 datasets:[{
-                    label: currentMetric.toUpperCase(),
-                    data:data.map(c=>c[currentMetric])
+                    label: currentMetric,
+                    data: data.map(c => c[currentMetric] || 0)
                 }]
             }
         }
     );
 
     document.getElementById("categoryChart").onclick = function(evt){
-        const points = categoryChart.getElementsAtEventForMode(evt,"nearest",{intersect:true},true);
+
+        const points = categoryChart.getElementsAtEventForMode(
+            evt,"nearest",{intersect:true},true
+        );
+
         if(!points.length) return;
 
         const selected = data[points[0].index].category;
 
         renderProducts(
-            productData.filter(p=>p.category === selected),
+            productData.filter(p => p.category === selected),
             "Top Products - " + selected
         );
     };
 }
 
-/* ================= MAJOR ================= */
-function updateMajorChart(){
+/* =========================
+   MAJOR CHART
+========================= */
+function renderMajor() {
 
     if(majorChart) majorChart.destroy();
 
@@ -186,10 +209,9 @@ function updateMajorChart(){
         {
             type:"pie",
             data:{
-                labels:majorData.map(m=>m.majorCategory),
+                labels: majorData.map(m => m.majorCategory),
                 datasets:[{
-                    label: currentMetric.toUpperCase(),
-                    data:majorData.map(m=>m[currentMetric])
+                    data: majorData.map(m => m[currentMetric] || 0)
                 }]
             }
         }
@@ -197,18 +219,21 @@ function updateMajorChart(){
 
     document.getElementById("majorChart").onclick = function(evt){
 
-        const points = majorChart.getElementsAtEventForMode(evt,"nearest",{intersect:true},true);
+        const points = majorChart.getElementsAtEventForMode(
+            evt,"nearest",{intersect:true},true
+        );
+
         if(!points.length) return;
 
         const selected = majorData[points[0].index].majorCategory;
 
-        renderCategoryChart(
-            categoryData.filter(c=>c.majorCategory === selected),
+        renderCategory(
+            categoryData.filter(c => c.majorCategory === selected),
             selected + " Categories"
         );
 
         renderProducts(
-            productData.filter(p=>p.majorCategory === selected),
+            productData.filter(p => p.majorCategory === selected),
             "Top Products - " + selected
         );
 
@@ -216,35 +241,41 @@ function updateMajorChart(){
     };
 }
 
-/* ================= FILTER ================= */
+/* =========================
+   FILTERS
+========================= */
 function applyFilters(e){
     e.preventDefault();
 
-    const metric = document.getElementById("metricFilter").value;
-    currentMetric = metric;
+    currentMetric = document.getElementById("metricFilter").value;
 
-    // 👉 Ready for backend integration
-    console.log("Apply Filters:", {
+    console.log({
         time: document.getElementById("timeFilter").value,
         month: document.getElementById("monthInput").value,
         year: document.getElementById("yearInput").value,
-        metric
+        metric: currentMetric
     });
 
-    resetCategories();
-    updateMajorChart();
+    resetView();
+    renderMajor();
 }
 
-/* ================= RESET ================= */
-function resetCategories(){
-    renderCategoryChart(categoryData);
+/* =========================
+   RESET VIEW
+========================= */
+function resetView(){
+
+    renderCategory(categoryData);
     renderProducts(productData);
+
     document.getElementById("backBtn").classList.remove("active");
 }
 
-/* ================= INIT ================= */
-updateMajorChart();
-renderCategoryChart(categoryData);
+/* =========================
+   INIT
+========================= */
+renderMajor();
+renderCategory(categoryData);
 renderProducts(productData);
 
 </script>
