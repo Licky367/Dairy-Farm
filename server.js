@@ -8,6 +8,27 @@ const connectDB = require("./db");
 
 const app = express();
 
+/*==== NOTIFICATION ====*/
+const http = require("http");
+const socketIo = require("socket.io");
+
+const server = http.createServer(app);
+const io = socketIo(server);
+
+io.on("connection", (socket) => {
+
+  console.log("User connected");
+
+  socket.on("joinConversation", (conversationId) => {
+    socket.join(conversationId);
+  });
+
+  socket.on("sendMessage", (data) => {
+    io.to(data.conversationId).emit("newMessage", data);
+  });
+
+});
+
 /* ===============================
    CONNECT DATABASE
 ================================= */
