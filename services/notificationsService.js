@@ -1,5 +1,6 @@
 const User = require("../models/User");
-const Notification = require("../models/Notification");
+const Conversation = require("../models/Conversation");
+const Message = require("../models/Message");
 
 const {
   sendEmailBulk,
@@ -9,10 +10,25 @@ const {
 
 
 /* ===============================
-   PROCESS NOTIFICATION
+   GET OR CREATE CONVERSATION
+================================= */
+const getConversation = async (userId, channel) => {
+  let convo = await Conversation.findOne({ userId, channel });
+
+  if (!convo) {
+    convo = await Conversation.create({ userId, channel });
+  }
+
+  return convo;
+};
+
+
+/* ===============================
+   PROCESS NOTIFICATION (NEW SYSTEM)
 ================================= */
 exports.processNotification = async ({
   channel,
+  subject = "",
   message,
   userIds,
   sendToAll,
@@ -21,112 +37,74 @@ exports.processNotification = async ({
   senderId,
   attachment = null
 }) => {
-  try {
-    /* ===============================
-       VALIDATION
-    =============================== */
-    if (!message || message.trim().length < 1) {
-      throw new Error("Message cannot be empty");
-    }
 
-    if (!["email", "sms", "whatsapp"].includes(channel)) {
-      throw new Error("Invalid channel");
-    }
-
-    /* ===============================
-       GET USERS
-    =============================== */
-    let users = [];
-
-    if (sendToAll) {
-      users = await User.find();
-    } else if (userIds && userIds.length > 0) {
-      users = await User.find({ _id: { $in: userIds } });
-    }
-
-    /* ===============================
-       EXTRACT CONTACTS
-    =============================== */
-    const emails = users.map(u => u.email).filter(Boolean);
-    const phones = users.map(u => u.phone).filter(Boolean);
-
-    const finalEmails = [...new Set([...emails, ...manualEmails])];
-    const finalPhones = [...new Set([...phones, ...manualPhones])];
-
-    let recipientsUsed = [];
-
-    /* ===============================
-       SEND VIA PROVIDERS
-       (providers handle sender identity)
-    =============================== */
-    if (channel === "email") {
-      await sendEmailBulk(finalEmails, message, attachment);
-      recipientsUsed = finalEmails;
-    }
-
-    if (channel === "sms") {
-      await sendSMSBulk(finalPhones, message);
-      recipientsUsed = finalPhones;
-    }
-
-    if (channel === "whatsapp") {
-      await sendWhatsAppBulk(finalPhones, message, attachment);
-      recipientsUsed = finalPhones;
-    }
-
-    /* ===============================
-       STORE PER RECIPIENT
-       (conversation-ready)
-    =============================== */
-    const notifications = [];
-
-    // Users (linked to system users)
-    users.forEach(user => {
-      notifications.push({
-        channel,
-        message,
-        receiverId: user._id,
-        recipient: channel === "email" ? user.email : user.phone,
-        senderId,
-        attachment: attachment ? attachment.path || attachment.filename : null,
-        status: "sent"
-      });
-    });
-
-    // Manual recipients (not in DB)
-    recipientsUsed.forEach(recipient => {
-      const existsInUsers = users.find(u =>
-        u.email === recipient || u.phone === recipient
-      );
-
-      if (!existsInUsers) {
-        notifications.push({
-          channel,
-          message,
-          recipient,
-          senderId,
-          attachment: attachment ? attachment.path || attachment.filename : null,
-          status: "sent"
-        });
-      }
-    });
-
-    await Notification.insertMany(notifications);
-
-    return { success: true };
-
-  } catch (error) {
-    /* ===============================
-       FAILURE LOG
-    =============================== */
-    await Notification.create({
-      channel,
-      message,
-      status: "failed",
-      error: error.message,
-      senderId
-    });
-
-    throw error;
+  if (!message || !message.trim()) {
+    throw new Error("Message cannot be empty");
   }
+
+  if (!["email", "sms", "whatsapp"].includes(channel)) {
+    throw new Error("Invalid channel");
+  }
+
+  if (channel === "email" && !subject) {
+    throw new Error("Email subject is required");
+  }
+
+  /* ===============================
+     USERS
+  =============================== */
+  let users = [];
+
+  if (sendToAll) {
+    users = await User.find();
+  } else if (userIds?.length) {
+    users = await User.find({ _id: { $in: userIds } });
+  }
+
+  const emails = users.map(u => u.email).filter(Boolean);
+  const phones = users.map(u => u.phone).filter(Boolean);
+
+  const finalEmails = [...new Set([...emails, ...manualEmails])];
+  const finalPhones = [...new Set([...phones, ...manualPhones])];
+
+
+  /* ===============================
+     SEND VIA PROVIDERS
+  =============================== */
+  if (channel === "email") {
+    await sendEmailBulk(finalEmails, subject, message, attachment);
+  }
+
+  if (channel === "sms") {
+    await sendSMSBulk(finalPhones, message);
+  }
+
+  if (channel === "whatsapp") {
+    await sendWhatsAppBulk(finalPhones, message, attachment);
+  }
+
+
+  /* ===============================
+     STORE MESSAGES (THREAD SYSTEM)
+  =============================== */
+  for (const user of users) {
+
+    const conversation = await getConversation(user._id, channel);
+
+    const msg = await Message.create({
+      conversationId: conversation._id,
+      senderId,
+      receiverId: user._id,
+      subject: channel === "email" ? subject : null,
+      message,
+      attachment: attachment ? attachment.path || attachment.filename : null,
+      status: "sent"
+    });
+
+    conversation.lastMessage = message;
+    conversation.lastUpdated = new Date();
+    await conversation.save();
+  }
+
+  return { success: true };
 };
