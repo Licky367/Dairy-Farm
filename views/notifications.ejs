@@ -57,10 +57,19 @@
         <input type="hidden" name="channel" id="channelInput" value="whatsapp">
         <input type="hidden" name="userId" id="userIdInput">
 
+        <!-- EMAIL SUBJECT (ONLY EMAIL) -->
+        <input 
+          type="text" 
+          id="emailSubject"
+          name="subject"
+          placeholder="Email subject..."
+          style="display:none;width:160px;padding:6px;border-radius:10px;border:1px solid #ccc;"
+        >
+
         <!-- ATTACH -->
         <label class="icon-btn">
           <i class="bi bi-paperclip"></i>
-          <input type="file" name="attachment" hidden>
+          <input type="file" name="attachment" id="fileInput" hidden>
         </label>
 
         <!-- MESSAGE -->
@@ -165,6 +174,7 @@ padding:10px;
 padding:12px;
 border-bottom:1px solid #eee;
 cursor:pointer;
+font-weight:500;
 }
 .contact-item:hover{
 background:#f5f5f5;
@@ -182,29 +192,44 @@ padding:10px;
 background:#fff;
 border-radius:10px;
 margin-bottom:10px;
+font-weight:600;
 }
 
+/* MESSAGE AREA */
 .chat-body{
 flex:1;
 overflow-y:auto;
 background:#e5ddd5;
 padding:10px;
 border-radius:10px;
+display:flex;
+flex-direction:column;
+gap:8px;
 }
 
-/* MESSAGE */
+/* MESSAGE BUBBLES */
 .msg{
 max-width:70%;
 padding:8px 12px;
-margin-bottom:8px;
 border-radius:10px;
+font-size:14px;
+word-wrap:break-word;
 }
+
 .msg.sent{
 margin-left:auto;
 background:#dcf8c6;
 }
+
 .msg.received{
 background:#fff;
+}
+
+/* ATTACHMENT PREVIEW */
+.msg img{
+max-width:200px;
+border-radius:8px;
+margin-top:5px;
 }
 
 /* COMPOSER */
@@ -233,9 +258,7 @@ border:none;
 font-size:20px;
 cursor:pointer;
 }
-.send-btn{
-color:#0b5d1e;
-}
+.send-btn{ color:#0b5d1e; }
 
 /* FLOAT BUTTON */
 .fab{
@@ -284,6 +307,7 @@ const history = document.getElementById("messageHistory");
 const header = document.getElementById("chatHeader");
 const userInput = document.getElementById("userIdInput");
 const modal = document.getElementById("newChatModal");
+const emailSubject = document.getElementById("emailSubject");
 
 /* CHANNEL SWITCH */
 tabs.forEach(tab=>{
@@ -293,6 +317,8 @@ tabs.forEach(tab=>{
 
     currentChannel = tab.dataset.channel;
     document.getElementById("channelInput").value = currentChannel;
+
+    emailSubject.style.display = currentChannel === "email" ? "block" : "none";
 
     loadMessages();
   };
@@ -309,7 +335,7 @@ contacts.forEach(c=>{
   };
 });
 
-/* LOAD MESSAGES (HOOK BACKEND HERE) */
+/* LOAD MESSAGES (SIMULATED THREADS) */
 function loadMessages(){
   if(!currentChat) return;
 
@@ -317,8 +343,13 @@ function loadMessages(){
 
   setTimeout(()=>{
     history.innerHTML = `
-      <div class="msg received">Hello</div>
-      <div class="msg sent">Hi there</div>
+      <div class="msg received">
+        Hello, this is a previous message
+      </div>
+
+      <div class="msg sent">
+        Got it 👍
+      </div>
     `;
   },300);
 }
@@ -328,16 +359,32 @@ document.getElementById("sendForm").onsubmit = function(e){
   e.preventDefault();
 
   const text = document.getElementById("messageInput").value;
+  const file = document.getElementById("fileInput").files[0];
+
   if(!text || !currentChat) return;
 
   const msg = document.createElement("div");
   msg.className = "msg sent";
   msg.innerText = text;
 
+  /* attachment preview */
+  if(file){
+    if(file.type.startsWith("image/")){
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      msg.appendChild(img);
+    } else {
+      const fileLabel = document.createElement("div");
+      fileLabel.innerText = "📎 " + file.name;
+      msg.appendChild(fileLabel);
+    }
+  }
+
   history.appendChild(msg);
   history.scrollTop = history.scrollHeight;
 
   this.reset();
+  emailSubject.value = "";
 };
 
 /* NEW CHAT */
@@ -348,4 +395,12 @@ document.getElementById("newChatBtn").onclick = ()=>{
 function closeModal(){
   modal.style.display="none";
 }
+
+/* SEARCH */
+document.getElementById("searchUser").addEventListener("input", function(){
+  const val = this.value.toLowerCase();
+  contacts.forEach(c=>{
+    c.style.display = c.dataset.name.toLowerCase().includes(val) ? "block" : "none";
+  });
+});
 </script>
