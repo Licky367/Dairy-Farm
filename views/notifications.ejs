@@ -1,242 +1,71 @@
 <div class="container-fluid py-3">
 
   <!-- CHANNEL NAV -->
-  <div class="d-flex gap-3 mb-3 border-bottom pb-2">
-
-    <button class="btn btn-light channel-tab active" data-channel="email">
-      <i class="bi bi-envelope-fill text-primary"></i> Email
-    </button>
-
-    <button class="btn btn-light channel-tab" data-channel="sms">
-      <i class="bi bi-chat-dots-fill text-success"></i> SMS
-    </button>
-
-    <button class="btn btn-light channel-tab" data-channel="whatsapp">
-      <i class="bi bi-whatsapp text-success"></i> WhatsApp
-    </button>
-
+  <div class="channel-nav">
+    <button class="channel-tab active" data-channel="email">📧 Email</button>
+    <button class="channel-tab" data-channel="sms">💬 SMS</button>
+    <button class="channel-tab" data-channel="whatsapp">🟢 WhatsApp</button>
   </div>
 
-  <div class="row">
+  <div class="layout">
 
-    <!-- LEFT: CONTACTS -->
-    <div class="col-md-4 border-end" style="height:75vh; overflow-y:auto;">
+    <!-- CONTACTS -->
+    <div class="contacts">
 
-      <h6 class="mb-3">Contacts</h6>
-
-      <input 
-        type="text" 
-        id="searchUser" 
-        class="form-control mb-3" 
-        placeholder="Search users..."
-      >
+      <input type="text" id="searchUser" placeholder="Search users...">
 
       <div id="contactList">
 
-        <% users.forEach(user => { %>
-          <div 
-            class="contact-item p-2 border rounded mb-2"
-            data-id="<%= user._id %>"
-            data-name="<%= user.name %>"
-            data-email="<%= user.email %>"
-            data-phone="<%= user.phone %>"
-          >
-            <strong><%= user.name %></strong><br>
-            <small><%= user.email %></small><br>
-            <small><%= user.phone %></small>
-          </div>
-        <% }) %>
+        <div class="contact-item" data-id="1" data-name="John Doe">
+          <strong>John Doe</strong><br>
+          <small>john@gmail.com</small><br>
+          <small>+254712345678</small>
+        </div>
+
+        <div class="contact-item" data-id="2" data-name="Mary Wanjiku">
+          <strong>Mary Wanjiku</strong><br>
+          <small>mary@gmail.com</small><br>
+          <small>+254798765432</small>
+        </div>
 
       </div>
+
     </div>
 
-    <!-- RIGHT: CHAT + SEND -->
-    <div class="col-md-8 d-flex flex-column" style="height:75vh;">
+    <!-- CHAT AREA -->
+    <div class="chat">
 
       <!-- HEADER -->
-      <div class="border-bottom pb-2 mb-2">
-        <h6 id="selectedUsersLabel">No contact selected</h6>
+      <div class="chat-header" id="selectedUsersLabel">
+        No contact selected
       </div>
 
-      <!-- MESSAGE HISTORY -->
-      <div 
-        id="messageHistory" 
-        class="flex-grow-1 mb-3 p-2 border rounded bg-light"
-        style="overflow-y:auto;"
-      >
-        <em class="text-muted">Select a contact to view messages</em>
+      <!-- HISTORY -->
+      <div id="messageHistory" class="chat-body">
+        <em>Select a contact to view messages</em>
       </div>
 
-      <!-- MULTI SELECT BADGES -->
-      <div id="selectedUsersContainer" class="mb-2"></div>
+      <!-- SELECTED USERS -->
+      <div id="selectedUsersContainer"></div>
 
       <!-- COMPOSER -->
-      <form action="/notifications/send" method="POST" id="sendForm">
+      <div class="composer">
 
-        <input type="hidden" name="channel" id="channelInput" value="email">
-        <input type="hidden" name="userIds" id="userIdsInput">
+        <textarea id="messageInput" placeholder="Type message..."></textarea>
 
-        <div class="mb-2">
-          <textarea 
-            name="message" 
-            id="messageInput"
-            class="form-control" 
-            rows="3"
-            placeholder="Type your message..."
-            required
-          ></textarea>
+        <div class="composer-footer">
+          <span id="charCount">0 chars</span>
+          <span id="smsInfo" style="display:none;">
+            | SMS: <span id="smsSegments">1</span>
+          </span>
 
-          <small id="charCount" class="text-muted">0 chars</small>
-          <small id="smsInfo" class="text-muted d-none">
-            | SMS segments: <span id="smsSegments">1</span>
-          </small>
+          <button id="clearSelection">Clear</button>
+          <button>Send</button>
         </div>
 
-        <div class="d-flex justify-content-between">
-
-          <button type="button" class="btn btn-outline-secondary" id="clearSelection">
-            Clear Selection
-          </button>
-
-          <button class="btn btn-primary">
-            Send
-          </button>
-
-        </div>
-
-      </form>
+      </div>
 
     </div>
 
   </div>
 </div>
-
-<!-- BOOTSTRAP ICONS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-<script>
-  let selectedUsers = [];
-  let currentChannel = "email";
-
-  const tabs = document.querySelectorAll(".channel-tab");
-  const channelInput = document.getElementById("channelInput");
-
-  const contactItems = document.querySelectorAll(".contact-item");
-  const selectedContainer = document.getElementById("selectedUsersContainer");
-  const selectedLabel = document.getElementById("selectedUsersLabel");
-  const userIdsInput = document.getElementById("userIdsInput");
-
-  const messageInput = document.getElementById("messageInput");
-  const charCount = document.getElementById("charCount");
-  const smsInfo = document.getElementById("smsInfo");
-  const smsSegments = document.getElementById("smsSegments");
-
-  const messageHistory = document.getElementById("messageHistory");
-
-  // CHANNEL SWITCH
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-
-      currentChannel = tab.dataset.channel;
-      channelInput.value = currentChannel;
-
-      updateUIForChannel();
-      loadMessages();
-    });
-  });
-
-  function updateUIForChannel() {
-    if (currentChannel === "sms") {
-      smsInfo.classList.remove("d-none");
-    } else {
-      smsInfo.classList.add("d-none");
-    }
-  }
-
-  // CONTACT SELECT
-  contactItems.forEach(item => {
-    item.addEventListener("click", () => {
-      const id = item.dataset.id;
-      const name = item.dataset.name;
-
-      if (!selectedUsers.find(u => u.id === id)) {
-        selectedUsers.push({ id, name });
-      }
-
-      renderSelectedUsers();
-      loadMessages();
-    });
-  });
-
-  function renderSelectedUsers() {
-    selectedContainer.innerHTML = "";
-
-    selectedUsers.forEach(user => {
-      const badge = document.createElement("span");
-      badge.className = "badge bg-primary me-2";
-      badge.innerText = user.name;
-
-      badge.onclick = () => {
-        selectedUsers = selectedUsers.filter(u => u.id !== user.id);
-        renderSelectedUsers();
-      };
-
-      selectedContainer.appendChild(badge);
-    });
-
-    selectedLabel.innerText = selectedUsers.length
-      ? selectedUsers.map(u => u.name).join(", ")
-      : "No contact selected";
-
-    userIdsInput.value = selectedUsers.map(u => u.id).join(",");
-  }
-
-  // CLEAR
-  document.getElementById("clearSelection").onclick = () => {
-    selectedUsers = [];
-    renderSelectedUsers();
-    messageHistory.innerHTML = "<em class='text-muted'>Selection cleared</em>";
-  };
-
-  // CHARACTER COUNT
-  messageInput.addEventListener("input", () => {
-    const len = messageInput.value.length;
-    charCount.innerText = len + " chars";
-
-    if (currentChannel === "sms") {
-      let segments = Math.ceil(len / 160) || 1;
-      smsSegments.innerText = segments;
-    }
-  });
-
-  // LOAD MESSAGES (placeholder)
-  async function loadMessages() {
-    if (!selectedUsers.length) return;
-
-    messageHistory.innerHTML = "<em>Loading...</em>";
-
-    // This should hit backend later
-    setTimeout(() => {
-      messageHistory.innerHTML = `
-        <div class="text-muted small">Conversation preview (mock)</div>
-        <div class="bg-white p-2 rounded mb-2">Previous message 1</div>
-        <div class="bg-white p-2 rounded">Previous message 2</div>
-      `;
-    }, 500);
-  }
-
-  // SEARCH
-  document.getElementById("searchUser").addEventListener("input", function () {
-    const val = this.value.toLowerCase();
-
-    contactItems.forEach(item => {
-      const name = item.dataset.name.toLowerCase();
-      item.style.display = name.includes(val) ? "block" : "none";
-    });
-  });
-
-  // DEFAULT CHANNEL
-  channelInput.value = "email";
-</script>
