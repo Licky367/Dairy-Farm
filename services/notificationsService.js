@@ -5,8 +5,12 @@ const {
   sendEmailBulk,
   sendSMSBulk,
   sendWhatsAppBulk
-} = require("./providers"); // we’ll create this next
+} = require("./providers");
 
+
+/* ===============================
+   PROCESS NOTIFICATION
+================================= */
 exports.processNotification = async ({
   channel,
   message,
@@ -14,9 +18,24 @@ exports.processNotification = async ({
   sendToAll,
   manualEmails = [],
   manualPhones = [],
-  senderId
+  senderId,
+  attachment = null
 }) => {
   try {
+    /* ===============================
+       VALIDATION
+    =============================== */
+    if (!message || message.trim().length < 1) {
+      throw new Error("Message cannot be empty");
+    }
+
+    if (!["email", "sms", "whatsapp"].includes(channel)) {
+      throw new Error("Invalid channel");
+    }
+
+    /* ===============================
+       GET USERS
+    =============================== */
     let users = [];
 
     if (sendToAll) {
@@ -25,17 +44,23 @@ exports.processNotification = async ({
       users = await User.find({ _id: { $in: userIds } });
     }
 
-    const emails = users.map(u => u.email);
-    const phones = users.map(u => u.phone);
+    /* ===============================
+       EXTRACT CONTACTS
+    =============================== */
+    const emails = users.map(u => u.email).filter(Boolean);
+    const phones = users.map(u => u.phone).filter(Boolean);
 
-    // merge manual inputs
     const finalEmails = [...new Set([...emails, ...manualEmails])];
     const finalPhones = [...new Set([...phones, ...manualPhones])];
 
     let recipientsUsed = [];
 
+    /* ===============================
+       SEND VIA PROVIDERS
+       (providers handle sender identity)
+    =============================== */
     if (channel === "email") {
-      await sendEmailBulk(finalEmails, message);
+      await sendEmailBulk(finalEmails, message, attachment);
       recipientsUsed = finalEmails;
     }
 
@@ -45,38 +70,61 @@ exports.processNotification = async ({
     }
 
     if (channel === "whatsapp") {
-      await sendWhatsAppBulk(finalPhones, message);
+      await sendWhatsAppBulk(finalPhones, message, attachment);
       recipientsUsed = finalPhones;
     }
 
+    /* ===============================
+       STORE PER RECIPIENT
+       (conversation-ready)
+    =============================== */
+    const notifications = [];
 
-if (!message || message.length < 1) {
-  throw new Error("Message cannot be empty");
-}
-
-if (!["email", "sms", "whatsapp"].includes(channel)) {
-  throw new Error("Invalid channel");
-}
-
-
-    await Notification.create({
-      channel,
-      message,
-      recipients: recipientsUsed,
-      status: "sent",
-      sentBy: senderId
+    // Users (linked to system users)
+    users.forEach(user => {
+      notifications.push({
+        channel,
+        message,
+        receiverId: user._id,
+        recipient: channel === "email" ? user.email : user.phone,
+        senderId,
+        attachment: attachment ? attachment.path || attachment.filename : null,
+        status: "sent"
+      });
     });
+
+    // Manual recipients (not in DB)
+    recipientsUsed.forEach(recipient => {
+      const existsInUsers = users.find(u =>
+        u.email === recipient || u.phone === recipient
+      );
+
+      if (!existsInUsers) {
+        notifications.push({
+          channel,
+          message,
+          recipient,
+          senderId,
+          attachment: attachment ? attachment.path || attachment.filename : null,
+          status: "sent"
+        });
+      }
+    });
+
+    await Notification.insertMany(notifications);
 
     return { success: true };
 
   } catch (error) {
+    /* ===============================
+       FAILURE LOG
+    =============================== */
     await Notification.create({
       channel,
       message,
-      recipients: [],
       status: "failed",
       error: error.message,
-      sentBy: senderId
+      senderId
     });
 
     throw error;
