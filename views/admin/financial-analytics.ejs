@@ -27,6 +27,21 @@ form button{background:#0b5d1e;color:#fff;border:none;cursor:pointer;}
 
 .hidden{display:none;}
 
+/* =========================
+   TOP PRODUCTS SCROLL FIX
+========================= */
+tbody {
+    display: block;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+thead, tfoot, tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
 @media (max-width:768px){.cards{grid-template-columns:1fr;}}
 </style>
 
@@ -81,7 +96,7 @@ form button{background:#0b5d1e;color:#fff;border:none;cursor:pointer;}
 
 </div>
 
-<!-- TABLE -->
+<!-- TOP PRODUCTS -->
 <div class="box" style="margin-top:20px;">
 <h3 id="productTitle">Top Products</h3>
 
@@ -106,6 +121,25 @@ form button{background:#0b5d1e;color:#fff;border:none;cursor:pointer;}
 </table>
 </div>
 
+<!-- =========================
+     DEMAND CURVE SECTION
+========================= -->
+<div class="box" style="margin-top:20px;">
+    <h3>Demand Curve</h3>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <select id="demandView">
+            <option value="global">Global</option>
+            <option value="major">Major Category</option>
+            <option value="category">Category</option>
+        </select>
+
+        <select id="demandSelector"></select>
+    </div>
+
+    <canvas id="demandChart"></canvas>
+</div>
+
 </div>
 
 <script>
@@ -114,24 +148,14 @@ let majorData = <%- JSON.stringify(majorCategoryStats || []) %>;
 let categoryData = <%- JSON.stringify(categoryStats || []) %>;
 let productData = <%- JSON.stringify(productStats || []) %>;
 
+let demandData = <%- JSON.stringify(demandCurves || null) %>;
+
 let majorChart;
 let categoryChart;
+let demandChart;
 
 let currentMetric = "revenue";
 let currentMajorCategory = null;
-
-/* =========================
-   UI HELPERS
-========================= */
-function updateMetricColumnTitle(){
-    const titleMap = {
-        revenue: "Revenue",
-        profit: "Profit",
-        netProfit: "Net Profit"
-    };
-
-    document.getElementById("metricColTitle").innerText = titleMap[currentMetric] || "Revenue";
-}
 
 /* =========================
    PRODUCT TABLE
@@ -166,7 +190,8 @@ function renderProducts(data, title="Top Products") {
 }
 
 /* =========================
-   CATEGORY CHART
+   CATEGORY + MAJOR CHARTS
+   (UNCHANGED)
 ========================= */
 function renderCategory(data, label="Category Performance") {
 
@@ -198,22 +223,17 @@ function renderCategory(data, label="Category Performance") {
 
         const selectedCategory = data[points[0].index].category;
 
-        // ✅ filter by BOTH majorCategory + category
         const filteredProducts = productData.filter(p =>
             p.majorCategory === currentMajorCategory &&
             p.category === selectedCategory
         );
 
-        renderProducts(
-            filteredProducts,
+        renderProducts(filteredProducts,
             `Top Products - ${currentMajorCategory} / ${selectedCategory}`
         );
     };
 }
 
-/* =========================
-   MAJOR CHART
-========================= */
 function renderMajor() {
 
     if(majorChart) majorChart.destroy();
@@ -253,117 +273,102 @@ function renderMajor() {
     };
 }
 
-/* =========================
-   RESET VIEW
-========================= */
 function resetView(){
-
     currentMajorCategory = null;
-
     renderCategory(categoryData, "Category Performance");
     renderProducts(productData, "Top Products");
-
     document.getElementById("backBtn").classList.remove("active");
 }
 
 /* =========================
-   FILTER LOGIC (RELOAD PAGE)
-   - this is the correct backend-aligned behavior
+   DEMAND CURVE
 ========================= */
-function applyFilters(e){
-    e.preventDefault();
+function renderDemandCurve(data) {
 
-    const timeMode = document.getElementById("timeFilter").value;
-    const month = document.getElementById("monthInput").value;
-    const year = document.getElementById("yearInput").value;
-    const metric = document.getElementById("metricFilter").value;
+    if (demandChart) demandChart.destroy();
 
-    // build query params
-    const params = new URLSearchParams();
+    demandChart = new Chart(
+        document.getElementById("demandChart"),
+        {
+            type: "line",
+            data: {
+                labels: data.map(d => d.price),
+                datasets: [{
+                    label: "Demand",
+                    data: data.map(d => d.demand),
+                    tension: 0.4
+                }]
+            }
+        }
+    );
+}
 
-    params.set("timeMode", timeMode);
-    params.set("metric", metric);
+function initDemand() {
 
-    // only send month/year if custom mode
-    if(timeMode === "custom"){
-        if(month) params.set("month", month);
-        if(year) params.set("year", year);
+    if (!demandData) return;
+
+    const view = document.getElementById("demandView");
+    const selector = document.getElementById("demandSelector");
+
+    function update() {
+
+        selector.innerHTML = "";
+
+        if (view.value === "global") {
+            selector.style.display = "none";
+            renderDemandCurve(demandData.global || []);
+        }
+
+        if (view.value === "major") {
+            selector.style.display = "inline-block";
+
+            demandData.majorCategory.forEach(m => {
+                const opt = document.createElement("option");
+                opt.value = m.majorCategory;
+                opt.text = m.majorCategory;
+                selector.appendChild(opt);
+            });
+
+            renderDemandCurve(demandData.majorCategory[0]?.curve || []);
+        }
+
+        if (view.value === "category") {
+            selector.style.display = "inline-block";
+
+            demandData.category.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.categoryKey;
+                opt.text = c.categoryKey;
+                selector.appendChild(opt);
+            });
+
+            renderDemandCurve(demandData.category[0]?.curve || []);
+        }
     }
 
-    // redirect reload (backend will re-render new values)
-    window.location.href = window.location.pathname + "?" + params.toString();
+    view.addEventListener("change", update);
+
+    selector.addEventListener("change", () => {
+
+        if (view.value === "major") {
+            const found = demandData.majorCategory.find(m => m.majorCategory === selector.value);
+            renderDemandCurve(found?.curve || []);
+        }
+
+        if (view.value === "category") {
+            const found = demandData.category.find(c => c.categoryKey === selector.value);
+            renderDemandCurve(found?.curve || []);
+        }
+    });
+
+    update();
 }
-
-/* =========================
-   INPUT VISIBILITY
-========================= */
-function updateMonthYearVisibility(){
-    const timeMode = document.getElementById("timeFilter").value;
-    const showCustom = timeMode === "custom";
-
-    document.getElementById("monthInput").classList.toggle("hidden", !showCustom);
-    document.getElementById("yearInput").classList.toggle("hidden", !showCustom);
-}
-
-/* =========================
-   INIT FROM QUERY STRING
-========================= */
-function loadInitialFiltersFromQuery(){
-
-    const params = new URLSearchParams(window.location.search);
-
-    const timeMode = params.get("timeMode") || "custom";
-    const month = params.get("month") || "";
-    const year = params.get("year") || "";
-    const metric = params.get("metric") || "revenue";
-
-    document.getElementById("timeFilter").value = timeMode;
-    document.getElementById("monthInput").value = month;
-    document.getElementById("yearInput").value = year;
-    document.getElementById("metricFilter").value = metric;
-
-    currentMetric = metric;
-
-    updateMonthYearVisibility();
-    updateMetricColumnTitle();
-}
-
-/* =========================
-   EVENTS
-========================= */
-document.getElementById("filterForm").addEventListener("submit", applyFilters);
-
-document.getElementById("timeFilter").addEventListener("change", () => {
-    updateMonthYearVisibility();
-});
-
-document.getElementById("metricFilter").addEventListener("change", () => {
-    currentMetric = document.getElementById("metricFilter").value;
-    updateMetricColumnTitle();
-
-    // re-render using same loaded dataset
-    if(currentMajorCategory){
-        const filteredCategories = categoryData.filter(c => c.majorCategory === currentMajorCategory);
-        const filteredProducts = productData.filter(p => p.majorCategory === currentMajorCategory);
-
-        renderCategory(filteredCategories, `${currentMajorCategory} Categories`);
-        renderProducts(filteredProducts, `Top Products - ${currentMajorCategory}`);
-    } else {
-        resetView();
-        renderMajor();
-    }
-});
-
-document.getElementById("backBtn").addEventListener("click", () => {
-    resetView();
-    renderMajor();
-});
 
 /* =========================
    START
 ========================= */
-loadInitialFiltersFromQuery();
 renderMajor();
 resetView();
+initDemand();
 
 </script>
