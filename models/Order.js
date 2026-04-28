@@ -13,13 +13,32 @@ const orderSchema = new mongoose.Schema(
     customerEmail: String,
     customerPhone: String,
 
-    // 📦 ITEMS
+    // 📦 ITEMS (BUNDLES)
     items: [
         {
             id: String,
             name: String,
-            cost: Number, // selling price
-            quantity: Number,
+
+            // 🔥 TOTAL PRODUCT PRICE (NOT UNIT PRICE)
+            cost: {
+                type: Number,
+                required: true
+            },
+
+            // 🔥 NUMBER OF UNITS INSIDE THIS PRODUCT
+            productUnits: {
+                type: Number,
+                required: true,
+                min: 1
+            },
+
+            // 🔥 NUMBER OF BUNDLES BOUGHT
+            quantity: {
+                type: Number,
+                required: true,
+                min: 1
+            },
+
             image: String,
 
             purchasePrice: {
@@ -40,7 +59,7 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
-    // 💰 FINANCIALS (ALIGNED WITH SERVICE)
+    // 💰 FINANCIALS
     totalAmount: {
         type: Number,
         required: true
@@ -61,13 +80,12 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
-    // 🔥 THESE MUST MATCH statsService
     totalRevenue: {
         type: Number,
         default: 0
     },
 
-    totalCost: {   // ✅ used by stats
+    totalCost: {
         type: Number,
         default: 0
     },
@@ -84,9 +102,7 @@ const orderSchema = new mongoose.Schema(
         index: true
     },
 
-    // =========================
-    // PAYMENT STATUS
-    // =========================
+    // 💳 PAYMENT STATUS
     status: {
         type: String,
         enum: ["paid", "depositPaid", "payAfter", "paid(cash)"],
@@ -100,9 +116,6 @@ const orderSchema = new mongoose.Schema(
         default: null
     },
 
-    // =========================
-    // PAYMENT METHOD
-    // =========================
     paymentMethod: {
         type: String,
         enum: ["M-PESA", "BANK", "CARD"],
@@ -140,7 +153,6 @@ const orderSchema = new mongoose.Schema(
     locationLng: Number,
     locationText: String,
 
-    // 📅 DELIVERY TIME
     expectedDeliveryDate: {
         type: Date,
         default: null
@@ -176,18 +188,20 @@ function calculateFinancials(doc) {
 
     (doc.items || []).forEach(item => {
 
-        const sellPrice = Number(item.cost || 0);
+        const bundlePrice = Number(item.cost || 0);
         const buyPrice = Number(item.purchasePrice || 0);
         const qty = Number(item.quantity || 0);
 
-        revenue += sellPrice * qty;
+        // 🔥 REVENUE = bundle price * number of bundles
+        revenue += bundlePrice * qty;
+
+        // 🔥 COST = purchase price * number of bundles
         cost += buyPrice * qty;
     });
 
     doc.totalRevenue = revenue;
     doc.totalCost = cost;
 
-    // 🔥 IMPORTANT: keep order-level profit clean
     doc.totalProfit = revenue - cost - Number(doc.shippingCost || 0);
 }
 
@@ -195,25 +209,20 @@ function calculateFinancials(doc) {
    HOOKS
 ========================= */
 
-// SAFE: full document available
 orderSchema.pre("save", function (next) {
     calculateFinancials(this);
     next();
 });
 
-// ⚠️ LIMITED SAFE UPDATE (only when items exist)
 orderSchema.pre("findOneAndUpdate", async function (next) {
 
     const update = this.getUpdate();
 
-    // If items not being updated → skip recalculation
     if (!update.items && !(update.$set && update.$set.items)) {
         return next();
     }
 
-    // Fetch full document to recalc properly
     const docToUpdate = await this.model.findOne(this.getQuery());
-
     if (!docToUpdate) return next();
 
     const merged = {
