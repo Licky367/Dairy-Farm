@@ -22,7 +22,7 @@ exports.getFinancialStats = async (req, res) => {
 };
 
 /* =========================
-   BUILD / REBUILD SNAPSHOT (MANUAL TRIGGER)
+   BUILD / REBUILD SNAPSHOT
 ========================= */
 exports.buildMonthlyStats = async (req, res) => {
     try {
@@ -46,7 +46,7 @@ exports.buildMonthlyStats = async (req, res) => {
 };
 
 /* =========================
-   CATEGORY STATS (FILTERABLE)
+   CATEGORY STATS (API)
 ========================= */
 exports.getCategoryStats = async (req, res) => {
     try {
@@ -67,7 +67,7 @@ exports.getCategoryStats = async (req, res) => {
 };
 
 /* =========================
-   PRODUCT STATS (FILTERABLE)
+   PRODUCT STATS (API)
 ========================= */
 exports.getProductStats = async (req, res) => {
     try {
@@ -89,7 +89,7 @@ exports.getProductStats = async (req, res) => {
 };
 
 /* =========================
-   DASHBOARD VIEW (EJS RENDER)
+   DASHBOARD RENDER (EJS)
 ========================= */
 exports.renderDashboard = async (req, res) => {
     try {
@@ -105,7 +105,10 @@ exports.renderDashboard = async (req, res) => {
             financial: dashboard.financial,
             majorCategoryStats: dashboard.majorCategoryStats,
             categoryStats: dashboard.categoryStats,
-            productStats: dashboard.productStats
+            productStats: dashboard.productStats,
+
+            // 🔥 ADDED: demand curves now available in view
+            demandCurves: dashboard.demandCurves || null
         });
 
     } catch (err) {
@@ -115,7 +118,7 @@ exports.renderDashboard = async (req, res) => {
 };
 
 /* =========================
-   DASHBOARD SUMMARY (API)
+   DASHBOARD API
 ========================= */
 exports.getDashboardStats = async (req, res) => {
     try {
