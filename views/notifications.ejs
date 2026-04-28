@@ -30,7 +30,10 @@
             data-id="<%= user._id %>"
             data-name="<%= user.name %>"
           >
-            <%= user.name %>
+            <div class="contact-avatar">
+              <%= user.name.charAt(0).toUpperCase() %>
+            </div>
+            <div class="contact-name"><%= user.name %></div>
           </div>
         <% }) %>
 
@@ -57,13 +60,12 @@
         <input type="hidden" name="channel" id="channelInput" value="whatsapp">
         <input type="hidden" name="userId" id="userIdInput">
 
-        <!-- EMAIL SUBJECT (ONLY EMAIL) -->
+        <!-- EMAIL SUBJECT -->
         <input 
           type="text" 
           id="emailSubject"
           name="subject"
           placeholder="Email subject..."
-          style="display:none;width:160px;padding:6px;border-radius:10px;border:1px solid #ccc;"
         >
 
         <!-- ATTACH -->
@@ -91,21 +93,22 @@
 
   </div>
 
-  <!-- FLOATING BUTTON -->
+  <!-- FLOAT -->
   <button id="newChatBtn" class="fab">
     <i class="bi bi-plus-lg"></i>
   </button>
 
-  <!-- NEW CHAT MODAL -->
+  <!-- MODAL -->
   <div id="newChatModal" class="modal">
 
     <div class="modal-content">
 
       <h4>Start New Chat</h4>
 
-      <input type="text" placeholder="Enter name or new contact">
+      <input type="text" id="modalSearch" placeholder="Search contacts...">
 
       <div class="modal-list">
+
         <% users.forEach(user => { %>
           <div 
             class="modal-item"
@@ -115,6 +118,7 @@
             <%= user.name %>
           </div>
         <% }) %>
+
       </div>
 
       <button onclick="closeModal()">Close</button>
@@ -125,7 +129,6 @@
 
 </div>
 
-<!-- ICONS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <style>
@@ -137,7 +140,7 @@ display:flex;
 flex-direction:column;
 }
 
-/* CHANNEL NAV */
+/* CHANNEL */
 .channel-nav{
 display:flex;
 gap:10px;
@@ -170,14 +173,30 @@ border-radius:10px;
 overflow-y:auto;
 padding:10px;
 }
+
 .contact-item{
-padding:12px;
+display:flex;
+align-items:center;
+gap:10px;
+padding:10px;
 border-bottom:1px solid #eee;
 cursor:pointer;
-font-weight:500;
 }
+
 .contact-item:hover{
 background:#f5f5f5;
+}
+
+.contact-avatar{
+width:35px;
+height:35px;
+border-radius:50%;
+background:#0b5d1e;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
 }
 
 /* CHAT */
@@ -195,7 +214,7 @@ margin-bottom:10px;
 font-weight:600;
 }
 
-/* MESSAGE AREA */
+/* MESSAGES */
 .chat-body{
 flex:1;
 overflow-y:auto;
@@ -207,13 +226,13 @@ flex-direction:column;
 gap:8px;
 }
 
-/* MESSAGE BUBBLES */
 .msg{
 max-width:70%;
-padding:8px 12px;
+padding:10px;
 border-radius:10px;
 font-size:14px;
-word-wrap:break-word;
+word-break:break-word;
+position:relative;
 }
 
 .msg.sent{
@@ -225,22 +244,21 @@ background:#dcf8c6;
 background:#fff;
 }
 
-/* ATTACHMENT PREVIEW */
+/* ATTACHMENT */
 .msg img{
-max-width:200px;
-border-radius:8px;
+max-width:180px;
 margin-top:5px;
+border-radius:8px;
 }
 
 /* COMPOSER */
 .composer{
 display:flex;
 align-items:center;
-gap:10px;
+gap:8px;
 padding:10px;
 background:#fff;
 border-radius:10px;
-margin-top:10px;
 }
 
 textarea{
@@ -251,16 +269,26 @@ border-radius:20px;
 border:1px solid #ccc;
 }
 
-/* ICON BUTTONS */
+/* SUBJECT */
+#emailSubject{
+display:none;
+width:150px;
+padding:6px;
+border-radius:10px;
+border:1px solid #ccc;
+}
+
+/* ICONS */
 .icon-btn{
 background:none;
 border:none;
 font-size:20px;
 cursor:pointer;
 }
-.send-btn{ color:#0b5d1e; }
 
-/* FLOAT BUTTON */
+.send-btn{color:#0b5d1e;}
+
+/* FLOAT */
 .fab{
 position:fixed;
 bottom:80px;
@@ -279,17 +307,19 @@ cursor:pointer;
 .modal{
 display:none;
 position:fixed;
-top:0;left:0;right:0;bottom:0;
+inset:0;
 background:rgba(0,0,0,.4);
 justify-content:center;
 align-items:center;
 }
+
 .modal-content{
 background:#fff;
 padding:20px;
 border-radius:10px;
 width:300px;
 }
+
 .modal-item{
 padding:10px;
 border-bottom:1px solid #eee;
@@ -306,8 +336,8 @@ const contacts = document.querySelectorAll(".contact-item");
 const history = document.getElementById("messageHistory");
 const header = document.getElementById("chatHeader");
 const userInput = document.getElementById("userIdInput");
-const modal = document.getElementById("newChatModal");
 const emailSubject = document.getElementById("emailSubject");
+const modal = document.getElementById("newChatModal");
 
 /* CHANNEL SWITCH */
 tabs.forEach(tab=>{
@@ -330,12 +360,11 @@ contacts.forEach(c=>{
     currentChat = c.dataset.id;
     userInput.value = currentChat;
     header.innerText = c.dataset.name;
-
     loadMessages();
   };
 });
 
-/* LOAD MESSAGES (SIMULATED THREADS) */
+/* LOAD MESSAGES */
 function loadMessages(){
   if(!currentChat) return;
 
@@ -343,13 +372,8 @@ function loadMessages(){
 
   setTimeout(()=>{
     history.innerHTML = `
-      <div class="msg received">
-        Hello, this is a previous message
-      </div>
-
-      <div class="msg sent">
-        Got it 👍
-      </div>
+      <div class="msg received">Hello 👋</div>
+      <div class="msg sent">Hi there</div>
     `;
   },300);
 }
@@ -358,8 +382,8 @@ function loadMessages(){
 document.getElementById("sendForm").onsubmit = function(e){
   e.preventDefault();
 
-  const text = document.getElementById("messageInput").value;
-  const file = document.getElementById("fileInput").files[0];
+  const text = messageInput.value;
+  const file = fileInput.files[0];
 
   if(!text || !currentChat) return;
 
@@ -367,16 +391,15 @@ document.getElementById("sendForm").onsubmit = function(e){
   msg.className = "msg sent";
   msg.innerText = text;
 
-  /* attachment preview */
   if(file){
     if(file.type.startsWith("image/")){
       const img = document.createElement("img");
       img.src = URL.createObjectURL(file);
       msg.appendChild(img);
     } else {
-      const fileLabel = document.createElement("div");
-      fileLabel.innerText = "📎 " + file.name;
-      msg.appendChild(fileLabel);
+      const fileTag = document.createElement("div");
+      fileTag.innerText = "📎 " + file.name;
+      msg.appendChild(fileTag);
     }
   }
 
@@ -385,6 +408,7 @@ document.getElementById("sendForm").onsubmit = function(e){
 
   this.reset();
   emailSubject.value = "";
+  emailSubject.style.display = currentChannel === "email" ? "block" : "none";
 };
 
 /* NEW CHAT */
@@ -397,10 +421,10 @@ function closeModal(){
 }
 
 /* SEARCH */
-document.getElementById("searchUser").addEventListener("input", function(){
+document.getElementById("searchUser").oninput = function(){
   const val = this.value.toLowerCase();
   contacts.forEach(c=>{
-    c.style.display = c.dataset.name.toLowerCase().includes(val) ? "block" : "none";
+    c.style.display = c.dataset.name.toLowerCase().includes(val) ? "flex" : "none";
   });
-});
+};
 </script>
