@@ -59,6 +59,12 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
+    // 🚚 TRANSPORTATION
+    transportationCost: {
+        type: Number,
+        default: 0
+    },
+
     // 💰 FINANCIALS
     totalAmount: {
         type: Number,
