@@ -223,8 +223,8 @@ async function buildLiveStatistics({ month, year, timeMode }) {
             const itemProfit = itemRevenue - itemCost;
 
             const itemsCount = order.items?.length || 1;
-            const shippingShare = orderShipping / itemsCount;
-            const netProfit = itemProfit - shippingShare;
+            const transportationShare = orderTransportation / itemsCount;
+            const netProfit = itemProfit - transportationShare;
 
             if (!majorMap[major]) {
                 majorMap[major] = {
