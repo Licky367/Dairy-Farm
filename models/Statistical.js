@@ -174,7 +174,6 @@ const statisticalSchema = new mongoose.Schema(
         default: null
     },
 
-    // ✅ NEW: required for weekly snapshots
     week: {
         type: Number,
         min: 1,
@@ -220,6 +219,12 @@ const statisticalSchema = new mongoose.Schema(
         min: 0
     },
 
+    transportationCost: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+
     orderCount: {
         type: Number,
         default: 0,
@@ -246,14 +251,12 @@ const statisticalSchema = new mongoose.Schema(
 },
 {
     timestamps: true
-}
-);
+});
 
 /* ===============================
    INDEXES
 =============================== */
 
-/* Prevent duplicate snapshots per period */
 statisticalSchema.index(
 {
     year: 1,
@@ -265,7 +268,6 @@ statisticalSchema.index(
 { unique: true }
 );
 
-/* Faster filtering */
 statisticalSchema.index({ year: 1, month: 1, periodType: 1 });
 statisticalSchema.index({ periodType: 1 });
 
