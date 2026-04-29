@@ -54,9 +54,9 @@ exports.markAsPaidCash = async (req, res) => {
 /* ================= MARK AS DELIVERED ================= */
 exports.markAsDelivered = async (req, res) => {
   try {
-    const { shippingCost } = req.body;
+    const { transportationCost } = req.body;
 
-    await ordersService.markAsDelivered(req.params.id, shippingCost);
+    await ordersService.markAsDelivered(req.params.id, transportationCost);
 
     res.redirect(`/admin/orders/${req.params.id}`);
 
