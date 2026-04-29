@@ -13,7 +13,14 @@ exports.getFinancialStats = async (req, res) => {
             timeMode
         });
 
-        res.json(data);
+        res.json({
+            revenue: data.revenue,
+            purchaseCost: data.purchaseCost,
+            transportationCost: data.transportationCost,
+            profit: data.profit,
+            netProfit: data.netProfit,
+            orders: data.orders
+        });
 
     } catch (err) {
         console.error("Financial Stats Error:", err);
@@ -30,8 +37,7 @@ exports.buildMonthlyStats = async (req, res) => {
 
         const data = await statsService.buildMonthlyStatistics({
             month,
-            year,
-            timeMode: "custom"
+            year
         });
 
         res.json({
@@ -106,8 +112,6 @@ exports.renderDashboard = async (req, res) => {
             majorCategoryStats: dashboard.majorCategoryStats,
             categoryStats: dashboard.categoryStats,
             productStats: dashboard.productStats,
-
-            // 🔥 ADDED: demand curves now available in view
             demandCurves: dashboard.demandCurves || null
         });
 
@@ -130,7 +134,13 @@ exports.getDashboardStats = async (req, res) => {
             timeMode
         });
 
-        res.json(data);
+        res.json({
+            financial: data.financial,
+            majorCategoryStats: data.majorCategoryStats,
+            categoryStats: data.categoryStats,
+            productStats: data.productStats,
+            demandCurves: data.demandCurves || null
+        });
 
     } catch (err) {
         console.error("Dashboard Stats Error:", err);
