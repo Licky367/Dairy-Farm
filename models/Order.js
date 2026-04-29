@@ -19,20 +19,20 @@ const orderSchema = new mongoose.Schema(
             id: String,
             name: String,
 
-            // 🔥 TOTAL PRODUCT PRICE (NOT UNIT PRICE)
+            // TOTAL PRICE PER BUNDLE
             cost: {
                 type: Number,
                 required: true
             },
 
-            // 🔥 NUMBER OF UNITS INSIDE THIS PRODUCT
+            // UNITS INSIDE A BUNDLE
             productUnits: {
                 type: Number,
                 required: true,
                 min: 1
             },
 
-            // 🔥 NUMBER OF BUNDLES BOUGHT
+            // NUMBER OF BUNDLES
             quantity: {
                 type: Number,
                 required: true,
@@ -41,6 +41,7 @@ const orderSchema = new mongoose.Schema(
 
             image: String,
 
+            // PURCHASE COST PER BUNDLE
             purchasePrice: {
                 type: Number,
                 default: 0
@@ -53,19 +54,18 @@ const orderSchema = new mongoose.Schema(
         }
     ],
 
-    // 🚚 SHIPPING
+    // 🚚 COSTS
     shippingCost: {
         type: Number,
         default: 0
     },
 
-    // 🚚 TRANSPORTATION
     transportationCost: {
         type: Number,
         default: 0
     },
 
-    // 💰 FINANCIALS
+    // 💰 ORDER TOTALS
     totalAmount: {
         type: Number,
         required: true
@@ -86,6 +86,7 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
+    // 📊 FINANCIAL METRICS
     totalRevenue: {
         type: Number,
         default: 0
@@ -96,7 +97,12 @@ const orderSchema = new mongoose.Schema(
         default: 0
     },
 
-    totalProfit: {
+    profit: {
+        type: Number,
+        default: 0
+    },
+
+    netProfit: {
         type: Number,
         default: 0
     },
@@ -177,7 +183,7 @@ function calculateFinancials(doc) {
     const total = Number(doc.totalAmount || 0);
     const paidDeposit = Number(doc.depositAmountPaid || 0);
 
-    // arrears
+    // ARREARS
     doc.arrearAmount = Math.max(0, total - paidDeposit);
 
     const isRevenueOrder = ["paid", "paid(cash)"].includes(doc.status);
@@ -185,7 +191,8 @@ function calculateFinancials(doc) {
     if (!isRevenueOrder) {
         doc.totalRevenue = 0;
         doc.totalCost = 0;
-        doc.totalProfit = 0;
+        doc.profit = 0;
+        doc.netProfit = 0;
         return;
     }
 
@@ -193,22 +200,20 @@ function calculateFinancials(doc) {
     let cost = 0;
 
     (doc.items || []).forEach(item => {
-
         const bundlePrice = Number(item.cost || 0);
-        const buyPrice = Number(item.purchasePrice || 0);
+        const purchasePrice = Number(item.purchasePrice || 0);
         const qty = Number(item.quantity || 0);
 
-        // 🔥 REVENUE = bundle price * number of bundles 
         revenue += bundlePrice * qty;
-
-        // 🔥 COST = purchase price * number of bundles
-        cost += buyPrice * qty;
+        cost += purchasePrice * qty;
     });
+
+    const transportation = Number(doc.transportationCost || 0);
 
     doc.totalRevenue = revenue;
     doc.totalCost = cost;
-
-    doc.totalProfit = revenue - cost - Number(doc.transportationCost || 0);
+    doc.profit = revenue - cost;
+    doc.netProfit = doc.profit - transportation;
 }
 
 /* =========================
@@ -224,9 +229,17 @@ orderSchema.pre("findOneAndUpdate", async function (next) {
 
     const update = this.getUpdate();
 
-    if (!update.items && !(update.$set && update.$set.items)) {
-        return next();
-    }
+    const hasRelevantUpdate =
+        update.items ||
+        (update.$set && (
+            update.$set.items ||
+            update.$set.transportationCost ||
+            update.$set.status ||
+            update.$set.depositAmountPaid ||
+            update.$set.totalAmount
+        ));
+
+    if (!hasRelevantUpdate) return next();
 
     const docToUpdate = await this.model.findOne(this.getQuery());
     if (!docToUpdate) return next();
@@ -244,7 +257,8 @@ orderSchema.pre("findOneAndUpdate", async function (next) {
             ...(update.$set || {}),
             totalRevenue: merged.totalRevenue,
             totalCost: merged.totalCost,
-            totalProfit: merged.totalProfit,
+            profit: merged.profit,
+            netProfit: merged.netProfit,
             arrearAmount: merged.arrearAmount
         }
     });
