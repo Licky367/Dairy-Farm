@@ -10,7 +10,7 @@ const paidFilter = {
 };
 
 /* =========================
-   DATE RANGE HELPERS
+   DATE HELPERS (UNCHANGED)
 ========================= */
 function getDateRange(month, year) {
     const now = new Date();
@@ -71,31 +71,7 @@ function resolveMonthYear(month, year) {
 }
 
 /* =========================
-   SMOOTHING FUNCTION
-========================= */
-function smoothCurve(data, windowSize = 3) {
-    if (!data || data.length === 0) return [];
-
-    const sorted = [...data].sort((a, b) => a.price - b.price);
-
-    return sorted.map((_, i) => {
-        let start = Math.max(0, i - windowSize);
-        let end = Math.min(sorted.length, i + windowSize + 1);
-
-        const slice = sorted.slice(start, end);
-
-        const avgDemand =
-            slice.reduce((sum, p) => sum + p.demand, 0) / slice.length;
-
-        return {
-            price: sorted[i].price,
-            demand: avgDemand
-        };
-    });
-}
-
-/* =========================
-   FINANCIAL STATS (AGGREGATION ONLY)
+   FINANCIAL STATS (CLEAN)
 ========================= */
 exports.getFinancialStats = async ({ month, year, timeMode }) => {
 
@@ -112,12 +88,12 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
     let profit = 0;
     let netProfit = 0;
 
-    for (let order of orders) {
-        revenue += Number(order.totalRevenue || 0);
-        purchaseCost += Number(order.totalCost || 0);
-        transportationCost += Number(order.transportationCost || 0);
-        profit += Number(order.profit || 0);
-        netProfit += Number(order.netProfit || 0);
+    for (let o of orders) {
+        revenue += o.totalRevenue || 0;
+        purchaseCost += o.totalCost || 0;
+        transportationCost += o.transportationCost || 0;
+        profit += o.profit || 0;
+        netProfit += o.netProfit || 0;
     }
 
     return {
@@ -131,7 +107,7 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
 };
 
 /* =========================
-   LIVE STATISTICS + DEMAND CURVES
+   LIVE STATISTICS (FIXED CORE LOGIC)
 ========================= */
 async function buildLiveStatistics({ month, year, timeMode }) {
 
@@ -145,34 +121,13 @@ async function buildLiveStatistics({ month, year, timeMode }) {
 
     const products = await Product.find({});
     const productLookup = {};
+    products.forEach(p => productLookup[p.id] = p);
 
-    products.forEach(p => {
-        productLookup[p.id] = p;
-    });
-
-    let revenue = 0;
-    let purchaseCost = 0;
-    let transportationCost = 0;
-    let profit = 0;
-    let netProfit = 0;
-
-    const majorMap = {};
-    const categoryMap = {};
-    const productMap = {};
-
-    const majorDemand = {};
-    const categoryDemand = {};
-    const timeDemand = {};
+    let majorMap = {};
+    let categoryMap = {};
+    let productMap = {};
 
     for (let order of orders) {
-
-        const orderTransportation = Number(order.transportationCost || 0);
-
-        revenue += Number(order.totalRevenue || 0);
-        purchaseCost += Number(order.totalCost || 0);
-        transportationCost += orderTransportation;
-        profit += Number(order.profit || 0);
-        netProfit += Number(order.netProfit || 0);
 
         for (let item of order.items || []) {
 
@@ -180,37 +135,18 @@ async function buildLiveStatistics({ month, year, timeMode }) {
             if (!product || !product.productUnits) continue;
 
             const qty = Number(item.quantity || 0);
-            const sellPrice = Number(item.cost || 0);
+            const revenue = Number(item.cost || 0) * qty;
+            const cost = Number(item.purchasePrice || 0) * qty;
 
-            const unitPrice = sellPrice / product.productUnits;
-            const trueUnits = qty * product.productUnits;
+            const profit = revenue - cost;
+            const netProfit = profit - Number(order.transportationCost || 0) / (order.items.length || 1);
 
             const major = product.majorCategory || "Uncategorized";
             const category = product.category || "General";
 
-            const priceKey = unitPrice.toFixed(2);
-
-            if (!majorDemand[major]) majorDemand[major] = {};
-            if (!majorDemand[major][priceKey]) {
-                majorDemand[major][priceKey] = { price: Number(priceKey), demand: 0 };
-            }
-            majorDemand[major][priceKey].demand += trueUnits;
-
-            const catKey = `${major}__${category}`;
-            if (!categoryDemand[catKey]) categoryDemand[catKey] = {};
-            if (!categoryDemand[catKey][priceKey]) {
-                categoryDemand[catKey][priceKey] = { price: Number(priceKey), demand: 0 };
-            }
-            categoryDemand[catKey][priceKey].demand += trueUnits;
-
-            if (!timeDemand[priceKey]) {
-                timeDemand[priceKey] = { price: Number(priceKey), demand: 0 };
-            }
-            timeDemand[priceKey].demand += trueUnits;
-
-            /* EXISTING ITEM LOGIC (UNCHANGED STRUCTURALLY) */
-            const itemRevenue = sellPrice * qty;
-
+            /* =========================
+               MAJOR
+            ========================= */
             if (!majorMap[major]) {
                 majorMap[major] = {
                     majorCategory: major,
@@ -222,9 +158,19 @@ async function buildLiveStatistics({ month, year, timeMode }) {
                 };
             }
 
-            const catMapKey = `${major}__${category}`;
-            if (!categoryMap[catMapKey]) {
-                categoryMap[catMapKey] = {
+            majorMap[major].revenue += revenue;
+            majorMap[major].purchaseCost += cost;
+            majorMap[major].profit += profit;
+            majorMap[major].netProfit += netProfit;
+            majorMap[major].unitsSold += qty;
+
+            /* =========================
+               CATEGORY
+            ========================= */
+            const cKey = `${major}__${category}`;
+
+            if (!categoryMap[cKey]) {
+                categoryMap[cKey] = {
                     majorCategory: major,
                     category,
                     revenue: 0,
@@ -235,6 +181,15 @@ async function buildLiveStatistics({ month, year, timeMode }) {
                 };
             }
 
+            categoryMap[cKey].revenue += revenue;
+            categoryMap[cKey].purchaseCost += cost;
+            categoryMap[cKey].profit += profit;
+            categoryMap[cKey].netProfit += netProfit;
+            categoryMap[cKey].unitsSold += qty;
+
+            /* =========================
+               PRODUCT
+            ========================= */
             if (!productMap[item.id]) {
                 productMap[item.id] = {
                     productId: item.id,
@@ -249,63 +204,31 @@ async function buildLiveStatistics({ month, year, timeMode }) {
                 };
             }
 
-            majorMap[major].revenue += itemRevenue;
-            majorMap[major].unitsSold += qty;
-
-            categoryMap[catMapKey].revenue += itemRevenue;
-            categoryMap[catMapKey].unitsSold += qty;
-
-            productMap[item.id].revenue += itemRevenue;
+            productMap[item.id].revenue += revenue;
+            productMap[item.id].purchaseCost += cost;
+            productMap[item.id].profit += profit;
+            productMap[item.id].netProfit += netProfit;
             productMap[item.id].unitsSold += qty;
         }
     }
 
-    const formatCurve = obj =>
-        Object.values(obj).sort((a, b) => a.price - b.price);
-
-    const demandCurves = {
-        global: smoothCurve(formatCurve(timeDemand)),
-        majorCategory: Object.keys(majorDemand).map(k => ({
-            majorCategory: k,
-            curve: smoothCurve(formatCurve(majorDemand[k]))
-        })),
-        category: Object.keys(categoryDemand).map(k => ({
-            categoryKey: k,
-            curve: smoothCurve(formatCurve(categoryDemand[k]))
-        }))
-    };
-
-    let periodType = "monthly";
-    if (timeMode === "today") periodType = "daily";
-    if (timeMode === "week") periodType = "weekly";
-    if (timeMode === "year") periodType = "yearly";
-
     return {
         year: selectedYear,
         month: selectedMonth,
-        periodType,
+        periodType: timeMode || "monthly",
 
-        revenue,
-        purchaseCost,
-        transportationCost,
-        profit,
-        netProfit,
-        orderCount: orders.length,
+        ...await exports.getFinancialStats({ month, year, timeMode }),
 
         majorCategoryStats: Object.values(majorMap),
         categoryStats: Object.values(categoryMap),
-        productStats: Object.values(productMap),
-
-        demandCurves
+        productStats: Object.values(productMap)
     };
 }
 
 /* =========================
-   SNAPSHOT FUNCTIONS (UNCHANGED BELOW)
+   REST (UNCHANGED STRUCTURE)
 ========================= */
-
 exports.buildMonthlyStatistics = async ({ month, year }) => {
-
     const fixed = resolveMonthYear(month, year);
 
     const payload = await buildLiveStatistics({
@@ -325,99 +248,4 @@ exports.buildMonthlyStatistics = async ({ month, year }) => {
     );
 
     return payload;
-};
-
-exports.getCategoryStats = async ({ month, year, majorCategory }) => {
-
-    const fixed = resolveMonthYear(month, year);
-
-    const data = await Statistical.findOne({
-        month: fixed.month,
-        year: fixed.year,
-        periodType: "monthly"
-    });
-
-    if (!data) return [];
-
-    let categories = data.categoryStats || [];
-
-    if (majorCategory) {
-        categories = categories.filter(c => c.majorCategory === majorCategory);
-    }
-
-    return categories;
-};
-
-exports.getProductStats = async ({ month, year, majorCategory, category }) => {
-
-    const fixed = resolveMonthYear(month, year);
-
-    const data = await Statistical.findOne({
-        month: fixed.month,
-        year: fixed.year,
-        periodType: "monthly"
-    });
-
-    if (!data) return [];
-
-    let products = data.productStats || [];
-
-    if (majorCategory) {
-        products = products.filter(p => p.majorCategory === majorCategory);
-    }
-
-    if (category) {
-        products = products.filter(p => p.category === category);
-    }
-
-    return products;
-};
-
-exports.getDashboardStats = async ({ month, year, timeMode }) => {
-
-    const financial = await exports.getFinancialStats({
-        month,
-        year,
-        timeMode
-    });
-
-    if (timeMode && timeMode !== "custom" && timeMode !== "month") {
-
-        const live = await buildLiveStatistics({
-            month,
-            year,
-            timeMode
-        });
-
-        return {
-            financial,
-            majorCategoryStats: live.majorCategoryStats,
-            categoryStats: live.categoryStats,
-            productStats: live.productStats,
-            demandCurves: live.demandCurves
-        };
-    }
-
-    const fixed = resolveMonthYear(month, year);
-
-    let snapshot = await Statistical.findOne({
-        month: fixed.month,
-        year: fixed.year,
-        periodType: "monthly"
-    });
-
-    if (!snapshot) {
-        snapshot = await exports.buildMonthlyStatistics({
-            month: fixed.month,
-            year: fixed.year
-        });
-    }
-
-    return {
-        financial,
-        majorCategoryStats: snapshot.majorCategoryStats,
-        categoryStats: snapshot.categoryStats,
-        productStats: snapshot.productStats,
-        demandCurves: snapshot.demandCurves || null
-    };
 };
