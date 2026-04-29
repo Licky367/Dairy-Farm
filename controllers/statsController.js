@@ -13,14 +13,7 @@ exports.getFinancialStats = async (req, res) => {
             timeMode
         });
 
-        res.json({
-            revenue: data.revenue,
-            purchaseCost: data.purchaseCost,
-            transportationCost: data.transportationCost,
-            profit: data.profit,
-            netProfit: data.netProfit,
-            orders: data.orders
-        });
+        res.json(data);
 
     } catch (err) {
         console.error("Financial Stats Error:", err);
@@ -134,13 +127,7 @@ exports.getDashboardStats = async (req, res) => {
             timeMode
         });
 
-        res.json({
-            financial: data.financial,
-            majorCategoryStats: data.majorCategoryStats,
-            categoryStats: data.categoryStats,
-            productStats: data.productStats,
-            demandCurves: data.demandCurves || null
-        });
+        res.json(data);
 
     } catch (err) {
         console.error("Dashboard Stats Error:", err);
