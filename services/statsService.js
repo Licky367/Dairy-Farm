@@ -108,23 +108,23 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
 
     let revenue = 0;
     let purchaseCost = 0;
-    let shippingCost = 0;
+    let transportationCost = 0;
 
     for (let order of orders) {
         revenue += Number(order.totalRevenue || 0);
         purchaseCost += Number(order.totalCost || 0);
-        shippingCost += Number(order.shippingCost || 0);
+        transportationCost += Number(order.transportationCost || 0);
     }
 
     const profit = revenue - purchaseCost;
-    const netProfit = profit - shippingCost;
+    const netProfit = profit - transpotationCost;
 
     return {
         revenue,
         purchaseCost,
         profit,
         netProfit,
-        shippingCost,
+        transportationCost,
         orders: orders.length
     };
 };
@@ -151,7 +151,7 @@ async function buildLiveStatistics({ month, year, timeMode }) {
 
     let revenue = 0;
     let purchaseCost = 0;
-    let shippingCost = 0;
+    let transportationCost = 0;
 
     const majorMap = {};
     const categoryMap = {};
@@ -166,11 +166,11 @@ async function buildLiveStatistics({ month, year, timeMode }) {
 
     for (let order of orders) {
 
-        const orderShipping = Number(order.shippingCost || 0);
+        const orderTransportation= Number(order.transpotationCost || 0);
 
         revenue += Number(order.totalRevenue || 0);
         purchaseCost += Number(order.totalCost || 0);
-        shippingCost += orderShipping;
+        transportationCost += orderTransportation;
 
         for (let item of order.items || []) {
 
