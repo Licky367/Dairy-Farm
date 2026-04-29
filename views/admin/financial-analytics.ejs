@@ -27,9 +27,6 @@ form button{background:#0b5d1e;color:#fff;border:none;cursor:pointer;}
 
 .hidden{display:none;}
 
-/* =========================
-   TOP PRODUCTS SCROLL FIX
-========================= */
 tbody {
     display: block;
     max-height: 350px;
@@ -72,10 +69,25 @@ thead, tfoot, tbody tr {
 
 <!-- CARDS -->
 <div class="cards">
-    <div class="card"><h3>Revenue</h3><h2>KES <%= financial.revenue %></h2></div>
-    <div class="card"><h3>Profit</h3><h2>KES <%= financial.profit %></h2></div>
-    <div class="card"><h3>Net Profit</h3><h2>KES <%= financial.netProfit %></h2></div>
-    <div class="card"><h3>Orders</h3><h2><%= financial.orders %></h2></div>
+    <div class="card">
+        <h3>Revenue</h3>
+        <h2>KES <%= financial.revenue %></h2>
+    </div>
+
+    <div class="card">
+        <h3>Profit</h3>
+        <h2>KES <%= financial.profit %></h2>
+    </div>
+
+    <div class="card">
+        <h3>Net Profit</h3>
+        <h2>KES <%= financial.netProfit %></h2>
+    </div>
+
+    <div class="card">
+        <h3>Orders</h3>
+        <h2><%= financial.orders %></h2>
+    </div>
 </div>
 
 <!-- CHARTS -->
@@ -104,7 +116,7 @@ thead, tfoot, tbody tr {
 <thead>
 <tr>
 <th>Product</th>
-<th id="metricColTitle">Revenue</th>
+<th id="metricColTitle">Value</th>
 <th>Units</th>
 </tr>
 </thead>
@@ -121,9 +133,7 @@ thead, tfoot, tbody tr {
 </table>
 </div>
 
-<!-- =========================
-     DEMAND CURVE SECTION
-========================= -->
+<!-- DEMAND CURVE -->
 <div class="box" style="margin-top:20px;">
     <h3>Demand Curve</h3>
 
@@ -147,7 +157,6 @@ thead, tfoot, tbody tr {
 let majorData = <%- JSON.stringify(majorCategoryStats || []) %>;
 let categoryData = <%- JSON.stringify(categoryStats || []) %>;
 let productData = <%- JSON.stringify(productStats || []) %>;
-
 let demandData = <%- JSON.stringify(demandCurves || null) %>;
 
 let majorChart;
@@ -156,6 +165,18 @@ let demandChart;
 
 let currentMetric = "revenue";
 let currentMajorCategory = null;
+
+/* =========================
+   SYNC METRIC LABELS
+========================= */
+function updateMetricUI() {
+    document.getElementById("metricColTitle").innerText =
+        currentMetric === "revenue"
+            ? "Revenue"
+            : currentMetric === "profit"
+                ? "Profit"
+                : "Net Profit";
+}
 
 /* =========================
    PRODUCT TABLE
@@ -167,19 +188,19 @@ function renderProducts(data, title="Top Products") {
 
     let totalMetric = 0;
 
-    const displayed = [...data]
+    const sorted = [...data]
         .sort((a,b)=>(Number(b[currentMetric] || 0))-(Number(a[currentMetric] || 0)))
         .slice(0,10);
 
-    displayed.forEach(p => {
+    sorted.forEach(p => {
 
-        const metricValue = Number(p[currentMetric] || 0);
-        totalMetric += metricValue;
+        const value = Number(p[currentMetric] || 0);
+        totalMetric += value;
 
         tbody.innerHTML += `
             <tr>
                 <td>${p.name || "Unknown"}</td>
-                <td>${metricValue}</td>
+                <td>${value}</td>
                 <td>${p.unitsSold || 0}</td>
             </tr>
         `;
@@ -187,188 +208,24 @@ function renderProducts(data, title="Top Products") {
 
     document.getElementById("productTitle").innerText = title;
     document.getElementById("totalMetric").innerText = totalMetric;
+
+    updateMetricUI();
 }
 
 /* =========================
-   CATEGORY + MAJOR CHARTS
-   (UNCHANGED)
+   CARDS REFRESH (SAFE BINDING)
 ========================= */
-function renderCategory(data, label="Category Performance") {
-
-    document.getElementById("categoryTitle").innerText = label;
-
-    if(categoryChart) categoryChart.destroy();
-
-    categoryChart = new Chart(
-        document.getElementById("categoryChart"),
-        {
-            type:"bar",
-            data:{
-                labels:data.map(c => c.category),
-                datasets:[{
-                    label: currentMetric,
-                    data: data.map(c => Number(c[currentMetric] || 0))
-                }]
-            }
-        }
-    );
-
-    document.getElementById("categoryChart").onclick = function(evt){
-
-        const points = categoryChart.getElementsAtEventForMode(
-            evt,"nearest",{intersect:true},true
-        );
-
-        if(!points.length) return;
-
-        const selectedCategory = data[points[0].index].category;
-
-        const filteredProducts = productData.filter(p =>
-            p.majorCategory === currentMajorCategory &&
-            p.category === selectedCategory
-        );
-
-        renderProducts(filteredProducts,
-            `Top Products - ${currentMajorCategory} / ${selectedCategory}`
-        );
-    };
-}
-
-function renderMajor() {
-
-    if(majorChart) majorChart.destroy();
-
-    majorChart = new Chart(
-        document.getElementById("majorChart"),
-        {
-            type:"pie",
-            data:{
-                labels: majorData.map(m => m.majorCategory),
-                datasets:[{
-                    label: currentMetric,
-                    data: majorData.map(m => Number(m[currentMetric] || 0))
-                }]
-            }
-        }
-    );
-
-    document.getElementById("majorChart").onclick = function(evt){
-
-        const points = majorChart.getElementsAtEventForMode(
-            evt,"nearest",{intersect:true},true
-        );
-
-        if(!points.length) return;
-
-        const selectedMajor = majorData[points[0].index].majorCategory;
-        currentMajorCategory = selectedMajor;
-
-        const filteredCategories = categoryData.filter(c => c.majorCategory === selectedMajor);
-        const filteredProducts = productData.filter(p => p.majorCategory === selectedMajor);
-
-        renderCategory(filteredCategories, `${selectedMajor} Categories`);
-        renderProducts(filteredProducts, `Top Products - ${selectedMajor}`);
-
-        document.getElementById("backBtn").classList.add("active");
-    };
-}
-
-function resetView(){
-    currentMajorCategory = null;
-    renderCategory(categoryData, "Category Performance");
-    renderProducts(productData, "Top Products");
-    document.getElementById("backBtn").classList.remove("active");
+function updateCards(financial) {
+    document.querySelectorAll(".card h2")[0].innerText = "KES " + financial.revenue;
+    document.querySelectorAll(".card h2")[1].innerText = "KES " + financial.profit;
+    document.querySelectorAll(".card h2")[2].innerText = "KES " + financial.netProfit;
+    document.querySelectorAll(".card h2")[3].innerText = financial.orders;
 }
 
 /* =========================
-   DEMAND CURVE
+   INIT
 ========================= */
-function renderDemandCurve(data) {
-
-    if (demandChart) demandChart.destroy();
-
-    demandChart = new Chart(
-        document.getElementById("demandChart"),
-        {
-            type: "line",
-            data: {
-                labels: data.map(d => d.price),
-                datasets: [{
-                    label: "Demand",
-                    data: data.map(d => d.demand),
-                    tension: 0.4
-                }]
-            }
-        }
-    );
-}
-
-function initDemand() {
-
-    if (!demandData) return;
-
-    const view = document.getElementById("demandView");
-    const selector = document.getElementById("demandSelector");
-
-    function update() {
-
-        selector.innerHTML = "";
-
-        if (view.value === "global") {
-            selector.style.display = "none";
-            renderDemandCurve(demandData.global || []);
-        }
-
-        if (view.value === "major") {
-            selector.style.display = "inline-block";
-
-            demandData.majorCategory.forEach(m => {
-                const opt = document.createElement("option");
-                opt.value = m.majorCategory;
-                opt.text = m.majorCategory;
-                selector.appendChild(opt);
-            });
-
-            renderDemandCurve(demandData.majorCategory[0]?.curve || []);
-        }
-
-        if (view.value === "category") {
-            selector.style.display = "inline-block";
-
-            demandData.category.forEach(c => {
-                const opt = document.createElement("option");
-                opt.value = c.categoryKey;
-                opt.text = c.categoryKey;
-                selector.appendChild(opt);
-            });
-
-            renderDemandCurve(demandData.category[0]?.curve || []);
-        }
-    }
-
-    view.addEventListener("change", update);
-
-    selector.addEventListener("change", () => {
-
-        if (view.value === "major") {
-            const found = demandData.majorCategory.find(m => m.majorCategory === selector.value);
-            renderDemandCurve(found?.curve || []);
-        }
-
-        if (view.value === "category") {
-            const found = demandData.category.find(c => c.categoryKey === selector.value);
-            renderDemandCurve(found?.curve || []);
-        }
-    });
-
-    update();
-}
-
-/* =========================
-   START
-========================= */
-renderMajor();
-resetView();
-initDemand();
+renderProducts(productData, "Top Products");
+updateMetricUI();
 
 </script>
