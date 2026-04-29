@@ -25,8 +25,6 @@ padding:10px;border-radius:8px;border:1px solid #ddd;
 }
 form button{background:#0b5d1e;color:#fff;border:none;cursor:pointer;}
 
-.hidden{display:none;}
-
 tbody {
     display: block;
     max-height: 350px;
@@ -69,25 +67,27 @@ thead, tfoot, tbody tr {
 
 <!-- CARDS -->
 <div class="cards">
+
     <div class="card">
         <h3>Revenue</h3>
-        <h2>KES <%= financial.revenue %></h2>
+        <h2>KES <%= financial.revenue || 0 %></h2>
     </div>
 
     <div class="card">
         <h3>Profit</h3>
-        <h2>KES <%= financial.profit %></h2>
+        <h2>KES <%= financial.profit || 0 %></h2>
     </div>
 
     <div class="card">
         <h3>Net Profit</h3>
-        <h2>KES <%= financial.netProfit %></h2>
+        <h2>KES <%= financial.netProfit || 0 %></h2>
     </div>
 
     <div class="card">
         <h3>Orders</h3>
-        <h2><%= financial.orders %></h2>
+        <h2><%= financial.orders || 0 %></h2>
     </div>
+
 </div>
 
 <!-- CHARTS -->
@@ -116,7 +116,7 @@ thead, tfoot, tbody tr {
 <thead>
 <tr>
 <th>Product</th>
-<th id="metricColTitle">Value</th>
+<th id="metricColTitle">Revenue</th>
 <th>Units</th>
 </tr>
 </thead>
@@ -167,15 +167,16 @@ let currentMetric = "revenue";
 let currentMajorCategory = null;
 
 /* =========================
-   SYNC METRIC LABELS
+   METRIC LABEL
 ========================= */
+function getMetricLabel() {
+    if (currentMetric === "revenue") return "Revenue";
+    if (currentMetric === "profit") return "Profit";
+    return "Net Profit";
+}
+
 function updateMetricUI() {
-    document.getElementById("metricColTitle").innerText =
-        currentMetric === "revenue"
-            ? "Revenue"
-            : currentMetric === "profit"
-                ? "Profit"
-                : "Net Profit";
+    document.getElementById("metricColTitle").innerText = getMetricLabel();
 }
 
 /* =========================
@@ -213,13 +214,23 @@ function renderProducts(data, title="Top Products") {
 }
 
 /* =========================
-   CARDS REFRESH (SAFE BINDING)
+   UPDATE CARDS SAFELY
 ========================= */
 function updateCards(financial) {
-    document.querySelectorAll(".card h2")[0].innerText = "KES " + financial.revenue;
-    document.querySelectorAll(".card h2")[1].innerText = "KES " + financial.profit;
-    document.querySelectorAll(".card h2")[2].innerText = "KES " + financial.netProfit;
-    document.querySelectorAll(".card h2")[3].innerText = financial.orders;
+
+    if (!financial) return;
+
+    document.querySelectorAll(".card")[0].querySelector("h2").innerText =
+        "KES " + (financial.revenue || 0);
+
+    document.querySelectorAll(".card")[1].querySelector("h2").innerText =
+        "KES " + (financial.profit || 0);
+
+    document.querySelectorAll(".card")[2].querySelector("h2").innerText =
+        "KES " + (financial.netProfit || 0);
+
+    document.querySelectorAll(".card")[3].querySelector("h2").innerText =
+        financial.orders || 0;
 }
 
 /* =========================
