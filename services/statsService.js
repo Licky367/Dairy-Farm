@@ -117,7 +117,7 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
     }
 
     const profit = revenue - purchaseCost;
-    const netProfit = profit - transpotationCost;
+    const netProfit = profit - transportationCost;
 
     return {
         revenue,
@@ -157,16 +157,13 @@ async function buildLiveStatistics({ month, year, timeMode }) {
     const categoryMap = {};
     const productMap = {};
 
-    /* =========================
-       DEMAND CURVE MAPS
-    ========================= */
     const majorDemand = {};
     const categoryDemand = {};
     const timeDemand = {};
 
     for (let order of orders) {
 
-        const orderTransportation= Number(order.transpotationCost || 0);
+        const orderTransportation = Number(order.transportationCost || 0);
 
         revenue += Number(order.totalRevenue || 0);
         purchaseCost += Number(order.totalCost || 0);
@@ -188,18 +185,12 @@ async function buildLiveStatistics({ month, year, timeMode }) {
 
             const priceKey = unitPrice.toFixed(2);
 
-            /* =========================
-               MAJOR CATEGORY DEMAND
-            ========================= */
             if (!majorDemand[major]) majorDemand[major] = {};
             if (!majorDemand[major][priceKey]) {
                 majorDemand[major][priceKey] = { price: Number(priceKey), demand: 0 };
             }
             majorDemand[major][priceKey].demand += trueUnits;
 
-            /* =========================
-               CATEGORY DEMAND
-            ========================= */
             const catKey = `${major}__${category}`;
             if (!categoryDemand[catKey]) categoryDemand[catKey] = {};
             if (!categoryDemand[catKey][priceKey]) {
@@ -207,9 +198,6 @@ async function buildLiveStatistics({ month, year, timeMode }) {
             }
             categoryDemand[catKey][priceKey].demand += trueUnits;
 
-            /* =========================
-               GLOBAL TIME DEMAND
-            ========================= */
             if (!timeDemand[priceKey]) {
                 timeDemand[priceKey] = { price: Number(priceKey), demand: 0 };
             }
@@ -291,7 +279,7 @@ async function buildLiveStatistics({ month, year, timeMode }) {
     };
 
     const profit = revenue - purchaseCost;
-    const netProfit = profit - shippingCost;
+    const netProfit = profit - transportationCost;
 
     let periodType = "monthly";
     if (timeMode === "today") periodType = "daily";
@@ -307,16 +295,13 @@ async function buildLiveStatistics({ month, year, timeMode }) {
         purchaseCost,
         profit,
         netProfit,
-        shippingCost,
+        transportationCost,
         orderCount: orders.length,
 
         majorCategoryStats: Object.values(majorMap),
         categoryStats: Object.values(categoryMap),
         productStats: Object.values(productMap),
 
-        /* =========================
-           NEW ADDITION (NO BREAKING CHANGES)
-        ========================= */
         demandCurves
     };
 }
