@@ -112,7 +112,7 @@ border-top:1px solid #eee;
 
   <p><b>Address:</b> <%= order.deliveryAddress || "N/A" %></p>
 
-  <p><b>Delivery Date:</b>
+  <p><b>Delivery Date (customer's expectation):</b>
     <%= order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "Not set" %>
   </p>
 
@@ -144,7 +144,7 @@ border-top:1px solid #eee;
   <% if(order.manualPayment){ %>
 
     <p style="color:green;">
-      Paid by <b><%= order.manualPayment.adminName %></b><br>
+      Paid To: <b><%= order.manualPayment.adminName %></b><br>
       Amount: KES <%= order.manualPayment.amount %><br>
       Time: <%= new Date(order.manualPayment.paidAt).toLocaleString() %>
     </p>
@@ -170,10 +170,10 @@ border-top:1px solid #eee;
 
     <form method="POST" action="/admin/orders/<%= order._id %>/deliver">
 
-      <label>Shipping Cost (KES)</label>
+      <label>Transportation Cost (KES)</label>
       <input
         type="number"
-        name="shippingCost"
+        name="transportationCost"
         min="0"
         required
       />
