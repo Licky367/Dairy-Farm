@@ -95,7 +95,7 @@ function smoothCurve(data, windowSize = 3) {
 }
 
 /* =========================
-   FINANCIAL STATS
+   FINANCIAL STATS (AGGREGATION ONLY)
 ========================= */
 exports.getFinancialStats = async ({ month, year, timeMode }) => {
 
@@ -109,22 +109,23 @@ exports.getFinancialStats = async ({ month, year, timeMode }) => {
     let revenue = 0;
     let purchaseCost = 0;
     let transportationCost = 0;
+    let profit = 0;
+    let netProfit = 0;
 
     for (let order of orders) {
         revenue += Number(order.totalRevenue || 0);
         purchaseCost += Number(order.totalCost || 0);
         transportationCost += Number(order.transportationCost || 0);
+        profit += Number(order.profit || 0);
+        netProfit += Number(order.netProfit || 0);
     }
-
-    const profit = revenue - purchaseCost;
-    const netProfit = profit - transportationCost;
 
     return {
         revenue,
         purchaseCost,
+        transportationCost,
         profit,
         netProfit,
-        transportationCost,
         orders: orders.length
     };
 };
@@ -152,6 +153,8 @@ async function buildLiveStatistics({ month, year, timeMode }) {
     let revenue = 0;
     let purchaseCost = 0;
     let transportationCost = 0;
+    let profit = 0;
+    let netProfit = 0;
 
     const majorMap = {};
     const categoryMap = {};
@@ -168,6 +171,8 @@ async function buildLiveStatistics({ month, year, timeMode }) {
         revenue += Number(order.totalRevenue || 0);
         purchaseCost += Number(order.totalCost || 0);
         transportationCost += orderTransportation;
+        profit += Number(order.profit || 0);
+        netProfit += Number(order.netProfit || 0);
 
         for (let item of order.items || []) {
 
@@ -203,16 +208,8 @@ async function buildLiveStatistics({ month, year, timeMode }) {
             }
             timeDemand[priceKey].demand += trueUnits;
 
-            /* =========================
-               EXISTING LOGIC (UNCHANGED)
-            ========================= */
+            /* EXISTING ITEM LOGIC (UNCHANGED STRUCTURALLY) */
             const itemRevenue = sellPrice * qty;
-            const itemCost = Number(item.purchasePrice || 0) * qty;
-            const itemProfit = itemRevenue - itemCost;
-
-            const itemsCount = order.items?.length || 1;
-            const transportationShare = orderTransportation / itemsCount;
-            const netProfit = itemProfit - transportationShare;
 
             if (!majorMap[major]) {
                 majorMap[major] = {
@@ -278,9 +275,6 @@ async function buildLiveStatistics({ month, year, timeMode }) {
         }))
     };
 
-    const profit = revenue - purchaseCost;
-    const netProfit = profit - transportationCost;
-
     let periodType = "monthly";
     if (timeMode === "today") periodType = "daily";
     if (timeMode === "week") periodType = "weekly";
@@ -293,9 +287,9 @@ async function buildLiveStatistics({ month, year, timeMode }) {
 
         revenue,
         purchaseCost,
+        transportationCost,
         profit,
         netProfit,
-        transportationCost,
         orderCount: orders.length,
 
         majorCategoryStats: Object.values(majorMap),
