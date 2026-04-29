@@ -198,7 +198,7 @@ function calculateFinancials(doc) {
         const buyPrice = Number(item.purchasePrice || 0);
         const qty = Number(item.quantity || 0);
 
-        // 🔥 REVENUE = bundle price * number of bundles
+        // 🔥 REVENUE = bundle price * number of bundles 
         revenue += bundlePrice * qty;
 
         // 🔥 COST = purchase price * number of bundles
@@ -208,7 +208,7 @@ function calculateFinancials(doc) {
     doc.totalRevenue = revenue;
     doc.totalCost = cost;
 
-    doc.totalProfit = revenue - cost - Number(doc.shippingCost || 0);
+    doc.totalProfit = revenue - cost - Number(doc.transportationCost || 0);
 }
 
 /* =========================
