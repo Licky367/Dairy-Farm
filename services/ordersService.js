@@ -42,10 +42,10 @@ exports.markAsPaid = async (orderId, adminName) => {
 
 
 /* ================= MARK AS DELIVERED ================= */
-exports.markAsDelivered = async (orderId, shippingCost) => {
+exports.markAsDelivered = async (orderId, transportationCost) => {
   return await Order.findByIdAndUpdate(orderId, {
     delivered: true,
-    shippingCost: Number(shippingCost),
+    transportationCost: Number(transportationCost),
     deliveryDate: new Date()
   });
 };
