@@ -3,19 +3,58 @@ const Order = require("../models/Order");
 const User = require("../models/User");
 
 /* =======================================
-        GROUPED PRODUCTS (ADMIN)
-   majorCategory → category → products
+   PAID FILTER
+======================================= */
+const paidFilter = {
+    status: { $in: ["paid", "paid(cash)"] }
+};
+
+/* =======================================
+   DATE HELPERS
+======================================= */
+function getDateRange(month, year) {
+    const now = new Date();
+
+    const selectedYear = Number(year) || now.getFullYear();
+    const selectedMonth = Number(month) || (now.getMonth() + 1);
+
+    const start = new Date(selectedYear, selectedMonth - 1, 1);
+    const end = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
+
+    return {
+        start,
+        end,
+        selectedMonth,
+        selectedYear
+    };
+}
+
+function getYearRange(year) {
+    const now = new Date();
+
+    const selectedYear = Number(year) || now.getFullYear();
+
+    const start = new Date(selectedYear, 0, 1);
+    const end = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    return {
+        start,
+        end,
+        selectedYear
+    };
+}
+
+/* =======================================
+   GROUPED PRODUCTS
 ======================================= */
 exports.getProductsGrouped = async () => {
-
     const products = await Product.find().sort({ createdAt: -1 });
 
     const grouped = {};
 
-    products.forEach(p => {
-
-        const major = p.majorCategory || "Uncategorized";
-        const cat = p.category || "General";
+    for (const product of products) {
+        const major = product.majorCategory || "Uncategorized";
+        const category = product.category || "General";
 
         if (!grouped[major]) {
             grouped[major] = {
@@ -24,15 +63,15 @@ exports.getProductsGrouped = async () => {
             };
         }
 
-        if (!grouped[major].categories[cat]) {
-            grouped[major].categories[cat] = {
-                category: cat,
+        if (!grouped[major].categories[category]) {
+            grouped[major].categories[category] = {
+                category,
                 products: []
             };
         }
 
-        grouped[major].categories[cat].products.push(p);
-    });
+        grouped[major].categories[category].products.push(product);
+    }
 
     return Object.values(grouped).map(group => ({
         majorCategory: group.majorCategory,
@@ -40,65 +79,59 @@ exports.getProductsGrouped = async () => {
     }));
 };
 
-
 /* =======================================
-        GET PRODUCTS (RAW)
+   GET PRODUCTS
 ======================================= */
 exports.getProducts = async () => {
     return await Product.find().sort({ createdAt: -1 });
 };
 
-
 /* =======================================
-        GET SINGLE PRODUCT
+   GET PRODUCT
 ======================================= */
 exports.getProduct = async (id) => {
     return await Product.findOne({ id });
 };
 
-
 /* =======================================
-        STOCK FETCH (SAFE)
+   STOCK PACKAGES
 ======================================= */
 const getStockPackages = async (category, majorCategory) => {
-
     const products = await Product.find({ category, majorCategory });
 
-    let packages = [];
+    const packages = [];
 
-    products.forEach(p => {
-        if (p.packages?.length) {
-            p.packages.forEach(pkg => {
-                packages.push({
-                    ...pkg.toObject(),
-                    parentId: p._id
-                });
+    for (const product of products) {
+        for (const pkg of product.packages || []) {
+            packages.push({
+                ...pkg.toObject(),
+                parentId: product._id
             });
         }
-    });
+    }
 
     return packages.sort(
-        (a, b) => new Date(a._id.getTimestamp()) - new Date(b._id.getTimestamp())
+        (a, b) =>
+            new Date(a._id.getTimestamp()) -
+            new Date(b._id.getTimestamp())
     );
 };
 
-
 /* =======================================
-        FIFO ALLOCATION ENGINE
+   FIFO STOCK ALLOCATION
 ======================================= */
 const allocateStock = async (packages, productUnits) => {
-
-    let remaining = productUnits;
+    let remaining = Number(productUnits) || 0;
     let totalCost = 0;
-    let allocations = [];
+    const allocations = [];
 
-    for (let pkg of packages) {
-
+    for (const pkg of packages) {
         if (remaining <= 0) break;
-        if (pkg.remainingUnits <= 0) continue;
+        if ((pkg.remainingUnits || 0) <= 0) continue;
 
         const take = Math.min(pkg.remainingUnits, remaining);
-        const unitCost = pkg.BP / pkg.units;
+        const unitCost =
+            (Number(pkg.BP) || 0) / (Number(pkg.units) || 1);
 
         totalCost += take * unitCost;
 
@@ -109,8 +142,15 @@ const allocateStock = async (packages, productUnits) => {
         });
 
         await Product.updateOne(
-            { _id: pkg.parentId, "packages._id": pkg._id },
-            { $inc: { "packages.$.remainingUnits": -take } }
+            {
+                _id: pkg.parentId,
+                "packages._id": pkg._id
+            },
+            {
+                $inc: {
+                    "packages.$.remainingUnits": -take
+                }
+            }
         );
 
         remaining -= take;
@@ -120,29 +160,57 @@ const allocateStock = async (packages, productUnits) => {
         throw new Error("Not enough stock in category packages");
     }
 
-    return { totalCost, allocations };
+    return {
+        totalCost,
+        allocations
+    };
 };
 
+/* =======================================
+   RESTORE ALLOCATIONS
+======================================= */
+const restoreAllocations = async (allocations = []) => {
+    for (const alloc of allocations) {
+        await Product.updateOne(
+            {
+                _id: alloc.parentId,
+                "packages._id": alloc.packageId
+            },
+            {
+                $inc: {
+                    "packages.$.remainingUnits": alloc.unitsTaken
+                }
+            }
+        );
+    }
+};
 
 /* =======================================
-        CREATE PRODUCT
+   CREATE PRODUCT
 ======================================= */
 exports.createProduct = async (data, file) => {
-
     const cost = Number(data.cost) || 0;
     const depositPercentage = Number(data.depositPercentage) || 0;
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
-    const packages = await getStockPackages(data.category, data.majorCategory);
+    const majorCategory = data.majorCategory || "Uncategorized";
 
-    const { totalCost, allocations } = await allocateStock(packages, productUnits);
+    const packages = await getStockPackages(
+        data.category,
+        majorCategory
+    );
+
+    const { totalCost, allocations } = await allocateStock(
+        packages,
+        productUnits
+    );
 
     await Product.create({
         id: data.id,
         name: data.name,
         category: data.category,
-        majorCategory: data.majorCategory || "Uncategorized",
+        majorCategory,
         image: file ? "/uploads/" + file.filename : "",
         cost,
         purchasePrice: totalCost,
@@ -155,46 +223,39 @@ exports.createProduct = async (data, file) => {
     });
 };
 
-
 /* =======================================
-        UPDATE PRODUCT
+   UPDATE PRODUCT
 ======================================= */
 exports.updateProduct = async (id, data, file) => {
-
     const existing = await Product.findOne({ id });
 
-    if (!existing) throw new Error("Product not found");
+    if (!existing) {
+        throw new Error("Product not found");
+    }
 
     const cost = Number(data.cost) || 0;
     const depositPercentage = Number(data.depositPercentage) || 0;
     const itemsAvailable = Number(data.itemsAvailable) || 0;
     const productUnits = Number(data.productUnits) || 0;
 
-    /* restore old stock */
-    if (existing.allocations?.length) {
-        for (let alloc of existing.allocations) {
-            await Product.updateOne(
-                {
-                    _id: alloc.parentId,
-                    "packages._id": alloc.packageId
-                },
-                {
-                    $inc: {
-                        "packages.$.remainingUnits": alloc.unitsTaken
-                    }
-                }
-            );
-        }
-    }
+    const majorCategory = data.majorCategory || "Uncategorized";
 
-    const packages = await getStockPackages(data.category, data.majorCategory);
+    await restoreAllocations(existing.allocations);
 
-    const { totalCost, allocations } = await allocateStock(packages, productUnits);
+    const packages = await getStockPackages(
+        data.category,
+        majorCategory
+    );
+
+    const { totalCost, allocations } = await allocateStock(
+        packages,
+        productUnits
+    );
 
     const updateData = {
         name: data.name,
         category: data.category,
-        majorCategory: data.majorCategory || "Uncategorized",
+        majorCategory,
         cost,
         purchasePrice: totalCost,
         depositPercentage,
@@ -209,42 +270,30 @@ exports.updateProduct = async (id, data, file) => {
         updateData.image = "/uploads/" + file.filename;
     }
 
-    await Product.findOneAndUpdate({ id }, updateData, { new: true });
+    await Product.findOneAndUpdate(
+        { id },
+        updateData,
+        { new: true }
+    );
 };
 
-
 /* =======================================
-        DELETE PRODUCT
+   DELETE PRODUCT
 ======================================= */
 exports.deleteProduct = async (id) => {
-
     const product = await Product.findOne({ id });
 
-    if (product?.allocations?.length) {
-        for (let alloc of product.allocations) {
-            await Product.updateOne(
-                {
-                    _id: alloc.parentId,
-                    "packages._id": alloc.packageId
-                },
-                {
-                    $inc: {
-                        "packages.$.remainingUnits": alloc.unitsTaken
-                    }
-                }
-            );
-        }
-    }
+    if (!product) return;
+
+    await restoreAllocations(product.allocations);
 
     await Product.findOneAndDelete({ id });
 };
 
-
 /* =======================================
-        CATEGORY GROUPING (ADMIN)
+   CATEGORY GROUPING
 ======================================= */
 exports.getCategories = async () => {
-
     const data = await Product.aggregate([
         {
             $group: {
@@ -254,92 +303,113 @@ exports.getCategories = async () => {
                 },
                 stockedUnits: {
                     $sum: {
-                        $multiply: ["$productUnits", "$itemsAvailable"]
+                        $multiply: [
+                            "$productUnits",
+                            "$itemsAvailable"
+                        ]
                     }
                 },
-                packages: { $push: "$packages" }
+                packages: {
+                    $push: "$packages"
+                }
             }
         }
     ]);
 
-    return data.map(cat => {
-
-        const allPackages = (cat.packages || []).flat();
+    return data.map(category => {
+        const allPackages = (category.packages || []).flat();
 
         const totalUnits = allPackages.reduce(
-            (sum, p) => sum + (p.units || 0),
+            (sum, pkg) => sum + (Number(pkg.units) || 0),
             0
         );
 
         const remainingUnits = allPackages.reduce(
-            (sum, p) => sum + (p.remainingUnits || 0),
+            (sum, pkg) => sum + (Number(pkg.remainingUnits) || 0),
             0
         );
 
         return {
-            category: cat._id.category,
-            majorCategory: cat._id.majorCategory || "Uncategorized",
-            stockedUnits: cat.stockedUnits || 0,
+            category: category._id.category,
+            majorCategory:
+                category._id.majorCategory || "Uncategorized",
+            stockedUnits: category.stockedUnits || 0,
             currentUnits: remainingUnits,
             totalUnits
         };
     });
 };
 
+/* =======================================
+   REVENUE
+======================================= */
+const computeRevenue = (orders = []) => {
+    let revenue = 0;
+
+    for (const order of orders) {
+        revenue += Number(order.totalRevenue) || 0;
+    }
+
+    return revenue;
+};
 
 /* =======================================
-        DASHBOARD
+   DASHBOARD
 ======================================= */
 exports.getDashboardData = async ({ month, year }) => {
+    const {
+        start: monthStart,
+        end: monthEnd
+    } = getDateRange(month, year);
 
-    const now = new Date();
+    const {
+        start: yearStart,
+        end: yearEnd
+    } = getYearRange(year);
 
-    const selectedYear = Number(year) || now.getFullYear();
-    const selectedMonth = Number(month) || (now.getMonth() + 1);
-
-    const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
-    const monthEnd = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
-
-    const yearStart = new Date(selectedYear, 0, 1);
-    const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
-
+    /* ---------------------------
+       ORDER COUNTS (NO FILTER)
+    --------------------------- */
     const totalOrders = await Order.countDocuments({
-        orderedAt: { $gte: monthStart, $lte: monthEnd }
+        orderedAt: {
+            $gte: monthStart,
+            $lte: monthEnd
+        }
     });
 
     const yearOrders = await Order.countDocuments({
-        orderedAt: { $gte: yearStart, $lte: yearEnd }
+        orderedAt: {
+            $gte: yearStart,
+            $lte: yearEnd
+        }
     });
 
+    /* ---------------------------
+       REVENUE (PAID ONLY)
+    --------------------------- */
     const monthlyOrders = await Order.find({
-        status: { $in: ["paid", "paid(cash)"] },
-        orderedAt: { $gte: monthStart, $lte: monthEnd }
+        ...paidFilter,
+        orderedAt: {
+            $gte: monthStart,
+            $lte: monthEnd
+        }
     });
 
     const yearlyOrders = await Order.find({
-        status: { $in: ["paid", "paid(cash)"] },
-        orderedAt: { $gte: yearStart, $lte: yearEnd }
+        ...paidFilter,
+        orderedAt: {
+            $gte: yearStart,
+            $lte: yearEnd
+        }
     });
-
-    const computeRevenue = (orders) => {
-
-        let revenue = 0;
-
-        orders.forEach(order => {
-            order.items.forEach(item => {
-                const cost = Number(item.cost) || 0;
-                const qty = Number(item.quantity) || 0;
-                revenue += cost * qty;
-            });
-        });
-
-        return revenue;
-    };
 
     const revenue = computeRevenue(monthlyOrders);
     const yearRevenue = computeRevenue(yearlyOrders);
 
-    const totalClients = await User.countDocuments({ role: "client" });
+    const totalClients = await User.countDocuments({
+        role: "client"
+    });
+
     const totalProducts = await Product.countDocuments();
 
     const products = await Product.find();
@@ -347,13 +417,15 @@ exports.getDashboardData = async ({ month, year }) => {
     let totalItemsAvailable = 0;
     let lowStockCount = 0;
 
-    products.forEach(p => {
-        totalItemsAvailable += Number(p.itemsAvailable) || 0;
+    for (const product of products) {
+        const items = Number(product.itemsAvailable) || 0;
 
-        if ((p.itemsAvailable || 0) > 0 && p.itemsAvailable <= 5) {
+        totalItemsAvailable += items;
+
+        if (items > 0 && items <= 5) {
             lowStockCount++;
         }
-    });
+    }
 
     const recentOrders = await Order.find()
         .sort({ createdAt: -1 })
