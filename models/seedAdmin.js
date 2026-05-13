@@ -1,96 +1,93 @@
-const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const User = require("./User");
-require("dotenv").config();
 
 /*
 =========================================
-ADMIN SEED (3 ADMINS)
-ENV-DRIVEN + SAFE RESEED
+ADMIN SEED
+HARDCODED ADMINS
+SAFE RESEED
 =========================================
 */
 
 const admins = [
-    {
-        id: process.env.ADMIN_1_ID,
-        name: process.env.ADMIN_1_NAME,
-        email: process.env.ADMIN_1_EMAIL,
-        phone: process.env.ADMIN_1_PHONE,
-        password: process.env.ADMIN_1_PASSWORD
-    },
+  {
+    id: "ADM001",
+    name: "System Admin",
+    email: "admin1@example.com",
+    phone: "0700000001",
+    password: "admin123"
+  },
 
-    {
-        id: process.env.ADMIN_2_ID,
-        name: process.env.ADMIN_2_NAME,
-        email: process.env.ADMIN_2_EMAIL,
-        phone: process.env.ADMIN_2_PHONE,
-        password: process.env.ADMIN_2_PASSWORD
-    },
+  {
+    id: "ADM002",
+    name: "Finance Admin",
+    email: "admin2@example.com",
+    phone: "0700000002",
+    password: "admin123"
+  },
 
-    {
-        id: process.env.ADMIN_3_ID,
-        name: process.env.ADMIN_3_NAME,
-        email: process.env.ADMIN_3_EMAIL,
-        phone: process.env.ADMIN_3_PHONE,
-        password: process.env.ADMIN_3_PASSWORD
-    }
+  {
+    id: "ADM003",
+    name: "Operations Admin",
+    email: "admin3@example.com",
+    phone: "0700000003",
+    password: "admin123"
+  }
 ];
 
 const seedAdmins = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI);
 
-        console.log("MongoDB connected...");
+  try {
 
-        for (const admin of admins) {
+    for (const admin of admins) {
 
-            // skip incomplete entries
-            if (!admin.email || !admin.password) {
-                console.log(
-                    `Skipping incomplete admin: ${admin.id}`
-                );
-                continue;
-            }
+      const exists = await User.findOne({
+        email: admin.email
+      });
 
-            const exists = await User.findOne({
-                email: admin.email
-            });
+      if (exists) {
 
-            if (exists) {
-                console.log(
-                    `Admin already exists: ${admin.email}`
-                );
-                continue;
-            }
+        console.log(
+          `⚠️ Admin already exists: ${admin.email}`
+        );
 
-            const hashedPassword =
-                await bcrypt.hash(
-                    admin.password,
-                    10
-                );
+        continue;
+      }
 
-            await User.create({
-                id: admin.id,
-                name: admin.name,
-                email: admin.email,
-                phone: admin.phone,
-                profileImage: "",
-                password: hashedPassword,
-                role: "admin"
-            });
+      const hashedPassword =
+        await bcrypt.hash(
+          admin.password,
+          10
+        );
 
-            console.log(
-                `Created admin: ${admin.email}`
-            );
-        }
+      await User.create({
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone,
+        profileImage: "",
+        password: hashedPassword,
+        role: "admin"
+      });
 
-        console.log("All admins seeded successfully.");
-        process.exit(0);
-
-    } catch (error) {
-        console.log("Seed error:", error);
-        process.exit(1);
+      console.log(
+        `✅ Created admin: ${admin.email}`
+      );
     }
+
+    console.log(
+      "🎉 Admin seeding completed successfully."
+    );
+
+  } catch (error) {
+
+    console.log(
+      "🔴 Seed Error:",
+      error
+    );
+
+  }
+
 };
 
-seedAdmins();
+module.exports = seedAdmins;
