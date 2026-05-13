@@ -1,26 +1,30 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
-    try {
 
-        await mongoose.connect(
-            process.env.MONGO_URI,
-            {
-                autoIndex: true
-            }
-        );
+  try {
 
-        console.log("MongoDB Connected");
+    const MONGO_URI =
+      process.env.MONGO_URI ||
+      "mongodb://127.0.0.1:27017/ecommerce_db";
 
-    } catch (error) {
+    await mongoose.connect(MONGO_URI);
 
-        console.log(
-            "MongoDB Connection Failed:",
-            error.message
-        );
+    console.log(
+      "🟢 MongoDB Connected"
+    );
 
-        process.exit(1);
-    }
+  } catch (error) {
+
+    console.log(
+      "🔴 MongoDB Connection Error:",
+      error.message
+    );
+
+    process.exit(1);
+
+  }
+
 };
 
 module.exports = connectDB;
