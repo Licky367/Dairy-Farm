@@ -4,27 +4,61 @@ const path = require("path");
 const vhost = require("vhost");
 require("dotenv").config();
 
+/* ===============================
+   DATABASE
+================================= */
 const connectDB = require("./db");
 
+/* ===============================
+   SEED ADMIN
+================================= */
+const seedAdmin = require("./models/seedAdmin");
+
+/* ===============================
+   INIT APP
+================================= */
 const app = express();
 
-/*==== NOTIFICATION ====*/
+/* ===============================
+   NOTIFICATION + SOCKET.IO
+================================= */
 const http = require("http");
 const socketIo = require("socket.io");
 
 const server = http.createServer(app);
-const io = socketIo(server);
+
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+/* Make io accessible globally */
+app.set("io", io);
 
 io.on("connection", (socket) => {
 
-  console.log("User connected");
+  console.log("🟢 User connected");
 
-  socket.on("joinConversation", (conversationId) => {
-    socket.join(conversationId);
-  });
+  socket.on(
+    "joinConversation",
+    (conversationId) => {
+      socket.join(conversationId);
+    }
+  );
 
   socket.on("sendMessage", (data) => {
-    io.to(data.conversationId).emit("newMessage", data);
+
+    io.to(data.conversationId).emit(
+      "newMessage",
+      data
+    );
+
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔴 User disconnected");
   });
 
 });
@@ -32,7 +66,19 @@ io.on("connection", (socket) => {
 /* ===============================
    CONNECT DATABASE
 ================================= */
-connectDB();
+connectDB()
+  .then(async () => {
+
+    /* AUTO SEED ADMIN */
+    await seedAdmin();
+
+  })
+  .catch((err) => {
+    console.log(
+      "MongoDB Connection Error:",
+      err
+    );
+  });
 
 /* ===============================
    IMPORT ROUTES
@@ -56,33 +102,63 @@ const notificationsRoutes = require("./routes/notifications");
    VIEW ENGINE
 ================================= */
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-const expressLayouts = require("express-ejs-layouts");
+
+app.set(
+  "views",
+  path.join(__dirname, "views")
+);
+
+const expressLayouts = require(
+  "express-ejs-layouts"
+);
 
 app.use(expressLayouts);
-app.set("layout", "layout"); // layout.ejs
+
+app.set("layout", "layout");
 
 /* ===============================
    GLOBAL MIDDLEWARE
 ================================= */
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
+
 app.use(express.json());
 
-app.use(express.static("public"));
+app.use(
+  express.static(
+    path.join(__dirname, "public")
+  )
+);
 
-app.use("/uploads", express.static("uploads"));
+app.use(
+  "/uploads",
+  express.static(
+    path.join(__dirname, "uploads")
+  )
+);
 
 /* ===============================
    SESSION
 ================================= */
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret:
+      process.env.SESSION_SECRET ||
+      "super-secret-key",
+
     resave: false,
+
     saveUninitialized: false,
+
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24,
+      maxAge:
+        1000 * 60 * 60 * 24,
+
       httpOnly: true,
+
       secure: false
     }
   })
@@ -92,6 +168,7 @@ app.use(
    GLOBAL VIEW VARIABLES
 ================================= */
 app.use((req, res, next) => {
+
   res.locals.user =
     req.session.user || null;
 
@@ -99,23 +176,32 @@ app.use((req, res, next) => {
     req.session.cart || [];
 
   next();
+
 });
 
 /* ===============================
    MAIN CLIENT APP
    localhost:3000
-   entry => /client
 ================================= */
 const clientApp = express.Router();
 
+/* Routes */
 clientApp.use("/", authRoutes);
+
 clientApp.use("/", profileRoutes);
+
 clientApp.use("/", clientRoutes);
+
 clientApp.use("/", checkoutRoutes);
+
 clientApp.use("/", productRoutes);
+
 clientApp.use("/", paymentRoutes);
+
 clientApp.use("/", cartRoutes);
+
 clientApp.use("/", clientOrderRoutes);
+
 clientApp.use("/", unpaidRoutes);
 
 /* Redirect root */
@@ -126,18 +212,37 @@ clientApp.get("/", (req, res) => {
 /* ===============================
    ADMIN SUBDOMAIN APP
    admin.localhost:3000
-   entry => /admin/dashboard
 ================================= */
 const adminApp = express.Router();
 
+/* Routes */
 adminApp.use("/", authRoutes);
+
 adminApp.use("/", profileRoutes);
+
 adminApp.use("/", adminRoutes);
+
 adminApp.use("/", unpaidRoutes);
-adminApp.use("/category", categoryRoutes);
-adminApp.use("/admin", statsRoutes);
-adminApp.use("/admin", receiptRoutes);
-adminApp.use("/notifications", notificationsRoutes);
+
+adminApp.use(
+  "/category",
+  categoryRoutes
+);
+
+adminApp.use(
+  "/admin",
+  statsRoutes
+);
+
+adminApp.use(
+  "/admin",
+  receiptRoutes
+);
+
+adminApp.use(
+  "/notifications",
+  notificationsRoutes
+);
 
 /* Redirect root */
 adminApp.get("/", (req, res) => {
@@ -154,26 +259,32 @@ app.use(
   )
 );
 
-/* Main site */
+/* ===============================
+   MAIN SITE
+================================= */
 app.use(clientApp);
 
 /* ===============================
    404 HANDLER
 ================================= */
 app.use((req, res) => {
+
   res.status(404).send(
     "Page Not Found"
   );
+
 });
 
 /* ===============================
    SERVER START
 ================================= */
-app.listen(
-  process.env.PORT,
-  () => {
-    console.log(
-      `Server running on port ${process.env.PORT}`
-    );
-  }
-);
+const PORT =
+  process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+
+  console.log(
+    `🚀 Server running on port ${PORT}`
+  );
+
+});
