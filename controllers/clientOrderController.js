@@ -1,4 +1,4 @@
-const clientOrderService = require("../services/clientOrderServices");
+const clientOrderService = require("../services/clientOrderService");
 
 /**
  * GET all user orders

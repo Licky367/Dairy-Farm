@@ -35,15 +35,27 @@ exports.sendEmailBulk = async (emails = [], message, attachment = null) => {
 
 
 /* ================= SMS ================= */
-const africastalking = require("africastalking")({
-  apiKey: process.env.AT_API_KEY,
-  username: process.env.AT_USERNAME
-});
+let sms = null;
 
-const sms = africastalking.SMS;
+const atApiKey = process.env.AT_API_KEY;
+const atUsername = process.env.AT_USERNAME;
+
+if (atApiKey && atUsername) {
+  try {
+    const africastalking = require("africastalking");
+    const africastalkingClient = africastalking({
+      apiKey: atApiKey,
+      username: atUsername
+    });
+
+    sms = africastalkingClient.SMS;
+  } catch (err) {
+    console.warn("SMS provider initialization skipped:", err.message);
+  }
+}
 
 exports.sendSMSBulk = async (phones = [], message) => {
-  if (!phones.length) return;
+  if (!phones.length || !sms) return;
 
   // Normalize phone numbers (ensure +254...)
   const formattedPhones = phones
@@ -60,15 +72,22 @@ exports.sendSMSBulk = async (phones = [], message) => {
 
 
 /* ================= WHATSAPP ================= */
-const twilio = require("twilio");
+let twilioClient = null;
 
-const client = twilio(
-  process.env.TWILIO_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {
+  try {
+    const twilio = require("twilio");
+    twilioClient = twilio(
+      process.env.TWILIO_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
+  } catch (err) {
+    console.warn("WhatsApp provider initialization skipped:", err.message);
+  }
+}
 
 exports.sendWhatsAppBulk = async (phones = [], message, attachment = null) => {
-  if (!phones.length) return;
+  if (!phones.length || !twilioClient) return;
 
   const from = `whatsapp:${process.env.WHATSAPP_FROM}`;
 
@@ -79,12 +98,11 @@ exports.sendWhatsAppBulk = async (phones = [], message, attachment = null) => {
       body: message
     };
 
-    // Attachment support (media)
     if (attachment) {
       payload.mediaUrl = [attachment.url || attachment.path];
     }
 
-    return client.messages.create(payload);
+    return twilioClient.messages.create(payload);
   });
 
   await Promise.all(promises);

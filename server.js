@@ -252,9 +252,13 @@ adminApp.get("/", (req, res) => {
 /* ===============================
    SUBDOMAIN BINDING
 ================================= */
+const ADMIN_SUBDOMAIN =
+  process.env.ADMIN_SUBDOMAIN ||
+  "admin.localhost";
+
 app.use(
   vhost(
-    process.env.ADMIN_SUBDOMAIN,
+    ADMIN_SUBDOMAIN,
     adminApp
   )
 );

@@ -55,6 +55,57 @@ exports.removeFromCart = (req, id) => {
 };
 
 /**
+ * INCREASE ITEM QUANTITY
+ */
+exports.increaseQty = async (req, id) => {
+    const cart = req.session.cart || [];
+    const item = cart.find(entry => entry.id === id);
+
+    if (!item) {
+        throw new Error("Cart item not found");
+    }
+
+    const product = await Product.findOne({ id });
+    if (!product) {
+        throw new Error("Product not found");
+    }
+
+    if ((item.quantity || 0) + 1 > (product.itemsAvailable || 0)) {
+        throw new Error("Cannot exceed available stock");
+    }
+
+    item.quantity += 1;
+    req.session.cart = cart;
+};
+
+/**
+ * DECREASE ITEM QUANTITY
+ */
+exports.decreaseQty = async (req, id) => {
+    const cart = req.session.cart || [];
+    const item = cart.find(entry => entry.id === id);
+
+    if (!item) {
+        throw new Error("Cart item not found");
+    }
+
+    if ((item.quantity || 1) <= 1) {
+        req.session.cart = cart.filter(entry => entry.id !== id);
+        return;
+    }
+
+    item.quantity -= 1;
+    req.session.cart = cart;
+};
+
+/**
+ * CLEAR CART
+ */
+exports.clearCart = (req) => {
+    req.session.cart = [];
+};
+
+/**
  * GET CART
  */
 exports.getCart = (req) => {

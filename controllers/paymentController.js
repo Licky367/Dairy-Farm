@@ -3,6 +3,57 @@ const Transaction = require("../models/Transaction");
 const mpesaService = require("../services/mpesaService");
 const { formatPhone } = require("../utils/phone");
 
+/* ================= PAYMENT PAGE ================= */
+exports.paymentPage = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.redirect("/login");
+        }
+
+        const { orderId, type } = req.query;
+
+        if (orderId) {
+            const order = await Order.findOne({
+                _id: orderId,
+                userId: req.session.user._id
+            });
+
+            if (!order) {
+                return res.status(404).send("Order not found");
+            }
+
+            return res.render("payment", {
+                order,
+                totalArrears: undefined,
+                user: req.session.user
+            });
+        }
+
+        if (type === "payArrears") {
+            const orders = await Order.find({
+                userId: req.session.user._id,
+                delivered: true,
+                arrearAmount: { $gt: 0 }
+            });
+
+            const totalArrears = orders.reduce(
+                (sum, o) => sum + Number(o.arrearAmount || 0),
+                0
+            );
+
+            return res.render("payment", {
+                order: null,
+                totalArrears,
+                user: req.session.user
+            });
+        }
+
+        return res.status(400).send("Invalid payment page request");
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send("Payment page failed");
+    }
+};
 
 /* ================= INITIATE PAYMENT ================= */
 exports.initiatePayment = async (req, res) => {
